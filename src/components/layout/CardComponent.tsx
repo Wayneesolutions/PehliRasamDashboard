@@ -12,6 +12,7 @@ interface CardData {
   data: { value: number }[];
 }
 
+
 const CardComponent: React.FC<CardData> = ({
   title,
   value,
@@ -26,7 +27,7 @@ const CardComponent: React.FC<CardData> = ({
 
   return (
     <div
-      className="bg-white rounded-lg p-6 shadow-md transition-transform transform hover:scale-105"
+      className="p-6 transition-transform transform bg-white rounded-lg shadow-md hover:scale-105"
       style={{
         boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.1)",
       }}
@@ -35,7 +36,7 @@ const CardComponent: React.FC<CardData> = ({
         {/* Icon & Title */}
         <div className="flex items-center">
           <div
-            className="w-12 h-12 rounded-full flex items-center justify-center text-white text-xl font-bold"
+            className="flex items-center justify-center w-12 h-12 text-xl font-bold text-white rounded-full"
             style={{
               backgroundColor: chartBackgroundColor,
               color: chartColor,
@@ -44,7 +45,7 @@ const CardComponent: React.FC<CardData> = ({
             {icon}
           </div>
           <div className="ml-4">
-            <p className="text-gray-500 text-sm">{title}</p>
+            <p className="text-sm text-gray-500">{title}</p>
             <p className="text-2xl font-bold text-black">{value}</p>
           </div>
         </div>
