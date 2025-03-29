@@ -1,7 +1,8 @@
 import { Select, Row, Col, InputNumber, Collapse, Input, Button, message, Spin, Tabs } from "antd";
 import { useForm, Controller } from "react-hook-form";
 import { useEffect, useState } from "react";
-import { getFormGroupList } from "./Actions";
+// import { getFormGroupList } from "./Actions";
+import { getFromGroupList } from "../../config/apiClient";
 
 const { Panel } = Collapse;
 const { TabPane } = Tabs;
@@ -42,10 +43,11 @@ const Form = () => {
 
     useEffect(() => {
         setLoading(true);
-        getFormGroupList()
+        getFromGroupList()
             .then((data) => {
-                if (Array.isArray(data)) {
-                    const formattedData = data.map((group: any) => ({
+                console.log('=======================',data)
+                if (Array.isArray(data.data)) {
+                    const formattedData = data.data.map((group: any) => ({
                         groupId: group._id,
                         groupName: group.name,
                         fields: Array.isArray(group.formFields)

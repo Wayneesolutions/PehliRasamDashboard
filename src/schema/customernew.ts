@@ -89,3 +89,15 @@ export interface ActiveClientDetails {
   address: Address;
 }
 
+export interface Customer {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  contact?: string;
+  imagePath?: string;
+  address: Address;
+  createdAt: string;
+  updatedAt: string;
+}
+

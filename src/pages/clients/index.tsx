@@ -86,34 +86,41 @@ const Clients: React.FC = () => {
 
       {/* Client Details Modal */}
       <Modal
-        title={<h2 className="text-lg font-semibold text-center">{selectedClient?.name}</h2>}
-        open={isClientModalOpen}
-        onCancel={() => setIsClientModalOpen(false)}
-        footer={null}
-        centered
-        width={350}
-      >
-        {selectedClient && (
-          <div className="flex flex-col items-center text-center p-4">
-            {selectedClient.imgURL.length > 0 ? (
-              <img src={selectedClient.imgURL[0]} alt="Profile" className="w-24 h-24 object-cover rounded-full shadow-md" />
-            ) : (
-              <div className="w-24 h-24 flex items-center justify-center bg-gray-200 rounded-full text-3xl font-semibold shadow-md">
-                {selectedClient.name.charAt(0)}
-              </div>
-            )}
-            <div className="mt-4 w-full space-y-2">
-              <p className="text-gray-600 text-sm"><strong>📍 Location:</strong> {selectedClient.location}</p>
-              <p className="text-gray-600 text-sm"><strong>📧 Email:</strong> {selectedClient.email}</p>
-              <p className="text-gray-600 text-sm"><strong>📞 Phone:</strong> {selectedClient.contact || "N/A"}</p>
-              <p className="text-gray-600 text-sm"><strong>📅 Registered:</strong> {new Date(selectedClient.registrationDate).toLocaleDateString()}</p>
-            </div>
-            <Button type="link" className="mt-4 text-blue-600 hover:underline text-sm" onClick={() => navigate("/dashboard/add-client", { state: { clientId: selectedClient._id } })}>
-              🔗 View Full Profile
-            </Button>
-          </div>
+  title={<h2 className="text-lg font-semibold text-center">{selectedClient ? `${selectedClient.firstName} ${selectedClient.lastName}` : "Client Details"}</h2>}
+  open={isClientModalOpen}
+  onCancel={() => setIsClientModalOpen(false)}
+  footer={null}
+  centered
+  width={350}
+>
+  {selectedClient && (
+    <div className="flex flex-col items-center text-center p-4">
+      {selectedClient.imagePath ? (
+        <img src={selectedClient.imagePath} alt={`${selectedClient.firstName} ${selectedClient.lastName}`} className="w-24 h-24 object-cover rounded-full shadow-md" />
+      ) : (
+        <div className="w-24 h-24 flex items-center justify-center bg-gray-200 rounded-full text-3xl font-semibold shadow-md">
+          {`${selectedClient.firstName[0]}${selectedClient.lastName[0]}`}
+        </div>
+      )}
+      <div className="mt-4 w-full space-y-2">
+        <p className="text-gray-600 text-sm">
+          <strong>📍 Location:</strong> {`${selectedClient.address.city}, ${selectedClient.address.stateOrProvince}, ${selectedClient.address.country}`}
+        </p>
+        <p className="text-gray-600 text-sm"><strong>📧 Email:</strong> {selectedClient.email}</p>
+        <p className="text-gray-600 text-sm"><strong>📞 Phone:</strong> {selectedClient.contact || "N/A"}</p>
+        {selectedClient.registrationDate && (
+          <p className="text-gray-600 text-sm">
+            <strong>📅 Registered:</strong> {new Date(selectedClient.registrationDate).toLocaleDateString()}
+          </p>
         )}
-      </Modal>
+      </div>
+      <Button type="link" className="mt-4 text-blue-600 hover:underline text-sm" onClick={() => navigate("/dashboard/add-client", { state: { clientId: selectedClient._id } })}>
+        🔗 View Full Profile
+      </Button>
+    </div>
+  )}
+</Modal>
+
 
       {/* Add Client Modal */}
       <Modal

@@ -6,11 +6,12 @@ import MembershipForm from "./Form";
 const AddClient = () => {
     const location = useLocation();
     const showMembershipForm = location.pathname === "/dashboard/add-client";
-
+    const customerId = location.state?.clientId;
+    
     return (
         <div className="flex h-screen bg-gray-100">
             {/* Sidebar (Fixed on the left) */}
-            <Sidebar />
+            <Sidebar customerId={customerId} />
 
             {/* Main Content Section */}
             <div className="flex-1 flex flex-col overflow-hidden">

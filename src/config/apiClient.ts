@@ -68,3 +68,28 @@ export const allActiveCustomer = async()=>{
     return (error as Error).response?.data;
   }
 }
+export const getCustomerBasicDetail = async (customerId:string)=>{
+  try {
+    const response = await apiClient.post('api/v1/admin/getCustomerBasicDetail',{customerId:customerId})
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+export const getCustomerProfileDetail = async (customerId:string)=>{
+  try {
+    const response = await apiClient.post('api/v1/admin/getCustomerProfileDetail',{customerId:customerId})
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+export const getFromGroupList = async ()  =>{
+  try {
+    const response = await apiClient.get('api/v1/admin/getFromGroupList')
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
