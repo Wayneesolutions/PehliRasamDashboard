@@ -21,6 +21,7 @@ const AddClient = () => {
                 <div className="flex-1 overflow-y-auto p-6">
                     {showMembershipForm ? <MembershipForm /> : <Outlet />}
                 </div>
+                
             </div>
         </div>
     );

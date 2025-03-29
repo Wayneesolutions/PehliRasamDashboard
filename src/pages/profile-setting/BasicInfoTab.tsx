@@ -127,18 +127,18 @@ const BasicInfoTab = () => {
 
     return (
         <Spin spinning={loading}>
-            <Card className="mb-4 p-6">
+            <Card className="p-6 mb-4">
                 <div className="flex flex-col items-center gap-4">
                     <Upload beforeUpload={() => false} onChange={handleFileChange} showUploadList={false}>
                         <Button icon={<UploadOutlined />}>Upload Profile Picture</Button>
                     </Upload>
 
                     {imagePreview && (
-                        <img src={imagePreview} alt="Profile" className="h-24 w-24 rounded-full mt-2 border p-1" />
+                        <img src={imagePreview} alt="Profile" className="w-24 h-24 p-1 mt-2 border rounded-full" />
                     )}
                 </div>
             </Card>
-            <Card className="mb-4 p-6">
+            <Card className="p-6 mb-4">
                 <div className="grid gap-4">
                     <Input placeholder="First Name" name="firstName" value={formData.firstName} onChange={handleChange} />
                     <Input placeholder="Last Name" name="lastName" value={formData.lastName} onChange={handleChange} />
@@ -147,7 +147,7 @@ const BasicInfoTab = () => {
                     <Input placeholder="Email" name="email" value={formData.email} disabled />
                     <Input.Password placeholder="New Password (leave empty to keep current)" name="password" value={formData.password} onChange={handleChange} />
                 </div>
-                <Button type="primary" className="mt-4 w-full" onClick={handleUpdate} loading={loading}>
+                <Button type="primary" className="w-full mt-4" onClick={handleUpdate} loading={loading}>
                     Update Profile
                 </Button>
             </Card>
