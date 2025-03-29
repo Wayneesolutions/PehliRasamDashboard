@@ -64,3 +64,28 @@ const schema = z.object({
 });
 
 export default schema;
+
+export interface AddClientFormData{
+  firstname:String;
+  lastname:String;
+  email:String;
+}
+
+export interface Address {
+  street: string;
+  city: string;
+  stateOrProvince: string;
+  postalCode: string;
+  country: string;
+}
+
+export interface ActiveClientDetails {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  imagePath: string;
+  activeStatus: boolean;
+  address: Address;
+}
+

@@ -1,34 +1,16 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input, Button, Card, Modal, Form } from "antd";
 import { SearchOutlined, AppstoreOutlined, UserAddOutlined, InfoCircleOutlined } from "@ant-design/icons";
-
-const staticClients = [
-  {
-    _id: "1",
-    name: "John Doe",
-    location: "New York, USA",
-    email: "johndoe@example.com",
-    contact: "123-456-7890",
-    registrationDate: "2024-01-10",
-    imgURL: ["https://via.placeholder.com/150"],
-  },
-  {
-    _id: "2",
-    name: "Jane Smith",
-    location: "Los Angeles, USA",
-    email: "janesmith@example.com",
-    contact: "987-654-3210",
-    registrationDate: "2023-11-22",
-    imgURL: [],
-  },
-];
+import  { addCustomerByAdmin, allActiveCustomer } from "../../config/apiClient";
+import { ActiveClientDetails } from "../../schema/customernew";
 
 const Clients: React.FC = () => {
   const [view, setView] = useState<"grid" | "list">("grid");
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
+  const [activeclients,setActiveClients] = useState<ActiveClientDetails[]>([])
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
@@ -41,12 +23,32 @@ const Clients: React.FC = () => {
     setIsAddClientModalOpen(true);
   };
 
-  const handleSaveClient = () => {
-    form.validateFields().then((values) => {
-      setIsAddClientModalOpen(false);
-      navigate("/dashboard/add-client", { state: values });
+  const handleSaveClient = async() => {
+    form.validateFields().then(async (values) => {
+      console.log(values)
+        const res = await addCustomerByAdmin(values)
+          if(!res.success){
+           alert(res.message)
+           return
+          }
+          alert(res.data.success)
+          setIsAddClientModalOpen(false);
+          navigate("/dashboard/add-client", { state: values });   
     });
   };
+  useEffect(()=>{
+    const fetchingCustomers = async ()=>{
+      const res =  await allActiveCustomer()
+      console.log('res from ========',res.data);
+      if(res.success){
+        setActiveClients(res?.data)
+      }else{
+        setActiveClients([])
+      }
+      
+    }
+    fetchingCustomers()
+  },[])
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
@@ -62,24 +64,25 @@ const Clients: React.FC = () => {
       </div>
 
       {/* Client Display */}
-      <div className={`grid ${view === "grid" ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3" : "flex flex-col"} gap-4`}>
-        {staticClients.map((client) => (
+            <div className={`grid ${view === "grid" ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3" : "flex flex-col"} gap-4`}>
+        {activeclients.map((client) => (
           <Card key={client._id} className="p-4 shadow-md flex flex-col items-center gap-3 text-center">
-            {client.imgURL.length > 0 ? (
-              <img src={client.imgURL[0]} alt={client.name} className="w-24 h-24 object-cover rounded-full shadow-md" />
+            {client.imagePath ? (
+              <img src={client.imagePath} alt={`${client.firstName} ${client.lastName}`} className="w-24 h-24 object-cover rounded-full shadow-md" />
             ) : (
               <div className="w-24 h-24 flex items-center justify-center bg-gray-200 rounded-full text-xl font-semibold">
-                {client.name.split(" ").map((n) => n[0]).join("")}
+                {`${client.firstName[0]}${client.lastName[0]}`}
               </div>
             )}
-            <h3 className="text-lg font-semibold">{client.name}</h3>
-            <p className="text-gray-500">{client.location}</p>
+            <h3 className="text-lg font-semibold">{`${client.firstName} ${client.lastName}`}</h3>
+            <p className="text-gray-500">{`${client.address.city}, ${client.address.country}`}</p>
             <Button type="primary" icon={<InfoCircleOutlined />} onClick={() => openClientModal(client)}>
               View Details
             </Button>
           </Card>
         ))}
       </div>
+
 
       {/* Client Details Modal */}
       <Modal

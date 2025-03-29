@@ -1,13 +1,20 @@
 import axios from 'axios';
 import { authState } from '../state/auth';
 import { setRecoil } from 'recoil-nexus';
+import { AddClientFormData } from '../schema/customernew';
 
 const baseURL = import.meta.env.VITE_APP_BASE_URL;
 
 const apiClient = axios.create({
   baseURL,
 });
-
+interface Error {
+  response?: {
+      data?: {
+          message: string,
+      }
+  }
+}
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -42,3 +49,22 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
+
+export const addCustomerByAdmin =async(data:AddClientFormData)=>{
+  try {
+    const response = await apiClient.post('/api/v1/admin/addCustomerByAdmin',data)
+    console.log('res fro add cli',response);
+    
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+export const allActiveCustomer = async()=>{
+  try {
+    const response = await apiClient.get('/api/v1/admin/allActiveCustomer',)
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
