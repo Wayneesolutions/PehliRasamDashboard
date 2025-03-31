@@ -20,7 +20,7 @@ const AddClient = () => {
 
                 {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto p-6">
-                    {showMembershipForm ? <MembershipForm /> : <Outlet />}
+                    {showMembershipForm ? <MembershipForm customerId={customerId}/> : <Outlet />}
                 </div>
             </div>
         </div>

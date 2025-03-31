@@ -93,3 +93,12 @@ export const getFromGroupList = async ()  =>{
   }
 }
 
+export const getCustomerMatchPreferencesDetail = async (customerId:string)  =>{
+  try {
+    const response = await apiClient.post('admin/getCustomerMatchPreferencesDetail',{customerId:customerId})
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+

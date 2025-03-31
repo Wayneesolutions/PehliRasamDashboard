@@ -2,7 +2,7 @@ import { Select, Row, Col, InputNumber, Collapse, Input, Button, message, Spin, 
 import { useForm, Controller } from "react-hook-form";
 import { useEffect, useState } from "react";
 // import { getFormGroupList } from "./Actions";
-import { getFromGroupList } from "../../config/apiClient";
+import { getCustomerMatchPreferencesDetail, getFromGroupList } from "../../config/apiClient";
 
 const { Panel } = Collapse;
 const { TabPane } = Tabs;
@@ -26,6 +26,7 @@ interface IField {
     fieldId: string;
     fieldName: string;
     value?: string;
+    fieldValueOptions:any
 }
 
 interface IGroup {
@@ -34,13 +35,27 @@ interface IGroup {
     fields: IField[];
 }
 
-const Form = () => {
+const Form = ({customerId}:{customerId:string}) => {
     const { control } = useForm();
     const { handleSubmit } = useForm();
     const [formData, setFormData] = useState<IGroup[]>([]);
+    const [matchdata,setMatchData] = useState<any>([])
     const [loading, setLoading] = useState(false);
-
-
+   
+    useEffect(()=>{
+        if(customerId){
+            async function getCutsomerMatch(){
+            const res = await getCustomerMatchPreferencesDetail(customerId)
+            if(res.success){
+                setMatchData(res.data)
+                
+            }
+        }
+        getCutsomerMatch()
+        }
+     
+    },[customerId])
+console.log('matchdata===',matchdata);
     useEffect(() => {
         setLoading(true);
         getFromGroupList()
@@ -56,6 +71,7 @@ const Form = () => {
                             ? group.fields.map((field: any) => ({
                                 fieldId: field.attributeId,
                                 fieldName: field.attributeName || "Unknown Field",
+                                fieldValueOptions: field.attributeOption || [],
                                 value: "",
                             }))
                             : [],
@@ -123,6 +139,41 @@ const Form = () => {
                                             group.fields.map((field) => (
                                                 <div key={field.fieldId} className="flex mb-3">
                                                     <label className="w-1/3 text-gray-600">{field.fieldName}</label>
+                                                    <select
+                                                        className="w-2/3 border p-2 rounded"
+                                                        value={field.value || ""}
+                                                        onChange={(e) =>
+                                                            handleDynamicFieldChange(group.groupId, field.fieldId, e.target.value)
+                                                        }
+                                                    >
+                                                        <option value="" disabled>Select an option</option>
+                                                        {field?.fieldValueOptions?.map((option:any) => (
+                                                            <option key={option} value={option}>
+                                                                {option}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-gray-500">No fields available</div>
+                                        )}
+                                    </Panel>
+                                ))}
+                            </Collapse>
+                        </div>
+                    </TabPane>
+
+                    {/* Static Preferences Tab */}
+                    <TabPane tab="Matching Preferences" key="2">
+                    <div className="w-full">
+                            <Collapse className="w-full border border-gray-200 rounded-md" expandIconPosition="start">
+                                {matchdata.map((group:any, index:any) => (
+                                    <Panel header={group.groupName} key={group.groupId || index} className="w-full">
+                                        {group.fields.length > 0 ? (
+                                            group.fields.map((field:any) => (
+                                                <div key={field.fieldId} className="flex mb-3">
+                                                    <label className="w-1/3 text-gray-600">{field.fieldName}</label>
                                                     <Input
                                                         className="w-2/3"
                                                         value={field.value || ""}
@@ -139,11 +190,7 @@ const Form = () => {
                                 ))}
                             </Collapse>
                         </div>
-                    </TabPane>
-
-                    {/* Static Preferences Tab */}
-                    <TabPane tab="Matching Preferences" key="2">
-                        <div className="grid grid-cols-2 gap-4">
+                        {/* <div className="grid grid-cols-2 gap-4">
                             {[
                                 { label: "More About Partner Preference", value: ["something"] },
                                 { label: "Member Status", value: ["type"] },
@@ -202,10 +249,10 @@ const Form = () => {
                                         )}
                                     </div>
                                 </div>
-                            ))}
+                            ))} */}
 
                             {/* Preferred Age Range */}
-                            <div className="flex w-full">
+                            {/* <div className="flex w-full">
                                 <div className="w-1/2 px-4 py-2 text-gray-500">Preferred Age Range</div>
                                 <div className="w-1/2 px-4 py-2">
                                     <Row gutter={8}>
@@ -242,10 +289,10 @@ const Form = () => {
                                         </Col>
                                     </Row>
                                 </div>
-                            </div>
+                            </div> */}
 
                             {/* Preferred Height */}
-                            <div className="flex w-full">
+                            {/* <div className="flex w-full">
                                 <div className="w-1/2 px-4 py-2 text-gray-500">Preferred Height</div>
                                 <div className="w-1/2 px-4 py-2">
                                     <Row gutter={8}>
@@ -283,7 +330,7 @@ const Form = () => {
                                     </Row>
                                 </div>
                             </div>
-                        </div>
+                        </div> */}
                     </TabPane>
                 </Tabs>
             </div>
