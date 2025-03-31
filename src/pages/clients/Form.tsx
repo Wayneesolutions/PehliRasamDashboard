@@ -47,17 +47,21 @@ const Form = () => {
             .then((data) => {
                 console.log('=======================',data)
                 if (Array.isArray(data.data)) {
+                    console.log('data.data======',data.data);
+                    
                     const formattedData = data.data.map((group: any) => ({
                         groupId: group._id,
-                        groupName: group.name,
-                        fields: Array.isArray(group.formFields)
-                            ? group.formFields.map((field: any) => ({
-                                fieldId: field._id,
+                        groupName: group.groupName,
+                        fields: Array.isArray(group.fields)
+                            ? group.fields.map((field: any) => ({
+                                fieldId: field.attributeId,
                                 fieldName: field.attributeName || "Unknown Field",
                                 value: "",
                             }))
                             : [],
                     }));
+                    console.log('formated grougps==========',formattedData);
+                    
                     setFormData(formattedData);
                 } else {
                     console.error("Unexpected API response format:", data);
