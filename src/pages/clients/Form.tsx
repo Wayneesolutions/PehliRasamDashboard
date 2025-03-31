@@ -54,7 +54,7 @@ const Form = ({customerId}:{customerId:string}) => {
         getCutsomerMatch()
         }
      
-    },[customerId])
+    },[])
 console.log('matchdata===',matchdata);
     useEffect(() => {
         setLoading(true);

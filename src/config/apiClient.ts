@@ -102,3 +102,22 @@ export const getCustomerMatchPreferencesDetail = async (customerId:string)  =>{
   }
 }
 
+export const updateCustomerBasicDetail = async (updatedData:any)  =>{
+  try {
+    const response = await apiClient.post('admin/updateCustomerBasicDetail',updatedData)
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
+export const uploadFile = async (file:any)  =>{
+  try {
+    const response = await apiClient.post('admin/upload',file)
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
+
