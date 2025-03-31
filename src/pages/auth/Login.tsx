@@ -72,17 +72,17 @@ const Login = () => {
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-100 to-gray-300">
-            <div className="w-full max-w-md p-8 bg-white shadow-lg rounded-2xl border border-gray-300">
-                <h1 className="text-4xl font-extrabold text-center bg-gradient-to-r from-black to-gray-700 text-transparent bg-clip-text">
+            <div className="w-full max-w-md p-8 bg-white border border-gray-300 shadow-lg rounded-2xl">
+                <h1 className="text-4xl font-extrabold text-center text-transparent bg-gradient-to-r from-black to-gray-700 bg-clip-text">
                     Pehli Rasam
                 </h1>
-                <p className="text-sm text-gray-600 text-center mt-1">
+                <p className="mt-1 text-sm text-center text-gray-600">
                     Welcome! Please log in to continue.
                 </p>
 
                 <form className="mt-6" onSubmit={handleSubmit}>
                     <div className="mb-4">
-                        <label className="block text-gray-800 font-medium">Email Address</label>
+                        <label className="block font-medium text-gray-800">Email Address</label>
                         <input
                             type="email"
                             className={`w-full p-3 mt-1 border rounded-lg focus:ring ${errors.email ? "border-red-500 ring-red-300" : "border-gray-400 focus:ring-black"}`}
@@ -90,11 +90,11 @@ const Login = () => {
                             value={formData.email}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         />
-                        {errors.email && <p className="text-sm text-red-500 mt-1">{errors.email}</p>}
+                        {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-gray-800 font-medium">Password</label>
+                        <label className="block font-medium text-gray-800">Password</label>
                         <input
                             type="password"
                             className={`w-full p-3 mt-1 border rounded-lg focus:ring ${errors.password ? "border-red-500 ring-red-300" : "border-gray-400 focus:ring-black"}`}
@@ -102,12 +102,12 @@ const Login = () => {
                             value={formData.password}
                             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         />
-                        {errors.password && <p className="text-sm text-red-500 mt-1">{errors.password}</p>}
+                        {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
                     </div>
 
                     <button
                         type="submit"
-                        className="w-full mt-4 p-3 text-white bg-gradient-to-r from-black to-gray-700 rounded-lg hover:opacity-90 shadow-lg transition"
+                        className="w-full p-3 mt-4 text-white transition rounded-lg shadow-lg bg-gradient-to-r from-black to-gray-700 hover:opacity-90"
                     >
                         Log in
                     </button>
