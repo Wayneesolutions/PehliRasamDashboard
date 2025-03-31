@@ -120,4 +120,13 @@ export const uploadFile = async (file:any)  =>{
   }
 }
 
+export const updateCustomerProfile = async (data:any)  =>{
+  try {
+    const response = await apiClient.post('admin/updateCustomerProfile',data)
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
 

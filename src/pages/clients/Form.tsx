@@ -2,7 +2,7 @@ import { Select, Row, Col, InputNumber, Collapse, Input, Button, message, Spin, 
 import { useForm, Controller } from "react-hook-form";
 import { useEffect, useState } from "react";
 // import { getFormGroupList } from "./Actions";
-import { getCustomerMatchPreferencesDetail, getFromGroupList } from "../../config/apiClient";
+import { getCustomerMatchPreferencesDetail, getFromGroupList, updateCustomerProfile } from "../../config/apiClient";
 
 const { Panel } = Collapse;
 const { TabPane } = Tabs;
@@ -47,8 +47,7 @@ const Form = ({customerId}:{customerId:string}) => {
             async function getCutsomerMatch(){
             const res = await getCustomerMatchPreferencesDetail(customerId)
             if(res.success){
-                setMatchData(res.data)
-                
+                setMatchData(res.data) 
             }
         }
         getCutsomerMatch()
@@ -106,11 +105,49 @@ console.log('matchdata===',matchdata);
         );
     };
 
-
+    const transformFormData = (formData: any, customerId: any): any => {
+        const result: any = {
+          customerId,
+          dynamicValue: []
+        };
+      
+        formData.forEach((group: any) => {
+          const groupId: any = group.groupId;
+          const groupFields: any[] = [];
+      
+          if (group.fields && group.fields.length > 0) {
+            group.fields.forEach((field: any) => {
+              if (field.value !== undefined && field.value !== "") {
+                groupFields.push({
+                  fieldID: field.fieldId,
+                  fieldValue: field.value
+                });
+              }
+            });
+      
+            if (groupFields.length > 0) {
+              result.dynamicValue.push({
+                groupId,
+                groupFields
+              });
+            }
+          }
+        });
+      
+        return result;
+      };
+      
 
     const onSubmit = async () => {
         setLoading(true);
-        console.log("Form submitted", { formData });
+        const apiData: any = transformFormData(formData, customerId);
+                
+        try {
+             await updateCustomerProfile(apiData)
+        } catch (error: any) {
+          console.error('Error:', error);
+        }
+        
         setLoading(false);
     };
 
