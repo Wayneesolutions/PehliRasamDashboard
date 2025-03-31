@@ -62,7 +62,7 @@ export const addCustomerByAdmin =async(data:AddClientFormData)=>{
 }
 export const allActiveCustomer = async()=>{
   try {
-    const response = await apiClient.get('/allActiveCustomer',)
+    const response = await apiClient.get('admin/allActiveCustomer',)
     return response?.data
   } catch (error) {
     return (error as Error).response?.data;
@@ -70,7 +70,7 @@ export const allActiveCustomer = async()=>{
 }
 export const getCustomerBasicDetail = async (customerId:string)=>{
   try {
-    const response = await apiClient.post('/getCustomerBasicDetail',{customerId:customerId})
+    const response = await apiClient.post('admin/getCustomerBasicDetail',{customerId:customerId})
     return response?.data
   } catch (error) {
     return (error as Error).response?.data;
@@ -78,7 +78,7 @@ export const getCustomerBasicDetail = async (customerId:string)=>{
 }
 export const getCustomerProfileDetail = async (customerId:string)=>{
   try {
-    const response = await apiClient.post('/getCustomerProfileDetail',{customerId:customerId})
+    const response = await apiClient.post('admin/getCustomerProfileDetail',{customerId:customerId})
     return response?.data
   } catch (error) {
     return (error as Error).response?.data;
@@ -86,7 +86,7 @@ export const getCustomerProfileDetail = async (customerId:string)=>{
 }
 export const getFromGroupList = async ()  =>{
   try {
-    const response = await apiClient.get('/getFromGroupList')
+    const response = await apiClient.get('admin/getFromGroupList')
     return response?.data
   } catch (error) {
     return (error as Error).response?.data;

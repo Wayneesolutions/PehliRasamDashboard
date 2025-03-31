@@ -35,7 +35,7 @@ const Login = () => {
         if (!validateForm()) return;
 
         try {
-            const response = await apiClient.post("/adminLogin", formData);
+            const response = await apiClient.post("admin/adminLogin", formData);
 
             const { token, admin } = response.data;
 
