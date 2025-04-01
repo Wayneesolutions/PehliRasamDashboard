@@ -47,6 +47,8 @@ const Form = ({customerId}:{customerId?:string | undefined}) => {
             async function getCutsomerMatch(){
             const res = await getCustomerMatchPreferencesDetail(customerId as string)
             if(res.success){
+                console.log('===',res.data);
+                
                 setMatchData(res.data) 
             }
         }
