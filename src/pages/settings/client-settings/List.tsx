@@ -1,33 +1,32 @@
-import { Table, Button, Modal, Form, Input } from "antd";
+import { Table, Button,Dropdown, Modal,Menu ,Form, Input } from "antd";
 import { PlusOutlined, MoreOutlined, MenuOutlined } from "@ant-design/icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createClientList, editClientList, getAllClientLists } from "../../../config/apiClient";
+import { message } from "antd";
 
-interface ListItem {
-    key: string;
-    name: string;
-    color: string;
-}
 
 const List = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [colorList,setColorList] = useState([])
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState(null);
+    const [val,setVal]= useState(false)
     const [form] = Form.useForm();
 
-    const data: ListItem[] = [
-        { key: "1", name: "manish", color: "#464C51" },
-        { key: "2", name: "POTENTIAL MEMBER", color: "#EC34D6" },
-        { key: "3", name: "Paid Member", color: "#26E911" },
-        { key: "4", name: "Free Member", color: "#E6E60C" },
-        { key: "5", name: "New Lead", color: "#E69708" },
-        { key: "6", name: "Sale Profile", color: "#428BCA" },
-        { key: "7", name: "Australia", color: "#9C46DB" },
-        { key: "8", name: "Import Paid Client", color: "#0000FF" },
-    ];
-
+    useEffect(()=>{
+     async function getAllClientColor(){
+        let res = await getAllClientLists()
+        if(res.success){
+            setColorList(res.data)
+        }
+     }
+     getAllClientColor()
+    },[val])
     const columns = [
         {
             title: "List name",
-            dataIndex: "name",
-            key: "name",
+            dataIndex: "listName",
+            key: "listName",
             render: (text: string) => (
                 <div className="flex items-center">
                     <MenuOutlined className="mr-2 text-gray-400 cursor-pointer" />
@@ -47,16 +46,75 @@ const List = () => {
             ),
         },
         {
-            render: () => <MoreOutlined className="cursor-pointer text-gray-500" />,
+            render: (_, record) => (
+                <Dropdown
+                    overlay={
+                        <Menu>
+                            <Menu.Item key="edit" onClick={() => handleEditClick(record)}>
+                                Edit
+                            </Menu.Item>
+                        </Menu>
+                    }
+                    trigger={["click"]}
+                >
+                    <MoreOutlined className="cursor-pointer text-gray-500" />
+                </Dropdown>
+            ),
         },
     ];
+
+    const handleEditClick = (record) => {
+        setEditingItem(record);
+        form.setFieldsValue(record); // Set form values with the existing record data
+        setIsEditModalOpen(true);
+    };
+
+    const handleEditSubmit = () => {
+        form.validateFields().then(async(values) => {
+            console.log("Edited Data:", { ...editingItem, ...values });
+            let obj = { ...editingItem, ...values }
+            console.log('===',obj);
+            let payLoad={
+                id:obj._id,
+                listName:obj.listName,
+                status:obj.status,
+                color:obj.color
+            }
+            let res = await editClientList(payLoad)
+            // TODO: Add API request to update data here
+            
+            
+            
+             if(res.success){
+                setIsEditModalOpen(false);
+                setEditingItem(null);
+                form.resetFields();
+                setVal(!val)
+             }
+            
+        });
+    };
 
     const showModal = () => setIsModalOpen(true);
     const handleCancel = () => setIsModalOpen(false);
     const handleOk = () => {
-        form.validateFields().then(() => {
+        form.validateFields().then(async(values) => {
+            console.log(values);
+            let data={
+                listName:values.name,
+                color:values.color
+            }
+           let res = await createClientList(data)
+           console.log(res);
+           
+           if(res.success){
             setIsModalOpen(false);
+            message.success(res.message)
             form.resetFields();
+            setVal(!val)
+           }
+           
+
         });
     };
 
@@ -76,7 +134,7 @@ const List = () => {
 
             <Table
                 columns={columns}
-                dataSource={data}
+                dataSource={colorList}
                 pagination={false}
                 className="shadow-sm rounded-md"
             />
@@ -88,6 +146,21 @@ const List = () => {
                     </Form.Item>
                     <Form.Item label="Color Code" name="color" rules={[{ required: true, message: "Please enter a color code" }]}>
                         <Input placeholder="Enter color code (e.g., #428BCA)" />
+                    </Form.Item>
+                </Form>
+            </Modal>
+            <Modal 
+                title="Edit List" 
+                open={isEditModalOpen} 
+                onCancel={() => setIsEditModalOpen(false)} 
+                onOk={handleEditSubmit}
+            >
+                <Form form={form} layout="vertical">
+                    <Form.Item label="List Name" name="listName" rules={[{ required: true, message: "List name is required" }]}>
+                        <Input placeholder="Enter list name" />
+                    </Form.Item>
+                    <Form.Item label="Color" name="color" rules={[{ required: true, message: "Color is required" }]}>
+                        <Input placeholder="Enter color code" />
                     </Form.Item>
                 </Form>
             </Modal>

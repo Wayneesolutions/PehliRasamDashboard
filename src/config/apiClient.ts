@@ -147,4 +147,32 @@ export const createPreferencesField = async (data:any)  =>{
   }
 }
 
+export const createClientList = async (data:any)  =>{
+  try {
+    const response = await apiClient.post('admin/createClientList',data)
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
+export const getAllClientLists = async ()  =>{
+  try {
+    const response = await apiClient.get('admin/getAllClientLists')
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
+export const editClientList = async (data:any)  =>{
+  console.log('da======================',data)
+  try {
+    const response = await apiClient.post('admin/editClientList',data)
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
 
