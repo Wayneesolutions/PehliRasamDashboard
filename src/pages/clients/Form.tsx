@@ -1,5 +1,5 @@
-import { Select, Row, Col, InputNumber, Collapse, Input, Button, message, Spin, Tabs } from "antd";
-import { useForm, Controller } from "react-hook-form";
+import { Collapse, Input, Button, message, Spin, Tabs } from "antd";
+import { useForm } from "react-hook-form";
 import { useEffect, useState } from "react";
 // import { getFormGroupList } from "./Actions";
 import { getCustomerMatchPreferencesDetail, getFromGroupList, updateCustomerProfile } from "../../config/apiClient";
@@ -7,20 +7,20 @@ import { getCustomerMatchPreferencesDetail, getFromGroupList, updateCustomerProf
 const { Panel } = Collapse;
 const { TabPane } = Tabs;
 
-const generateHeightOptions = () => {
-    const options = [];
-    for (let inches = 48; inches <= 96; inches++) {
-        const feet = Math.floor(inches / 12);
-        const remainingInches = inches % 12;
-        options.push({
-            value: inches,
-            label: `${feet}'${remainingInches}"`,
-        });
-    }
-    return options;
-};
+// const generateHeightOptions = () => {
+//     const options = [];
+//     for (let inches = 48; inches <= 96; inches++) {
+//         const feet = Math.floor(inches / 12);
+//         const remainingInches = inches % 12;
+//         options.push({
+//             value: inches,
+//             label: `${feet}'${remainingInches}"`,
+//         });
+//     }
+//     return options;
+// };
 
-const heightOptions = generateHeightOptions();
+// const heightOptions = generateHeightOptions();
 
 interface IField {
     fieldId: string;
@@ -35,8 +35,8 @@ interface IGroup {
     fields: IField[];
 }
 
-const Form = ({customerId}:{customerId:string}) => {
-    const { control } = useForm();
+const Form = ({customerId}:{customerId?:string | undefined}) => {
+    // const { control } = useForm();
     const { handleSubmit } = useForm();
     const [formData, setFormData] = useState<IGroup[]>([]);
     const [matchdata,setMatchData] = useState<any>([])
@@ -45,7 +45,7 @@ const Form = ({customerId}:{customerId:string}) => {
     useEffect(()=>{
         if(customerId){
             async function getCutsomerMatch(){
-            const res = await getCustomerMatchPreferencesDetail(customerId)
+            const res = await getCustomerMatchPreferencesDetail(customerId as string)
             if(res.success){
                 setMatchData(res.data) 
             }
@@ -155,8 +155,8 @@ console.log('matchdata===',matchdata);
     if (!formData.length) return <div>No data found</div>;
 
     return (
-        <div className="p-6 bg-white shadow-md rounded-md">
-            <div className="flex justify-between items-center mb-4">
+        <div className="p-6 bg-white rounded-md shadow-md">
+            <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">Form Groups</h2>
                 <Button type="primary" onClick={handleSubmit(onSubmit)} loading={loading}>
                     Save
@@ -177,7 +177,7 @@ console.log('matchdata===',matchdata);
                                                 <div key={field.fieldId} className="flex mb-3">
                                                     <label className="w-1/3 text-gray-600">{field.fieldName}</label>
                                                     <select
-                                                        className="w-2/3 border p-2 rounded"
+                                                        className="w-2/3 p-2 border rounded"
                                                         value={field.value || ""}
                                                         onChange={(e) =>
                                                             handleDynamicFieldChange(group.groupId, field.fieldId, e.target.value)
@@ -276,7 +276,7 @@ console.log('matchdata===',matchdata);
                                     <div className="w-1/2 px-4 py-2">
                                         {item.options ? (
                                             <Select
-                                                className="text-blue-500 w-full"
+                                                className="w-full text-blue-500"
                                                 defaultValue="Click to add"
                                                 options={item.options.map((option) => ({ label: option, value: option }))}
 
