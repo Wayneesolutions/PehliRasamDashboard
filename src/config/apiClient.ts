@@ -129,4 +129,22 @@ export const updateCustomerProfile = async (data:any)  =>{
   }
 }
 
+export const getAllPreferencesGroupFields = async ()  =>{
+  try {
+    const response = await apiClient.get('admin/getAllPreferencesGroupFields')
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
+export const createPreferencesField = async (data:any)  =>{
+  try {
+    const response = await apiClient.post('admin/createPreferencesField',data)
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
 

@@ -2,6 +2,7 @@ import { useEffect, useState, KeyboardEvent, ChangeEvent, useRef } from "react";
 import { Mail, Phone, MapPin, Camera, Check, X, Upload } from "lucide-react";
 import { getCustomerBasicDetail, updateCustomerBasicDetail, uploadFile } from "../../config/apiClient";
 import { Customer } from "../../schema/customernew";
+import { message } from "antd";
 
 const Sidebar = ({ customerId }: { customerId: string }) => {
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -71,8 +72,9 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
         setCustomer(res.customer);
         setEditMode(null);
         setEditValue("");
+        message.success(res.message)
       } else {
-        setError(res.message || "Failed to update");
+        message.error(res.message || "Failed to update");
       }
       
     } catch (error: any) {
