@@ -200,3 +200,64 @@ export interface ICustomer {
     drinkAlcoholPreferrence?: 'Yes,occasionally' | 'yes,regularly' | 'No';
 
 }
+
+ export interface PreferencesField {
+    label: string;
+    profileField: string;
+    clientTypes: string[]; // Assuming it's an array
+    weight: number;
+    useInMatch: boolean;
+    choices: string[];
+    helpText?: string; // Optional
+    dealBreak: boolean;
+    preferencesGroupId: string; // Assuming it's an ID
+  }
+
+export  interface ClientList {
+    listName: string;
+    color: string;
+  }
+
+ export interface CustomerUpdate {
+    customerId: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    contact?: string;
+  }
+
+ export interface MatchField {
+    fieldId: string;
+    fieldName: string;
+    profileField: string;
+    clientTypes: string;
+    weight: string;
+    choices?: string[]; // Optional as not all fields may have choices
+    dealBreak?: boolean;
+    helpText?: string;
+    useInMatch?: boolean;
+    value?: string;
+  }
+  
+ export interface MatchGroup {
+    groupId: string;
+    groupName: string;
+    fields: MatchField[];
+  }
+
+ export interface Field {
+    attributeId: string;
+    attributeName: string;
+    attributeType: string;
+    attributeEnum: any[]; // Can be replaced with a more specific type if needed
+    attributeOption: string[]; // Assuming it's an array of strings
+  }
+  
+ export interface Group {
+    _id: string;
+    groupName: string;
+    fields: Field[];
+  }
+  
+  
+  

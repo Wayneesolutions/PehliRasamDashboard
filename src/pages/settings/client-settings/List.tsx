@@ -1,27 +1,45 @@
-import { Table, Button,Dropdown, Modal,Menu ,Form, Input } from "antd";
+import { Table, Button, Dropdown, Modal, Menu, Form, Input, message } from "antd";
 import { PlusOutlined, MoreOutlined, MenuOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { createClientList, editClientList, getAllClientLists } from "../../../config/apiClient";
-import { message } from "antd";
 
+// Define types for List Item and API Response
+interface ClientList {
+    _id: string;
+    listName: string;
+    color: string;
+    status?: string;
+}
+
+interface ApiResponse<T> {
+    success: boolean;
+    message?: string;
+    data?: T;
+}
 
 const List = () => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [colorList,setColorList] = useState([])
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState(null);
-    const [val,setVal]= useState(false)
+    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+    const [colorList, setColorList] = useState<ClientList[]>([]);
+    const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+    const [editingItem, setEditingItem] = useState<ClientList | null>(null);
+    const [val, setVal] = useState<boolean>(false);
     const [form] = Form.useForm();
 
-    useEffect(()=>{
-     async function getAllClientColor(){
-        let res = await getAllClientLists()
-        if(res.success){
-            setColorList(res.data)
-        }
-     }
-     getAllClientColor()
-    },[val])
+    useEffect(() => {
+        const getAllClientColor = async () => {
+            try {
+                const res: ApiResponse<ClientList[]> = await getAllClientLists();
+                if (res.success && res.data) {
+                    setColorList(res.data);
+                }
+            } catch (error) {
+                console.error("Error fetching client lists:", error);
+                message.error("Failed to fetch client lists.");
+            }
+        };
+        getAllClientColor();
+    }, [val]);
+
     const columns = [
         {
             title: "List name",
@@ -46,7 +64,7 @@ const List = () => {
             ),
         },
         {
-            render: (_, record) => (
+            render: (_: any, record: ClientList) => (
                 <Dropdown
                     overlay={
                         <Menu>
@@ -63,59 +81,57 @@ const List = () => {
         },
     ];
 
-    const handleEditClick = (record) => {
+    const handleEditClick = (record: ClientList) => {
         setEditingItem(record);
-        form.setFieldsValue(record); // Set form values with the existing record data
+        form.setFieldsValue(record);
         setIsEditModalOpen(true);
     };
 
-    const handleEditSubmit = () => {
-        form.validateFields().then(async(values) => {
-            console.log("Edited Data:", { ...editingItem, ...values });
-            let obj = { ...editingItem, ...values }
-            console.log('===',obj);
-            let payLoad={
-                id:obj._id,
-                listName:obj.listName,
-                status:obj.status,
-                color:obj.color
+    const handleEditSubmit = async () => {
+        try {
+            const values = await form.validateFields();
+            if (editingItem) {
+                const payLoad = {
+                    id: editingItem._id,
+                    listName: values.listName,
+                    status: editingItem.status,
+                    color: values.color,
+                };
+                const res: ApiResponse<null> = await editClientList(payLoad);
+                if (res.success) {
+                    setIsEditModalOpen(false);
+                    setEditingItem(null);
+                    form.resetFields();
+                    setVal(!val);
+                }
             }
-            let res = await editClientList(payLoad)
-            // TODO: Add API request to update data here
-            
-            
-            
-             if(res.success){
-                setIsEditModalOpen(false);
-                setEditingItem(null);
-                form.resetFields();
-                setVal(!val)
-             }
-            
-        });
+        } catch (error) {
+            console.error("Error editing client list:", error);
+            message.error("Failed to edit client list.");
+        }
     };
 
     const showModal = () => setIsModalOpen(true);
     const handleCancel = () => setIsModalOpen(false);
-    const handleOk = () => {
-        form.validateFields().then(async(values) => {
-            console.log(values);
-            let data={
-                listName:values.name,
-                color:values.color
-            }
-           let res = await createClientList(data)
-           console.log(res);
-           
-           if(res.success){
-            setIsModalOpen(false);
-            message.success(res.message)
-            form.resetFields();
-            setVal(!val)
-           }
-           
 
-        });
+    const handleOk = async () => {
+        try {
+            const values = await form.validateFields();
+            const data = {
+                listName: values.name,
+                color: values.color,
+            };
+            const res: ApiResponse<null> = await createClientList(data);
+            if (res.success) {
+                setIsModalOpen(false);
+                message.success(res.message || "Client list created successfully");
+                form.resetFields();
+                setVal(!val);
+            }
+        } catch (error) {
+            console.error("Error creating client list:", error);
+            message.error("Failed to create client list.");
+        }
     };
 
     return (
@@ -132,10 +148,11 @@ const List = () => {
                 </Button>
             </div>
 
-            <Table
+            <Table<ClientList>
                 columns={columns}
                 dataSource={colorList}
                 pagination={false}
+                rowKey={(record) => record._id}
                 className="shadow-sm rounded-md"
             />
 
@@ -149,6 +166,7 @@ const List = () => {
                     </Form.Item>
                 </Form>
             </Modal>
+
             <Modal 
                 title="Edit List" 
                 open={isEditModalOpen} 

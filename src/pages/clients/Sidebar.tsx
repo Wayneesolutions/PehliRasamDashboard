@@ -3,13 +3,13 @@ import { Mail, Phone, MapPin, Camera, Check, X, Upload } from "lucide-react";
 import { getCustomerBasicDetail, updateCustomerBasicDetail, uploadFile } from "../../config/apiClient";
 import { Customer } from "../../schema/customernew";
 import { message } from "antd";
+import { CustomerUpdate } from "../clientsForm/types/clientTypes";
 
 const Sidebar = ({ customerId }: { customerId: string }) => {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [editMode, setEditMode] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>("");
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -33,24 +33,21 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
   const handleEdit = (field: string, value: string) => {
     setEditMode(field);
     setEditValue(value);
-    setError(null);
   };
 
   const handleCancel = () => {
     setEditMode(null);
     setEditValue("");
-    setError(null);
   };
 
   const handleSave = async () => {
     if (!editMode || !customer) return;
 
     setIsUpdating(true);
-    setError(null);
 
     try {
       // Send data directly in the format the API expects
-      const updateData :any= {
+      const updateData :CustomerUpdate= {
         customerId: customerId
       };
 
@@ -77,8 +74,7 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
         message.error(res.message || "Failed to update");
       }
       
-    } catch (error: any) {
-      setError(error.message || "An error occurred");
+    } catch (error) {
       console.error("Error updating customer:", error);
     } finally {
       setIsUpdating(false);
@@ -105,7 +101,6 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
     if (!file) return;
 
     setIsUploading(true);
-    setError(null);
 
     try {
       const formData = new FormData();
@@ -113,7 +108,6 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
 
       const response = await uploadFile(formData)
 
-      console.log('res from file uploadd==',response)
       if (response.success) {
         const updateData = {
           customerId: customerId,
@@ -125,14 +119,13 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
         if (updateRes.success) {
           setCustomer(updateRes.customer);
         } else {
-          setError(updateRes.message || "Failed to update profile image");
+          message.error(updateRes.message || "Failed to update profile image");
         }
       } else {
-        setError(response.message || "Failed to upload image");
+        message.error(response.message || "Failed to upload image");
       }
-    } catch (error: any) {
-      setError(error.message || "An error occurred while uploading");
-      console.error("Error uploading image:", error);
+    } catch (error) {
+      message.error((error as Error).message || "An error occurred while uploading");
     } finally {
       setIsUploading(false);
       // Clear the file input
@@ -261,7 +254,6 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
         )}
       </div>
 
-      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
       
       <button className="bg-gray-200 text-gray-700 px-4 py-1 rounded mt-3">Actions ▼</button>
 

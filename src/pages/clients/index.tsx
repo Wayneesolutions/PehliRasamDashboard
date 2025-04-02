@@ -14,7 +14,7 @@ const Clients: React.FC = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
-  const openClientModal = (client: any) => {
+  const openClientModal = (client: ActiveClientDetails) => {
     setSelectedClient(client);
     setIsClientModalOpen(true);
   };

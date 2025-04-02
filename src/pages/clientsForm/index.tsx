@@ -128,14 +128,22 @@ const ClientSubmissionForm = () => {
             setTimeout(() => {
                 navigate(`/suggestions`);
             }, 2000);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error saving client:", error);
-
-            const errorMessage = error.response?.data?.message || "Error saving client.";
+        
+            let errorMessage = "Error saving client.";
+        
+            if (error instanceof Error) {
+                // Type assertion for potential Axios error structure
+                const axiosError = error as { response?: { data?: { message?: string } } };
+                errorMessage = axiosError.response?.data?.message || errorMessage;
+            }
+        
             message.error(errorMessage);
         } finally {
             setLoading(false);
         }
+        
     };
 
 

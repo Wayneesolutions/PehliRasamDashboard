@@ -1,15 +1,23 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Switch, Modal, Form, Input, Select, Collapse } from "antd";
+import { Table,Dropdown,Menu,Row,Col, Button, Switch, Modal, Form, Input, Select, Collapse } from "antd";
 import { PlusOutlined, MoreOutlined } from "@ant-design/icons";
-import { createPreferencesField, getAllPreferencesGroupFields } from "../../../config/apiClient";
+import { createPreferencesField, deletePreferencesField, getAllPreferencesGroupFields, updatePreferencesField } from "../../../config/apiClient";
 import { message } from "antd";
+import { PreferencesField } from "../../clientsForm/types/clientTypes";
 const { Panel } = Collapse;
 
 const Matching: React.FC = () => {
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingRecord, setEditingRecord] = useState<any>(null);
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    const [deletingRecord, setDeletingRecord] = useState(null);
+    const [formData, setFormData] = useState<any>({});
     const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
     const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
     const [matchPreferences,setMathprefrerences]= useState<any>([])
     const [selectedGroupId, setSelectedGroupId] = useState(null);
+    const [editval,seEdittVal]=useState(false)
+    const [delte,setDelete] = useState(false)
     const [val,setVal]=useState(false)
     const [form] = Form.useForm();
     
@@ -17,14 +25,14 @@ const Matching: React.FC = () => {
       async function fetchgetAllPreferencesGroupFields(){
           let res = await getAllPreferencesGroupFields()
           if(res.data){
+            console.log('match prefrences data===',res.data);
+            
              setMathprefrerences(res.data)
-             console.log('data from fetch=========',res.data);
           }
-          console.log('res===',res);
           
       }
       fetchgetAllPreferencesGroupFields()
-    },[val])
+    },[val,editval,delte])
 
     // const matchPreferences = [
     //     { key: "1", label: "More about Partner Preference", profileField: "Long Text", weight: "Medium", choices: "", dealBreak: true },
@@ -47,8 +55,28 @@ const Matching: React.FC = () => {
         { title: "Use In Match", dataIndex: "useInMatch", key: "useInMatch", render: () => <Switch /> },
         { title: "Choices", dataIndex: "choices", key: "choices", render: (text: string) => text || "Add" },
         { title: "Deal Break", dataIndex: "dealBreak", key: "dealBreak", render: (value: boolean) => <Switch checked={value} /> },
-        { title: "", key: "actions", render: () => <MoreOutlined /> },
+        { 
+            title: "Actions", 
+            key: "actions", 
+            render: (record) => (
+                <Dropdown 
+                    overlay={
+                        <Menu>
+                            <Menu.Item onClick={() => handleEdit(record)}>
+                                Edit
+                            </Menu.Item>
+                            <Menu.Item onClick={() => handleDelete(record)}>
+                                Delete
+                            </Menu.Item>
+                        </Menu>
+                    }
+                >
+                    <MoreOutlined />
+                </Dropdown>
+            ),
+        },
     ];
+    
 
     const groupColumns = [
         { title: "Match Groups", dataIndex: "group", key: "group" },
@@ -59,10 +87,10 @@ const Matching: React.FC = () => {
     const handleFieldSubmit = () => {
         form.validateFields().then(async(values) => {
             // Processing choices (splitting comma-separated values into an array)
-            const choicesArray = values.choices ? values.choices.split(",").map(choice => choice.trim()) : [];
+            const choicesArray = values.choices ? values.choices.split(",").map((choice: string) => choice.trim()) : [];
 
             // Constructing final data structure
-            const payload = {
+            const payload:PreferencesField = {
                 label: values.fieldName,
                 profileField: values.profileField,
                 clientTypes: values.clientTypes,
@@ -71,18 +99,20 @@ const Matching: React.FC = () => {
                 choices: choicesArray,
                 helpText: values.helpText,
                 dealBreak: values.dealBreak,
-                preferencesGroupId:selectedGroupId, // Received as prop
+                preferencesGroupId:selectedGroupId ? selectedGroupId : "", // Received as prop
             };
 
             console.log("Submitting Data:", payload);
             let res = await createPreferencesField(payload)
             console.log('res from addf filed==',res);
             
-            if(res.data){
-                message.success(res.message)
-                setVal(!val)
+            if(!res.data){
+                message.error(res.message)
+                return
             }
             
+            message.success(res.message)
+                setVal(!val)
         });
     };
 
@@ -94,15 +124,84 @@ const Matching: React.FC = () => {
     };
     const generateMatchPreferences = (group) => {
         return group.fields.map(field => ({
-            key: field.fieldId,
+            fieldId: field.fieldId,
             label: field.fieldName,
             profileField: field.profileField,
             weight: field.weight,
             useInMatch: field.useInMatch,
-            choices: field.choices.join(", "), // Joining choices as a string
+            choices: Array.isArray(field.choices) ? field.choices.join(", ") : "", // Handle undefined choices
             dealBreak: field.dealBreak,
+            preferencesGroupId: group._id, // Ensure group ID is available
         }));
     };
+    
+
+    const handleEdit = (record) => {
+        setFormData({
+            ...record,
+            preferencesGroupId: record.preferencesGroupId, // Ensure group ID is stored
+        });
+    
+        setIsEditModalOpen(true);
+    };
+    
+    
+    const handleDelete = (record: any) => {
+        setDeletingRecord(record);
+        setIsDeleteConfirmOpen(true);
+    };
+    
+    const confirmDelete =async () => {
+        console.log(deletingRecord);
+        if(deletingRecord){
+            let res = await deletePreferencesField(deletingRecord?.fieldId)
+            if(res){
+                message.success(res.message)
+                setDelete(!delte)
+            }
+        }
+       
+        setIsDeleteConfirmOpen(false);
+    };
+    
+    // Handle form input change
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value,
+        });
+        console.log(formData);
+        
+    };
+    
+    // Handle checkbox change
+    const handleSwitchChange = (checked: boolean, name: string) => {
+        setFormData({
+            ...formData,
+            [name]: checked,
+        });
+    };
+    
+    const handleSaveEdit =async () => {
+        const updatedFormData = {
+            ...formData,
+            choices: typeof formData.choices === "string"
+                ? formData.choices.split(",").map(choice => choice.trim()) 
+                : formData.choices,
+        };
+    
+        console.log("Updated Data:", updatedFormData);
+        let res = await updatePreferencesField(updatedFormData)
+        console.log(res);
+        if(!res.data){
+         message.error(res.message)
+         return
+        }
+         seEdittVal(!editval)
+        message.success(res.message);
+        setIsEditModalOpen(false);
+    };
+    
 
     return (
         <div className="p-4 bg-white rounded-lg shadow-md">
@@ -140,6 +239,90 @@ const Matching: React.FC = () => {
                 </div>
                 <Table columns={groupColumns} dataSource={matchGroups} pagination={false} />
             </div>
+            {/* Delete Confirmation Modal */}
+        <Modal
+            title="Confirm Delete"
+            open={isDeleteConfirmOpen}
+            onOk={confirmDelete}
+            onCancel={() => setIsDeleteConfirmOpen(false)}
+        >
+            <p>Are you sure you want to delete "{deletingRecord?.label}"?</p>
+        </Modal>
+
+        {/* Edit Modal */}
+        <Modal
+  title="Edit Field"
+  open={isEditModalOpen}
+  onOk={handleSaveEdit}
+  onCancel={() => setIsEditModalOpen(false)}
+>
+  <Form layout="vertical">
+    <Row gutter={16}>
+      <Col span={12}>
+        <Form.Item label="Label">
+          <Input name="label" value={formData.label} onChange={handleInputChange} />
+        </Form.Item>
+      </Col>
+      <Col span={12}>
+        <Form.Item label="Profile Field">
+          <Input name="profileField" value={formData.profileField} onChange={handleInputChange} />
+        </Form.Item>
+      </Col>
+    </Row>
+
+    <Row gutter={16}>
+      <Col span={12}>
+        <Form.Item label="Client Types">
+          <Input name="clientTypes" value={formData.clientTypes} onChange={handleInputChange} />
+        </Form.Item>
+      </Col>
+      <Col span={12}>
+        <Form.Item label="Weight">
+          <Input name="weight" value={formData.weight} onChange={handleInputChange} />
+        </Form.Item>
+      </Col>
+    </Row>
+
+    <Form.Item label="Choices">
+      <Select
+        mode="tags"
+        style={{ width: "100%" }}
+        placeholder="Enter choices"
+        value={formData.choices}
+        onChange={(value) => setFormData({ ...formData, choices: value })}
+      />
+    </Form.Item>
+
+    <Form.Item label="Help Text">
+      <Input name="helpText" value={formData.helpText} onChange={handleInputChange} />
+    </Form.Item>
+
+    <Row gutter={16}>
+      <Col span={12}>
+        <Form.Item label="Use In Match">
+          <Switch
+            checked={formData.useInMatch}
+            onChange={(checked) => handleSwitchChange(checked, "useInMatch")}
+          />
+        </Form.Item>
+      </Col>
+      
+            <Input type="hidden" name="preferencesGroupId" value={formData.preferencesGroupId} />
+
+      
+      <Col span={12}>
+        <Form.Item label="Deal Break">
+          <Switch
+            checked={formData.dealBreak}
+            onChange={(checked) => handleSwitchChange(checked, "dealBreak")}
+          />
+        </Form.Item>
+      </Col>
+    </Row>
+  </Form>
+</Modal>
+
+
 
             {/* Add/Edit Field Modal */}
             <Modal 

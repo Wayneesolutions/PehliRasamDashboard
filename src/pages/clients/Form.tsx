@@ -3,6 +3,7 @@ import { useForm, Controller } from "react-hook-form";
 import { useEffect, useState } from "react";
 // import { getFormGroupList } from "./Actions";
 import { getCustomerMatchPreferencesDetail, getFromGroupList, updateCustomerProfile } from "../../config/apiClient";
+import { Field, Group, MatchGroup } from "../clientsForm/types/clientTypes";
 
 const { Panel } = Collapse;
 const { TabPane } = Tabs;
@@ -39,7 +40,7 @@ const Form = ({customerId}:{customerId:string}) => {
     const { control } = useForm();
     const { handleSubmit } = useForm();
     const [formData, setFormData] = useState<IGroup[]>([]);
-    const [matchdata,setMatchData] = useState<any>([])
+    const [matchdata,setMatchData] = useState<MatchGroup[]>([])
     const [loading, setLoading] = useState(false);
    
     useEffect(()=>{
@@ -47,7 +48,6 @@ const Form = ({customerId}:{customerId:string}) => {
             async function getCutsomerMatch(){
             const res = await getCustomerMatchPreferencesDetail(customerId)
             if(res.success){
-                console.log('===',res.data);
                 
                 setMatchData(res.data) 
             }
@@ -56,37 +56,32 @@ const Form = ({customerId}:{customerId:string}) => {
         }
      
     },[])
-console.log('matchdata===',matchdata);
     useEffect(() => {
         setLoading(true);
         getFromGroupList()
             .then((data) => {
                 console.log('=======================',data)
                 if (Array.isArray(data.data)) {
-                    console.log('data.data======',data.data);
-                    
-                    const formattedData = data.data.map((group: any) => ({
+                    const formattedData = data.data.map((group: Group) => ({
                         groupId: group._id,
                         groupName: group.groupName,
                         fields: Array.isArray(group.fields)
-                            ? group.fields.map((field: any) => ({
+                            ? group.fields.map((field: Field) => ({
                                 fieldId: field.attributeId,
                                 fieldName: field.attributeName || "Unknown Field",
-                                fieldValueOptions: field.attributeOption || [],
+                                fieldValueOptions: field.attributeOption || '',
                                 value: "",
                             }))
                             : [],
                     }));
-                    console.log('formated grougps==========',formattedData);
+                    console.log('formateddat',formattedData);
                     
                     setFormData(formattedData);
                 } else {
-                    console.error("Unexpected API response format:", data);
                     message.error("Invalid data format received from server.");
                 }
             })
             .catch((error) => {
-                console.error("API Error:", error);
                 message.error("Failed to fetch form groups. Please try again.");
             })
             .finally(() => setLoading(false));
@@ -106,19 +101,20 @@ console.log('matchdata===',matchdata);
             )
         );
     };
+    
 
-    const transformFormData = (formData: any, customerId: any): any => {
-        const result: any = {
+    const transformFormData = (formData: any, customerId: string) => {
+        const result:any = {
           customerId,
           dynamicValue: []
         };
       
-        formData.forEach((group: any) => {
-          const groupId: any = group.groupId;
-          const groupFields: any[] = [];
+        formData.forEach((group: { groupId: string; fields: any[]; }) => {
+          const groupId: string = group.groupId;
+          const groupFields: { fieldID: string; fieldValue: string; }[] = [];
       
           if (group.fields && group.fields.length > 0) {
-            group.fields.forEach((field: any) => {
+            group.fields.forEach((field) => {
               if (field.value !== undefined && field.value !== "") {
                 groupFields.push({
                   fieldID: field.fieldId,
@@ -142,11 +138,11 @@ console.log('matchdata===',matchdata);
 
     const onSubmit = async () => {
         setLoading(true);
-        const apiData: any = transformFormData(formData, customerId);
+        const apiData = transformFormData(formData, customerId);
                 
         try {
              await updateCustomerProfile(apiData)
-        } catch (error: any) {
+        } catch (error) {
           console.error('Error:', error);
         }
         
@@ -155,7 +151,8 @@ console.log('matchdata===',matchdata);
 
     if (loading) return <Spin size="large" className="flex justify-center mt-10" />;
     if (!formData.length) return <div>No data found</div>;
-
+    console.log('form===dat',formData);
+    
     return (
         <div className="p-6 bg-white shadow-md rounded-md">
             <div className="flex justify-between items-center mb-4">
@@ -178,20 +175,31 @@ console.log('matchdata===',matchdata);
                                             group.fields.map((field) => (
                                                 <div key={field.fieldId} className="flex mb-3">
                                                     <label className="w-1/3 text-gray-600">{field.fieldName}</label>
-                                                    <select
-                                                        className="w-2/3 border p-2 rounded"
-                                                        value={field.value || ""}
-                                                        onChange={(e) =>
-                                                            handleDynamicFieldChange(group.groupId, field.fieldId, e.target.value)
-                                                        }
-                                                    >
-                                                        <option value="" disabled>Select an option</option>
-                                                        {field?.fieldValueOptions?.map((option:any) => (
-                                                            <option key={option} value={option}>
-                                                                {option}
-                                                            </option>
-                                                        ))}
-                                                    </select>
+                                                    {Array.isArray(field?.fieldValueOptions) && field?.fieldValueOptions.length > 0 ? (
+                                                // If fieldValueOptions is an array, show a dropdown
+                                                <select
+                                                    className="w-2/3 border p-2 rounded"
+                                                    value={field.value || ""}
+                                                    onChange={(e) => handleDynamicFieldChange(group.groupId, field.fieldId, e.target.value)}
+                                                >
+                                                    <option value="" disabled>Select an option</option>
+                                                    {field.fieldValueOptions.map((option: any) => (
+                                                        <option key={option} value={option}>
+                                                            {option}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                // If fieldValueOptions is not an array, show a text box
+                                                <input
+                                                    type="text"
+                                                    className="w-2/3 border p-2 rounded"
+                                                    value={field.value || ""}
+                                                    placeholder="Text here..."
+                                                    onChange={(e) => handleDynamicFieldChange(group.groupId, field.fieldId, e.target.value)}
+                                                />
+                                            )}
+
                                                 </div>
                                             ))
                                         ) : (
@@ -207,10 +215,10 @@ console.log('matchdata===',matchdata);
                     <TabPane tab="Matching Preferences" key="2">
                     <div className="w-full">
                             <Collapse className="w-full border border-gray-200 rounded-md" expandIconPosition="start">
-                                {matchdata.map((group:any, index:any) => (
+                                {matchdata.map((group, index) => (
                                     <Panel header={group.groupName} key={group.groupId || index} className="w-full">
                                         {group.fields.length > 0 ? (
-                                            group.fields.map((field:any) => (
+                                            group.fields.map((field) => (
                                                 <div key={field.fieldId} className="flex mb-3">
                                                     <label className="w-1/3 text-gray-600">{field.fieldName}</label>
                                                     <Input

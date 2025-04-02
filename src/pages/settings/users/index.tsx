@@ -46,13 +46,20 @@ const UserManagement: React.FC = () => {
             }));
 
             setUsers(formattedUsers);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error fetching users:", error);
-
-            if (error.response?.status === 401) {
-                message.error("Session expired. Please log in again.");
+        
+            if (error instanceof Error) {
+                // If error is an Axios error with a response object
+                const axiosError = error as { response?: { status?: number } };
+                
+                if (axiosError.response?.status === 401) {
+                    message.error("Session expired. Please log in again.");
+                } else {
+                    message.error("Failed to fetch users");
+                }
             } else {
-                message.error("Failed to fetch users");
+                message.error("An unexpected error occurred.");
             }
         }
     };
@@ -75,10 +82,18 @@ const UserManagement: React.FC = () => {
             setIsModalVisible(false);
             form.resetFields();
             fetchUsers();
-        } catch (error: any) {
-            console.error("Error creating admin:", error.response?.data || error);
-            message.error(error.response?.data?.error || "Failed to create admin");
+        } catch (error: unknown) {
+            console.error("Error creating admin:", error);
+        
+            if (error instanceof Error) {
+                // Check if error has a response property (common in Axios errors)
+                const axiosError = error as { response?: { data?: { error?: string } } };
+                message.error(axiosError.response?.data?.error || "Failed to create admin");
+            } else {
+                message.error("An unexpected error occurred.");
+            }
         }
+        
     };
 
     const handleDelete = async (userId: string) => {
@@ -96,10 +111,18 @@ const UserManagement: React.FC = () => {
 
             message.success("Admin deleted successfully!");
             fetchUsers();
-        } catch (error: any) {
-            console.error("Error deleting admin:", error.response?.data || error);
-            message.error(error.response?.data?.message || "Failed to delete admin");
+        } catch (error: unknown) {
+            console.error("Error deleting admin:", error);
+        
+            if (error instanceof Error) {
+                // Type assertion for Axios-style errors
+                const axiosError = error as { response?: { data?: { message?: string } } };
+                message.error(axiosError.response?.data?.message || "Failed to delete admin");
+            } else {
+                message.error("An unexpected error occurred.");
+            }
         }
+        
     };
 
     const columns = [

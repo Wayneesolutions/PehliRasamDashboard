@@ -2,6 +2,7 @@ import axios from 'axios';
 import { authState } from '../state/auth';
 import { setRecoil } from 'recoil-nexus';
 import { AddClientFormData } from '../schema/customernew';
+import { ClientList, CustomerUpdate, PreferencesField } from '../pages/clientsForm/types/clientTypes';
 
 const baseURL = import.meta.env.VITE_APP_BASE_URL;
 
@@ -102,7 +103,7 @@ export const getCustomerMatchPreferencesDetail = async (customerId:string)  =>{
   }
 }
 
-export const updateCustomerBasicDetail = async (updatedData:any)  =>{
+export const updateCustomerBasicDetail = async (updatedData:CustomerUpdate)  =>{
   try {
     const response = await apiClient.post('admin/updateCustomerBasicDetail',updatedData)
     return response?.data
@@ -111,7 +112,7 @@ export const updateCustomerBasicDetail = async (updatedData:any)  =>{
   }
 }
 
-export const uploadFile = async (file:any)  =>{
+export const uploadFile = async (file:FormData)  =>{
   try {
     const response = await apiClient.post('admin/upload',file)
     return response?.data
@@ -138,7 +139,7 @@ export const getAllPreferencesGroupFields = async ()  =>{
   }
 }
 
-export const createPreferencesField = async (data:any)  =>{
+export const createPreferencesField = async (data:PreferencesField)  =>{
   try {
     const response = await apiClient.post('admin/createPreferencesField',data)
     return response?.data
@@ -146,8 +147,23 @@ export const createPreferencesField = async (data:any)  =>{
     return (error as Error).response?.data;
   }
 }
-
-export const createClientList = async (data:any)  =>{
+export const updatePreferencesField = async (data:PreferencesField)  =>{
+  try {
+    const response = await apiClient.post('admin/updatePreferencesField',data)
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+export const deletePreferencesField = async (data:string)  =>{
+  try {
+    const response = await apiClient.post('admin/deletePreferencesField',{fieldId:data})
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+export const createClientList = async (data:ClientList)  =>{
   try {
     const response = await apiClient.post('admin/createClientList',data)
     return response?.data
@@ -165,7 +181,7 @@ export const getAllClientLists = async ()  =>{
   }
 }
 
-export const editClientList = async (data:any)  =>{
+export const editClientList = async (data:ClientList)  =>{
   console.log('da======================',data)
   try {
     const response = await apiClient.post('admin/editClientList',data)
