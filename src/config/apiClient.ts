@@ -53,7 +53,7 @@ export default apiClient;
 
 export const addCustomerByAdmin =async(data:AddClientFormData)=>{
   try {
-    const response = await apiClient.post('/addCustomerByAdmin',data)
+    const response = await apiClient.post('admin/addCustomerByAdmin',data)
     console.log('res fro add cli',response);
     
     return response?.data

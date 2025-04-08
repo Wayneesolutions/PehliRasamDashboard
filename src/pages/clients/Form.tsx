@@ -1,33 +1,17 @@
-import { Select, Row, Col, InputNumber, Collapse, Input, Button, message, Spin, Tabs } from "antd";
-import { useForm, Controller } from "react-hook-form";
+import { Input, Button, message, Spin, Tabs, Collapse } from "antd";
+import { useForm } from "react-hook-form";
 import { useEffect, useState } from "react";
-// import { getFormGroupList } from "./Actions";
 import { getCustomerMatchPreferencesDetail, getFromGroupList, updateCustomerProfile } from "../../config/apiClient";
 import { Field, Group, MatchGroup } from "../clientsForm/types/clientTypes";
 
 const { Panel } = Collapse;
 const { TabPane } = Tabs;
 
-const generateHeightOptions = () => {
-    const options = [];
-    for (let inches = 48; inches <= 96; inches++) {
-        const feet = Math.floor(inches / 12);
-        const remainingInches = inches % 12;
-        options.push({
-            value: inches,
-            label: `${feet}'${remainingInches}"`,
-        });
-    }
-    return options;
-};
-
-const heightOptions = generateHeightOptions();
-
 interface IField {
     fieldId: string;
     fieldName: string;
     value?: string;
-    fieldValueOptions:any
+    fieldValueOptions: any;
 }
 
 interface IGroup {
@@ -36,31 +20,27 @@ interface IGroup {
     fields: IField[];
 }
 
-const Form = ({customerId}:{customerId:string}) => {
-    const { control } = useForm();
+const Form = ({ customerId }: { customerId: string }) => {
     const { handleSubmit } = useForm();
     const [formData, setFormData] = useState<IGroup[]>([]);
-    const [matchdata,setMatchData] = useState<MatchGroup[]>([])
+    const [matchdata, setMatchData] = useState<MatchGroup[]>([]);
     const [loading, setLoading] = useState(false);
-   
-    useEffect(()=>{
-        if(customerId){
-            async function getCutsomerMatch(){
-            const res = await getCustomerMatchPreferencesDetail(customerId)
-            if(res.success){
-                
-                setMatchData(res.data) 
+    const [activePanels, setActivePanels] = useState<string[]>([]); // for expanded panels
+
+    useEffect(() => {
+        if (customerId) {
+            async function getCustomerMatch() {
+                const res = await getCustomerMatchPreferencesDetail(customerId);
+                if (res.success) setMatchData(res.data);
             }
+            getCustomerMatch();
         }
-        getCutsomerMatch()
-        }
-     
-    },[])
+    }, [customerId]);
+
     useEffect(() => {
         setLoading(true);
         getFromGroupList()
             .then((data) => {
-                console.log('=======================',data)
                 if (Array.isArray(data.data)) {
                     const formattedData = data.data.map((group: Group) => ({
                         groupId: group._id,
@@ -74,20 +54,19 @@ const Form = ({customerId}:{customerId:string}) => {
                             }))
                             : [],
                     }));
-                    console.log('formateddat',formattedData);
-                    
                     setFormData(formattedData);
+                    setActivePanels(data.data.map((group: Group) => group._id)); // open all by default
                 } else {
                     message.error("Invalid data format received from server.");
                 }
             })
-            .catch((error) => {
+            .catch(() => {
                 message.error("Failed to fetch form groups. Please try again.");
             })
             .finally(() => setLoading(false));
     }, []);
 
-    const handleDynamicFieldChange = (groupId: string, fieldId: string, value: string) => {
+    const handleFieldChange = (groupId: string, fieldId: string, value: string) => {
         setFormData((prevData) =>
             prevData.map((group) =>
                 group.groupId === groupId
@@ -101,104 +80,110 @@ const Form = ({customerId}:{customerId:string}) => {
             )
         );
     };
-    
 
-    const transformFormData = (formData: any, customerId: string) => {
-        const result:any = {
-          customerId,
-          dynamicValue: []
-        };
-      
-        formData.forEach((group: { groupId: string; fields: any[]; }) => {
-          const groupId: string = group.groupId;
-          const groupFields: { fieldID: string; fieldValue: string; }[] = [];
-      
-          if (group.fields && group.fields.length > 0) {
-            group.fields.forEach((field) => {
-              if (field.value !== undefined && field.value !== "") {
-                groupFields.push({
-                  fieldID: field.fieldId,
-                  fieldValue: field.value
-                });
-              }
-            });
-      
-            if (groupFields.length > 0) {
-              result.dynamicValue.push({
-                groupId,
-                groupFields
-              });
+    const handleFieldSaveOnEnter = async (
+        e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>,
+        groupId: string,
+        fieldId: string,
+        value: string
+    ) => {
+        if (e.key === 'Enter') {
+            const payload = {
+                customerId,
+                dynamicValue: [
+                    {
+                        groupId,
+                        groupFields: [
+                            {
+                                fieldID: fieldId,
+                                fieldValue: value
+                            }
+                        ]
+                    }
+                ]
+            };
+            try {
+                await updateCustomerProfile(payload);
+                message.success("Field updated successfully.");
+            } catch (error) {
+                message.error("Failed to update field.");
             }
-          }
-        });
-      
-        return result;
-      };
-      
-
-    const onSubmit = async () => {
-        setLoading(true);
-        const apiData = transformFormData(formData, customerId);
-                
-        try {
-             await updateCustomerProfile(apiData)
-        } catch (error) {
-          console.error('Error:', error);
         }
-        
-        setLoading(false);
     };
 
     if (loading) return <Spin size="large" className="flex justify-center mt-10" />;
     if (!formData.length) return <div>No data found</div>;
-    console.log('form===dat',formData);
-    
+
     return (
         <div className="p-6 bg-white shadow-md rounded-md">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Form Groups</h2>
-                <Button type="primary" onClick={handleSubmit(onSubmit)} loading={loading}>
-                    Save
-                </Button>
             </div>
 
             <div className="flex w-full">
-                {/* Tabs */}
                 <Tabs defaultActiveKey="1" className="w-full">
-                    {/* Dynamic Form Tab */}
                     <TabPane tab="Form Groups" key="1">
                         <div className="w-full">
-                            <Collapse className="w-full border border-gray-200 rounded-md" expandIconPosition="start">
-                                {formData.map((group, index) => (
-                                    <Panel header={group.groupName} key={group.groupId || index} className="w-full">
+                            <Collapse
+                                className="w-full border border-gray-200 rounded-md"
+                                expandIconPosition="start"
+                                activeKey={activePanels}
+                                onChange={(keys) => setActivePanels(Array.isArray(keys) ? keys : [keys])}
+                            >
+                                {formData.map((group) => (
+                                    <Panel header={group.groupName} key={group.groupId} className="w-full">
                                         {group.fields.length > 0 ? (
                                             group.fields.map((field) => (
                                                 <div key={field.fieldId} className="flex mb-3">
                                                     <label className="w-1/3 text-gray-600">{field.fieldName}</label>
-                                                    {Array.isArray(field?.fieldValueOptions) && field?.fieldValueOptions.length > 0 ? (
-                                                // If fieldValueOptions is an array, show a dropdown
-                                                <select
-                                                    className="w-2/3 border p-2 rounded"
-                                                    value={field.value || ""}
-                                                    onChange={(e) => handleDynamicFieldChange(group.groupId, field.fieldId, e.target.value)}
-                                                >
-                                                    <option value="" disabled>Select an option</option>
-                                                    {field.fieldValueOptions.map((option: any) => (
-                                                        <option key={option} value={option}>
-                                                            {option}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            ) : (
-                                                // If fieldValueOptions is not an array, show a text box
-                                                <input
-                                                    type="text"
-                                                    className="w-2/3 border p-2 rounded"
-                                                    value={field.value || ""}
-                                                    placeholder="Text here..."
-                                                    onChange={(e) => handleDynamicFieldChange(group.groupId, field.fieldId, e.target.value)}
-                                                />
-                                            )}
+                                                    {Array.isArray(field.fieldValueOptions) && field.fieldValueOptions.length > 0 ? (
+                                                        <select
+                                                            className="w-2/3 border p-2 rounded"
+                                                            value={field.value || ""}
+                                                            onChange={async (e) => {
+                                                                const selectedValue = e.target.value;
+                                                                handleFieldChange(group.groupId, field.fieldId, selectedValue);
+                                                                const payload = {
+                                                                    customerId,
+                                                                    dynamicValue: [
+                                                                        {
+                                                                            groupId: group.groupId,
+                                                                            groupFields: [
+                                                                                {
+                                                                                    fieldID: field.fieldId,
+                                                                                    fieldValue: selectedValue,
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    ],
+                                                                };
+                                                                try {
+                                                                    await updateCustomerProfile(payload);
+                                                                    message.success("Field updated successfully.");
+                                                                } catch {
+                                                                    message.error("Failed to update field.");
+                                                                }
+                                                            }}
+                                                        >
+                                                            <option value="" disabled>Select an option</option>
+                                                            {field.fieldValueOptions.map((option: any) => (
+                                                                <option key={option} value={option}>
+                                                                    {option}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        <input
+                                                            type="text"
+                                                            className="w-2/3 border p-2 rounded"
+                                                            value={field.value || ""}
+                                                            placeholder="Text here..."
+                                                            onChange={(e) => handleFieldChange(group.groupId, field.fieldId, e.target.value)}
+                                                            onKeyDown={(e) =>
+                                                                handleFieldSaveOnEnter(e, group.groupId, field.fieldId, field.value || "")
+                                                            }
+                                                        />
+                                                    )}
 
                                                 </div>
                                             ))
@@ -211,12 +196,16 @@ const Form = ({customerId}:{customerId:string}) => {
                         </div>
                     </TabPane>
 
-                    {/* Static Preferences Tab */}
                     <TabPane tab="Matching Preferences" key="2">
-                    <div className="w-full">
-                            <Collapse className="w-full border border-gray-200 rounded-md" expandIconPosition="start">
-                                {matchdata.map((group, index) => (
-                                    <Panel header={group.groupName} key={group.groupId || index} className="w-full">
+                        <div className="w-full">
+                            <Collapse
+                                className="w-full border border-gray-200 rounded-md"
+                                expandIconPosition="start"
+                                activeKey={activePanels}
+                                onChange={(keys) => setActivePanels(Array.isArray(keys) ? keys : [keys])}
+                            >
+                                {matchdata.map((group) => (
+                                    <Panel header={group.groupName} key={group.groupId} className="w-full">
                                         {group.fields.length > 0 ? (
                                             group.fields.map((field) => (
                                                 <div key={field.fieldId} className="flex mb-3">
@@ -225,7 +214,10 @@ const Form = ({customerId}:{customerId:string}) => {
                                                         className="w-2/3"
                                                         value={field.value || ""}
                                                         onChange={(e) =>
-                                                            handleDynamicFieldChange(group.groupId, field.fieldId, e.target.value)
+                                                            handleFieldChange(group.groupId, field.fieldId, e.target.value)
+                                                        }
+                                                        onKeyDown={(e) =>
+                                                            handleFieldSaveOnEnter(e, group.groupId, field.fieldId, field.value || "")
                                                         }
                                                     />
                                                 </div>
@@ -298,8 +290,8 @@ const Form = ({customerId}:{customerId:string}) => {
                                 </div>
                             ))} */}
 
-                            {/* Preferred Age Range */}
-                            {/* <div className="flex w-full">
+                        {/* Preferred Age Range */}
+                        {/* <div className="flex w-full">
                                 <div className="w-1/2 px-4 py-2 text-gray-500">Preferred Age Range</div>
                                 <div className="w-1/2 px-4 py-2">
                                     <Row gutter={8}>
@@ -338,8 +330,8 @@ const Form = ({customerId}:{customerId:string}) => {
                                 </div>
                             </div> */}
 
-                            {/* Preferred Height */}
-                            {/* <div className="flex w-full">
+                        {/* Preferred Height */}
+                        {/* <div className="flex w-full">
                                 <div className="w-1/2 px-4 py-2 text-gray-500">Preferred Height</div>
                                 <div className="w-1/2 px-4 py-2">
                                     <Row gutter={8}>
