@@ -5,7 +5,11 @@ import { Customer } from "../../schema/customernew";
 import { message } from "antd";
 import { CustomerUpdate } from "../clientsForm/types/clientTypes";
 
-const Sidebar = ({ customerId }: { customerId: string }) => {
+type SidebarProps = {
+  customerId: string;
+};
+
+const Sidebar = ({ customerId }: SidebarProps) => {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [editMode, setEditMode] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>("");
@@ -47,7 +51,7 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
 
     try {
       // Send data directly in the format the API expects
-      const updateData :CustomerUpdate= {
+      const updateData: CustomerUpdate = {
         customerId: customerId
       };
 
@@ -64,7 +68,7 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
 
       // Send the updateData directly without nesting it
       const res = await updateCustomerBasicDetail(updateData);
-      
+
       if (res.success) {
         setCustomer(res.customer);
         setEditMode(null);
@@ -73,7 +77,7 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
       } else {
         message.error(res.message || "Failed to update");
       }
-      
+
     } catch (error) {
       console.error("Error updating customer:", error);
     } finally {
@@ -115,7 +119,7 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
         };
 
         const updateRes = await updateCustomerBasicDetail(updateData);
-        
+
         if (updateRes.success) {
           setCustomer(updateRes.customer);
         } else {
@@ -144,25 +148,25 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
         ) : (
           <Camera className="text-gray-500" size={50} />
         )}
-        
+
         {/* Upload button overlay */}
-        <div 
+        <div
           className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer rounded-md"
           onClick={handleUploadClick}
         >
           <Upload className="text-white" size={24} />
         </div>
-        
+
         {/* Hidden file input */}
-        <input 
-          type="file" 
+        <input
+          type="file"
           ref={fileInputRef}
           onChange={handleFileChange}
           accept="image/*"
           className="hidden"
         />
       </div>
-      
+
       {isUploading && (
         <p className="text-xs text-blue-500 mt-1">Uploading...</p>
       )}
@@ -187,7 +191,7 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
             </button>
           </div>
         ) : (
-          <h2 
+          <h2
             className="text-lg font-semibold cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
             onClick={() => customer && handleEdit("firstName", customer.firstName)}
           >
@@ -216,7 +220,7 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
             </button>
           </div>
         ) : (
-          <h3 
+          <h3
             className="text-md cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
             onClick={() => customer && handleEdit("lastName", customer.lastName)}
           >
@@ -245,7 +249,7 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
             </button>
           </div>
         ) : (
-          <p 
+          <p
             className="text-gray-500 text-sm text-center cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
             onClick={() => customer && handleEdit("email", customer.email)}
           >
@@ -254,23 +258,23 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
         )}
       </div>
 
-      
+
       <button className="bg-gray-200 text-gray-700 px-4 py-1 rounded mt-3">Actions ▼</button>
 
       {/* Contact Info */}
       <div className="mt-4 space-y-2 w-full text-gray-600">
         <div className="flex items-center space-x-2">
-          <Mail size={18} /> 
-          <span 
+          <Mail size={18} />
+          <span
             className="text-sm break-words cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
             onClick={() => customer && handleEdit("email", customer.email)}
           >
             {customer?.email || "N/A"}
           </span>
         </div>
-        
+
         <div className="flex items-center space-x-2">
-          <Phone size={18} /> 
+          <Phone size={18} />
           {editMode === "contact" ? (
             <div className="flex items-center flex-1">
               <input
@@ -289,7 +293,7 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
               </button>
             </div>
           ) : (
-            <span 
+            <span
               className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
               onClick={() => customer && handleEdit("contact", customer.contact || "")}
             >
@@ -297,9 +301,9 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
             </span>
           )}
         </div>
-        
+
         <div className="flex items-center space-x-2">
-          <MapPin size={18} /> 
+          <MapPin size={18} />
           <span className="text-sm">
             {customer?.address ? `${customer.address.city}, ${customer.address.country}` : "N/A"}
           </span>

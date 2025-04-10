@@ -11,9 +11,9 @@ const apiClient = axios.create({
 });
 interface Error {
   response?: {
-      data?: {
-          message: string,
-      }
+    data?: {
+      message: string,
+    }
   }
 }
 apiClient.interceptors.request.use(
@@ -51,17 +51,17 @@ apiClient.interceptors.response.use(
 
 export default apiClient;
 
-export const addCustomerByAdmin =async(data:AddClientFormData)=>{
+export const addCustomerByAdmin = async (data: AddClientFormData) => {
   try {
-    const response = await apiClient.post('admin/addCustomerByAdmin',data)
-    console.log('res fro add cli',response);
-    
+    const response = await apiClient.post('admin/addCustomerByAdmin', data)
+    console.log('res fro add cli', response);
+
     return response?.data
   } catch (error) {
     return (error as Error).response?.data;
   }
 }
-export const allActiveCustomer = async()=>{
+export const allActiveCustomer = async () => {
   try {
     const response = await apiClient.get('admin/allActiveCustomer',)
     return response?.data
@@ -69,23 +69,23 @@ export const allActiveCustomer = async()=>{
     return (error as Error).response?.data;
   }
 }
-export const getCustomerBasicDetail = async (customerId:string)=>{
+export const getCustomerBasicDetail = async (customerId: string) => {
   try {
-    const response = await apiClient.post('admin/getCustomerBasicDetail',{customerId:customerId})
+    const response = await apiClient.post('admin/getCustomerBasicDetail', { customerId: customerId })
     return response?.data
   } catch (error) {
     return (error as Error).response?.data;
   }
 }
-export const getCustomerProfileDetail = async (customerId:string)=>{
+export const getCustomerProfileDetail = async (customerId: string) => {
   try {
-    const response = await apiClient.post('admin/getCustomerProfileDetail',{customerId:customerId})
+    const response = await apiClient.post('admin/getCustomerProfileDetail', { customerId: customerId })
     return response?.data
   } catch (error) {
     return (error as Error).response?.data;
   }
 }
-export const getFromGroupList = async ()  =>{
+export const getFromGroupList = async () => {
   try {
     const response = await apiClient.get('admin/getFromGroupList')
     return response?.data
@@ -122,34 +122,34 @@ export const updateCustomerMatchPreferencesDetail = async (payload: {
 };
 
 
-export const updateCustomerBasicDetail = async (updatedData:CustomerUpdate)  =>{
+export const updateCustomerBasicDetail = async (updatedData: CustomerUpdate) => {
   try {
-    const response = await apiClient.post('admin/updateCustomerBasicDetail',updatedData)
+    const response = await apiClient.post('admin/updateCustomerBasicDetail', updatedData)
     return response?.data
   } catch (error) {
     return (error as Error).response?.data;
   }
 }
 
-export const uploadFile = async (file:FormData)  =>{
+export const uploadFile = async (file: FormData) => {
   try {
-    const response = await apiClient.post('admin/upload',file)
+    const response = await apiClient.post('admin/upload', file)
     return response?.data
   } catch (error) {
     return (error as Error).response?.data;
   }
 }
 
-export const updateCustomerProfile = async (data:any)  =>{
+export const updateCustomerProfile = async (data: any) => {
   try {
-    const response = await apiClient.post('admin/updateCustomerProfile',data)
+    const response = await apiClient.post('admin/updateCustomerProfile', data)
     return response?.data
   } catch (error) {
     return (error as Error).response?.data;
   }
 }
 
-export const getAllPreferencesGroupFields = async ()  =>{
+export const getAllPreferencesGroupFields = async () => {
   try {
     const response = await apiClient.get('admin/getAllPreferencesGroupFields')
     return response?.data
@@ -158,40 +158,40 @@ export const getAllPreferencesGroupFields = async ()  =>{
   }
 }
 
-export const createPreferencesField = async (data:PreferencesField)  =>{
+export const createPreferencesField = async (data: PreferencesField) => {
   try {
-    const response = await apiClient.post('admin/createPreferencesField',data)
+    const response = await apiClient.post('admin/createPreferencesField', data)
     return response?.data
   } catch (error) {
     return (error as Error).response?.data;
   }
 }
-export const updatePreferencesField = async (data:PreferencesField)  =>{
+export const updatePreferencesField = async (data: PreferencesField) => {
   try {
-    const response = await apiClient.post('admin/updatePreferencesField',data)
+    const response = await apiClient.post('admin/updatePreferencesField', data)
     return response?.data
   } catch (error) {
     return (error as Error).response?.data;
   }
 }
-export const deletePreferencesField = async (data:string)  =>{
+export const deletePreferencesField = async (data: string) => {
   try {
-    const response = await apiClient.post('admin/deletePreferencesField',{fieldId:data})
+    const response = await apiClient.post('admin/deletePreferencesField', { fieldId: data })
     return response?.data
   } catch (error) {
     return (error as Error).response?.data;
   }
 }
-export const createClientList = async (data:ClientList)  =>{
+export const createClientList = async (data: ClientList) => {
   try {
-    const response = await apiClient.post('admin/createClientList',data)
+    const response = await apiClient.post('admin/createClientList', data)
     return response?.data
   } catch (error) {
     return (error as Error).response?.data;
   }
 }
 
-export const getAllClientLists = async ()  =>{
+export const getAllClientLists = async () => {
   try {
     const response = await apiClient.get('admin/getAllClientLists')
     return response?.data
@@ -200,10 +200,10 @@ export const getAllClientLists = async ()  =>{
   }
 }
 
-export const editClientList = async (data:ClientList)  =>{
-  console.log('da======================',data)
+export const editClientList = async (data: ClientList) => {
+  console.log('da======================', data)
   try {
-    const response = await apiClient.post('admin/editClientList',data)
+    const response = await apiClient.post('admin/editClientList', data)
     return response?.data
   } catch (error) {
     return (error as Error).response?.data;

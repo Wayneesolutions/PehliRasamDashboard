@@ -1,8 +1,8 @@
-import { Input, Button, message, Spin, Tabs, Collapse } from "antd";
-import { useForm } from "react-hook-form";
-import { useEffect, useState } from "react";
-import { getCustomerMatchPreferencesDetail, getFromGroupList, updateCustomerProfile, updateCustomerMatchPreferencesDetail } from "../../config/apiClient";
+import { message, Spin, Tabs, Collapse } from "antd";
+import { useEffect, useState, useCallback } from "react";
+import { getCustomerMatchPreferencesDetail, getCustomerProfileDetail, updateCustomerProfile, updateCustomerMatchPreferencesDetail } from "../../config/apiClient";
 import { Field, Group, MatchGroup } from "../clientsForm/types/clientTypes";
+import { useOutletContext } from "react-router-dom";
 
 const { Panel } = Collapse;
 const { TabPane } = Tabs;
@@ -12,6 +12,7 @@ interface IField {
     fieldName: string;
     value?: string;
     fieldValueOptions: any;
+    attributeType: string;
 }
 
 interface IGroup {
@@ -20,8 +21,18 @@ interface IGroup {
     fields: IField[];
 }
 
-const Form = ({ customerId }: { customerId: string }) => {
-    const { handleSubmit } = useForm();
+interface ContextType {
+    customerId: string;
+}
+
+interface FormProps {
+    customerId?: string;
+}
+
+const Form: React.FC<FormProps> = ({ customerId }) => {
+    const context = useOutletContext<ContextType>();
+    const resolvedCustomerId = customerId || context?.customerId;
+
     const [formData, setFormData] = useState<IGroup[]>([]);
     const [matchdata, setMatchData] = useState<MatchGroup[]>([]);
     const [loading, setLoading] = useState(false);
@@ -30,7 +41,7 @@ const Form = ({ customerId }: { customerId: string }) => {
     useEffect(() => {
         if (customerId) {
             async function getCustomerMatch() {
-                const res = await getCustomerMatchPreferencesDetail({ customerId });
+                const res = await getCustomerMatchPreferencesDetail({ customerId: resolvedCustomerId });
 
                 if (res.success) setMatchData(res.data);
             }
@@ -39,78 +50,116 @@ const Form = ({ customerId }: { customerId: string }) => {
     }, [customerId]);
 
     useEffect(() => {
+        if (!resolvedCustomerId) return;
+
         setLoading(true);
-        getFromGroupList()
-            .then((data) => {
-                if (Array.isArray(data.data)) {
-                    const formattedData = data.data.map((group: Group) => ({
+        const fetchData = async () => {
+            try {
+                const [profileRes, matchRes] = await Promise.all([
+                    getCustomerProfileDetail(resolvedCustomerId),
+                    getCustomerMatchPreferencesDetail({ customerId: resolvedCustomerId })
+                ]);
+
+                // Handle profile
+                if (Array.isArray(profileRes.data)) {
+                    const formattedData = profileRes.data.map((group: Group) => ({
                         groupId: group._id,
                         groupName: group.groupName,
                         fields: Array.isArray(group.fields)
-                            ? group.fields.map((field: Field) => ({
+                            ? group.fields.map((field: any) => ({
                                 fieldId: field.attributeId,
-                                fieldName: field.attributeName || "Unknown Field",
-                                fieldValueOptions: field.attributeOption || '',
-                                value: "",
+                                fieldName: field.fieldName || "Unknown Field",
+                                fieldValueOptions: field.attributeOption || [],
+                                value: field.value === "NaN" ? "" : field.value || "",
+                                attributeType: field.attributeType || "text", // <-- add this line
                             }))
                             : [],
+
                     }));
                     setFormData(formattedData);
-                    setActivePanels(data.data.map((group: Group) => group._id)); // open all by default
-                } else {
-                    message.error("Invalid data format received from server.");
+                    setActivePanels(profileRes.data.map((g: Group) => g._id));
                 }
-            })
-            .catch(() => {
-                message.error("Failed to fetch form groups. Please try again.");
-            })
-            .finally(() => setLoading(false));
-    }, []);
+
+                // Handle match preferences
+                if (matchRes.success) setMatchData(matchRes.data);
+
+            } catch (err) {
+                message.error("Failed to load data.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [resolvedCustomerId]);
+
 
     const handleFieldChange = (groupId: string, fieldId: string, value: string) => {
-        setFormData((prevData) =>
-            prevData.map((group) =>
-                group.groupId === groupId
-                    ? {
-                        ...group,
-                        fields: group.fields.map((field) =>
-                            field.fieldId === fieldId ? { ...field, value } : field
-                        ),
-                    }
-                    : group
-            )
+        setFormData((prev) =>
+            prev.map((g) => {
+                if (g.groupId !== groupId) return g;
+
+                return {
+                    ...g,
+                    fields: g.fields.map((f) =>
+                        f.fieldId === fieldId
+                            ? { ...f, value, source: "input" } // 🚨 mark that value came from input
+                            : f
+                    ),
+                };
+            })
         );
     };
 
+
+
     const handleFieldSaveOnEnter = async (
-        e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>,
+        e: React.KeyboardEvent<HTMLInputElement>,
         groupId: string,
-        fieldId: string,
-        value: string
+        fieldId: string
     ) => {
-        if (e.key === 'Enter') {
+        if (e.key === "Enter") {
+            const value = (e.target as HTMLInputElement).value;
+
             const payload = {
-                customerId,
+                customerId: resolvedCustomerId,
                 dynamicValue: [
                     {
                         groupId,
                         groupFields: [
                             {
                                 fieldID: fieldId,
-                                fieldValue: value
-                            }
-                        ]
-                    }
-                ]
+                                fieldValue: value,
+                            },
+                        ],
+                    },
+                ],
             };
+
             try {
                 await updateCustomerProfile(payload);
                 message.success("Field updated successfully.");
+
+                // Update local state
+                setFormData((prev) =>
+                    prev.map((group) =>
+                        group.groupId === groupId
+                            ? {
+                                ...group,
+                                fields: group.fields.map((field) =>
+                                    field.fieldId === fieldId ? { ...field, value } : field
+                                ),
+                            }
+                            : group
+                    )
+                );
             } catch (error) {
                 message.error("Failed to update field.");
             }
         }
     };
+
+
 
     if (loading) return <Spin size="large" className="flex justify-center mt-10" />;
     if (!formData.length) return <div>No data found</div>;
@@ -123,7 +172,7 @@ const Form = ({ customerId }: { customerId: string }) => {
 
             <div className="flex w-full">
                 <Tabs defaultActiveKey="1" className="w-full">
-                    <TabPane tab="Form Groups" key="1">
+                    <TabPane tab="Profile" key="1">
                         <div className="w-full">
                             <Collapse
                                 className="w-full border border-gray-200 rounded-md"
@@ -133,64 +182,79 @@ const Form = ({ customerId }: { customerId: string }) => {
                             >
                                 {formData.map((group) => (
                                     <Panel header={group.groupName} key={group.groupId} className="w-full">
-                                        {group.fields.length > 0 ? (
-                                            group.fields.map((field) => (
-                                                <div key={field.fieldId} className="flex mb-3">
-                                                    <label className="w-1/3 text-gray-600">{field.fieldName}</label>
-                                                    {Array.isArray(field.fieldValueOptions) && field.fieldValueOptions.length > 0 ? (
-                                                        <select
-                                                            className="w-2/3 border p-2 rounded"
-                                                            value={field.value || ""}
-                                                            onChange={async (e) => {
-                                                                const selectedValue = e.target.value;
-                                                                handleFieldChange(group.groupId, field.fieldId, selectedValue);
-                                                                const payload = {
-                                                                    customerId,
-                                                                    dynamicValue: [
-                                                                        {
-                                                                            groupId: group.groupId,
-                                                                            groupFields: [
-                                                                                {
-                                                                                    fieldID: field.fieldId,
-                                                                                    fieldValue: selectedValue,
-                                                                                },
-                                                                            ],
-                                                                        },
-                                                                    ],
-                                                                };
-                                                                try {
-                                                                    await updateCustomerProfile(payload);
-                                                                    message.success("Field updated successfully.");
-                                                                } catch {
-                                                                    message.error("Failed to update field.");
-                                                                }
-                                                            }}
-                                                        >
-                                                            <option value="" disabled>Select an option</option>
-                                                            {field.fieldValueOptions.map((option: any) => (
-                                                                <option key={option} value={option}>
-                                                                    {option}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    ) : (
-                                                        <input
-                                                            type="text"
-                                                            className="w-2/3 border p-2 rounded"
-                                                            value={field.value || ""}
-                                                            placeholder="Text here..."
-                                                            onChange={(e) => handleFieldChange(group.groupId, field.fieldId, e.target.value)}
-                                                            onKeyDown={(e) =>
-                                                                handleFieldSaveOnEnter(e, group.groupId, field.fieldId, field.value || "")
-                                                            }
-                                                        />
-                                                    )}
+                                        {group.fields.map((field) => (
+                                            <div key={field.fieldId} className="flex mb-3">
+                                                <label className="w-1/3 text-gray-600">{field.fieldName}</label>
 
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="text-gray-500">No fields available</div>
-                                        )}
+                                                {field.attributeType === "select" ? (
+                                                    <select
+                                                        className="w-2/3 border p-2 rounded"
+                                                        value={field.value || ""}
+                                                        onChange={async (e) => {
+                                                            const selectedValue = e.target.value;
+
+                                                            const payload = {
+                                                                customerId: resolvedCustomerId,
+                                                                dynamicValue: [
+                                                                    {
+                                                                        groupId: group.groupId,
+                                                                        groupFields: [
+                                                                            {
+                                                                                fieldID: field.fieldId,
+                                                                                fieldValue: selectedValue,
+                                                                            },
+                                                                        ],
+                                                                    },
+                                                                ],
+                                                            };
+
+                                                            try {
+                                                                await updateCustomerProfile(payload);
+                                                                message.success("Field updated successfully");
+
+                                                                setFormData((prev) =>
+                                                                    prev.map((g) =>
+                                                                        g.groupId === group.groupId
+                                                                            ? {
+                                                                                ...g,
+                                                                                fields: g.fields.map((f) =>
+                                                                                    f.fieldId === field.fieldId
+                                                                                        ? { ...f, value: selectedValue }
+                                                                                        : f
+                                                                                ),
+                                                                            }
+                                                                            : g
+                                                                    )
+                                                                );
+                                                            } catch (err) {
+                                                                message.error("Update failed");
+                                                            }
+                                                        }}
+                                                    >
+                                                        <option value="">Select an option</option>
+                                                        {field.fieldValueOptions.map((option: string) => (
+                                                            <option key={option} value={option}>
+                                                                {option}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                    <input
+                                                        type="text"
+                                                        className="w-2/3 border p-2 rounded"
+                                                        value={typeof field.value === "string" ? field.value : ""}
+                                                        placeholder="Text here..."
+                                                        onChange={(e) =>
+                                                            handleFieldChange(group.groupId, field.fieldId, e.target.value)
+                                                        }
+                                                        onKeyDown={(e) =>
+                                                            handleFieldSaveOnEnter(e, group.groupId, field.fieldId)
+                                                        }
+                                                    />
+                                                )}
+                                            </div>
+                                        ))}
+
                                     </Panel>
                                 ))}
                             </Collapse>
@@ -213,7 +277,8 @@ const Form = ({ customerId }: { customerId: string }) => {
                                                 const options = field.choices || [];
 
                                                 return (
-                                                    <div key={field.fieldId} className="flex mb-3">
+                                                    <div key={`${group.groupId}-${field.fieldId}`} className="flex mb-3">
+
                                                         <label className="w-1/3 text-gray-600">{field.fieldName}</label>
 
                                                         {Array.isArray(options) && options.length > 0 ? (
@@ -224,7 +289,7 @@ const Form = ({ customerId }: { customerId: string }) => {
                                                                     const selectedValue = e.target.value;
 
                                                                     const payload = {
-                                                                        customerId,
+                                                                        customerId: resolvedCustomerId,
                                                                         matchPreferences: [
                                                                             {
                                                                                 preferencesGroupId: group.groupId,
@@ -270,7 +335,7 @@ const Form = ({ customerId }: { customerId: string }) => {
                                                             <input
                                                                 type="text"
                                                                 className="w-2/3 border p-2 rounded"
-                                                                value={fieldValue}
+                                                                value={fieldValue === "NaN" || fieldValue == null ? "" : fieldValue}
                                                                 placeholder="Text here..."
                                                                 onChange={(e) => {
                                                                     const updatedValue = e.target.value;
@@ -290,7 +355,7 @@ const Form = ({ customerId }: { customerId: string }) => {
                                                                 onKeyDown={async (e) => {
                                                                     if (e.key === "Enter") {
                                                                         const payload = {
-                                                                            customerId,
+                                                                            customerId: resolvedCustomerId,
                                                                             matchPreferences: [
                                                                                 {
                                                                                     preferencesGroupId: group.groupId,
@@ -313,6 +378,7 @@ const Form = ({ customerId }: { customerId: string }) => {
                                                                     }
                                                                 }}
                                                             />
+
                                                         )}
                                                     </div>
                                                 );

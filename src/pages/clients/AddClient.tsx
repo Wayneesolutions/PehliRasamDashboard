@@ -2,12 +2,31 @@ import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import MembershipForm from "./Form";
+import { useEffect, useMemo } from "react";
 
 const AddClient = () => {
     const location = useLocation();
+    const stateClientId = location.state?.clientId;
+
+    useEffect(() => {
+        if (stateClientId) {
+            localStorage.setItem("clientId", stateClientId);
+        }
+    }, [stateClientId]);
+
+    // Use from state or fallback to localStorage
+    const customerId = useMemo(() => {
+        return stateClientId || localStorage.getItem("clientId");
+    }, [stateClientId]);
+
     const showMembershipForm = location.pathname === "/dashboard/add-client";
-    const customerId = location.state?.clientId;
-    
+
+    useEffect(() => {
+        if (!customerId) {
+            console.warn("customerId not found in location.state or localStorage");
+        }
+    }, [customerId]);
+
     return (
         <div className="flex h-screen bg-gray-100">
             {/* Sidebar (Fixed on the left) */}
@@ -20,7 +39,11 @@ const AddClient = () => {
 
                 {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto p-6">
-                    {showMembershipForm ? <MembershipForm customerId={customerId}/> : <Outlet />}
+                    {showMembershipForm ? (
+                        <MembershipForm customerId={customerId} />
+                    ) : (
+                        <Outlet context={{ customerId }} />
+                    )}
                 </div>
             </div>
         </div>

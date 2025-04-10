@@ -21,9 +21,16 @@ const Header: React.FC = () => {
                 {topTabs.map((tab) => (
                     <div
                         key={tab.name}
-                        className={`cursor-pointer transition ${location.pathname === tab.path ? "text-blue-600 underline font-bold" : "hover:text-blue-600"
-                            }`}
-                        onClick={() => navigate(tab.path)}
+                        className={`cursor-pointer transition ${
+                            location.pathname === tab.path
+                                ? "text-blue-600 underline font-bold"
+                                : "hover:text-blue-600"
+                        }`}
+                        onClick={() =>
+                            navigate(tab.path, {
+                                state: { clientId: location.state?.clientId },
+                            })
+                        }
                     >
                         {tab.name}
                     </div>
