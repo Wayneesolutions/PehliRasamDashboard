@@ -94,14 +94,33 @@ export const getFromGroupList = async ()  =>{
   }
 }
 
-export const getCustomerMatchPreferencesDetail = async (customerId:string)  =>{
+export const getCustomerMatchPreferencesDetail = async (payload: { customerId: string }) => {
   try {
-    const response = await apiClient.post('admin/getCustomerMatchPreferencesDetail',{customerId:customerId})
-    return response?.data
-  } catch (error) {
-    return (error as Error).response?.data;
+    const response = await apiClient.post('admin/getCustomerMatchPreferencesDetail', payload);
+    return response?.data;
+  } catch (error: any) {
+    return error.response?.data;
   }
-}
+};
+
+export const updateCustomerMatchPreferencesDetail = async (payload: {
+  customerId: string;
+  matchPreferences: {
+    preferencesGroupId: string;
+    groupFields: {
+      fieldId: string;
+      fieldValue: string;
+    }[];
+  }[];
+}) => {
+  try {
+    const response = await apiClient.post('admin/updateCustomerMatchPreferences', payload);
+    return response?.data;
+  } catch (error: any) {
+    return error.response?.data;
+  }
+};
+
 
 export const updateCustomerBasicDetail = async (updatedData:CustomerUpdate)  =>{
   try {

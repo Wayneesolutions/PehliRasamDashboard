@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import Loader from "../components/layout/Loader";
 import Layout from "../components/layout/Layout";
-import ProtectedRoute from "./ProtectedRoute"; // <- make sure this import is correct
+import ProtectedRoute from "./ProtectedRoute";
 
 const Submission = lazy(() => import("../pages/clientsForm/index"));
 const Suggestions = lazy(() => import("../pages/clientsForm/Suggestions"));
