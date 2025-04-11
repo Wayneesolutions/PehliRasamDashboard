@@ -1,7 +1,7 @@
 import { message, Spin, Tabs, Collapse } from "antd";
-import { useEffect, useState, useCallback } from "react";
-import { getCustomerMatchPreferencesDetail, getCustomerProfileDetail, updateCustomerProfile, updateCustomerMatchPreferencesDetail } from "../../config/apiClient";
-import { Field, Group, MatchGroup } from "../clientsForm/types/clientTypes";
+import { useEffect, useState } from "react";
+import { getCustomerMatchPreferencesDetail, getCustomerProfileDetail, uploadImage, updateCustomerProfile, updateCustomerMatchPreferencesDetail } from "../../config/apiClient";
+import { Group, MatchGroup } from "../clientsForm/types/clientTypes";
 import { useOutletContext } from "react-router-dom";
 
 const { Panel } = Collapse;
@@ -29,6 +29,8 @@ interface FormProps {
     customerId?: string;
 }
 
+
+
 const Form: React.FC<FormProps> = ({ customerId }) => {
     const context = useOutletContext<ContextType>();
     const resolvedCustomerId = customerId || context?.customerId;
@@ -36,7 +38,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
     const [formData, setFormData] = useState<IGroup[]>([]);
     const [matchdata, setMatchData] = useState<MatchGroup[]>([]);
     const [loading, setLoading] = useState(false);
-    const [activePanels, setActivePanels] = useState<string[]>([]); // for expanded panels
+    const [activePanels, setActivePanels] = useState<string[]>([]);
 
     useEffect(() => {
         if (customerId) {
@@ -63,22 +65,24 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                 // Handle profile
                 if (Array.isArray(profileRes.data)) {
                     const formattedData = profileRes.data.map((group: Group) => ({
-                        groupId: group._id,
+                        groupId: group.groupId || "MISSING_GROUP_ID",
                         groupName: group.groupName,
                         fields: Array.isArray(group.fields)
                             ? group.fields.map((field: any) => ({
-                                fieldId: field.attributeId,
+                                fieldId: field.fieldId || "MISSING_FIELD_ID",
                                 fieldName: field.fieldName || "Unknown Field",
                                 fieldValueOptions: field.attributeOption || [],
                                 value: field.value === "NaN" ? "" : field.value || "",
-                                attributeType: field.attributeType || "text", // <-- add this line
+                                attributeType: field.attributeType || "text",
                             }))
                             : [],
-
                     }));
+
+                    console.log("✅ Formatted formData with proper groupIds:", JSON.stringify(formattedData, null, 2));
                     setFormData(formattedData);
-                    setActivePanels(profileRes.data.map((g: Group) => g._id));
                 }
+
+
 
                 // Handle match preferences
                 if (matchRes.success) setMatchData(matchRes.data);
@@ -93,54 +97,70 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
         fetchData();
     }, [resolvedCustomerId]);
 
+    const generateFullPayload = () => {
+        return {
+            customerId: resolvedCustomerId,
+            profileValue: formData
+                .map((group) => {
+                    const filledFields = group.fields
+                        .map((field) => {
+                            let valueToSend = "";
 
-    const handleFieldChange = (groupId: string, fieldId: string, value: string) => {
-        setFormData((prev) =>
-            prev.map((g) => {
-                if (g.groupId !== groupId) return g;
+                            if (["select", "radio", "checkbox", "Image"].includes(field.attributeType)) {
+                                valueToSend = field.value || "";
+                            } else if (["text", "number", "date"].includes(field.attributeType)) {
+                                valueToSend = field.value?.trim?.() || "";
+                            }
 
-                return {
-                    ...g,
-                    fields: g.fields.map((f) =>
-                        f.fieldId === fieldId
-                            ? { ...f, value, source: "input" } // 🚨 mark that value came from input
-                            : f
-                    ),
-                };
-            })
-        );
+                            if (!valueToSend) return null;
+
+                            return {
+                                fieldID: field.fieldId,
+                                fieldValue: valueToSend,
+                            };
+                        })
+                        .filter(Boolean); // Removes nulls
+
+                    if (filledFields.length === 0) return null;
+
+                    return {
+                        groupId: group.groupId,
+                        groupFields: filledFields,
+                    };
+                })
+                .filter(Boolean),
+        };
     };
 
 
-
-    const handleFieldSaveOnEnter = async (
-        e: React.KeyboardEvent<HTMLInputElement>,
-        groupId: string,
-        fieldId: string
-    ) => {
-        if (e.key === "Enter") {
-            const value = (e.target as HTMLInputElement).value;
-
-            const payload = {
-                customerId: resolvedCustomerId,
-                dynamicValue: [
-                    {
-                        groupId,
-                        groupFields: [
-                            {
-                                fieldID: fieldId,
-                                fieldValue: value,
-                            },
-                        ],
-                    },
-                ],
-            };
-
-            try {
-                await updateCustomerProfile(payload);
-                message.success("Field updated successfully.");
-
-                // Update local state
+    const saveFieldValue = async (groupId: string, fieldId: string, value: string) => {
+        // Build payload with only the current field if value is non-empty
+        if (!value?.trim()) {
+            message.warning("Empty values are not saved.");
+            return;
+        }
+    
+        const payload = {
+            customerId: resolvedCustomerId,
+            profileValue: [
+                {
+                    groupId,
+                    groupFields: [
+                        {
+                            fieldID: fieldId,
+                            fieldValue: value,
+                        },
+                    ],
+                },
+            ],
+        };
+    
+        try {
+            const res = await updateCustomerProfile(payload);
+    
+            if (res.success) {
+                message.success("Field updated successfully");
+                // Update local state immediately
                 setFormData((prev) =>
                     prev.map((group) =>
                         group.groupId === groupId
@@ -153,10 +173,65 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                             : group
                     )
                 );
+            } else {
+                message.error(res.message || "Update failed");
+            }
+        } catch (err) {
+            message.error("Update failed");
+        }
+    };
+    
+    const handleFieldChange = (groupId: string, fieldId: string, value: string) => {
+        // Update local state immediately
+        setFormData((prev) =>
+            prev.map((group) =>
+                group.groupId === groupId
+                    ? {
+                        ...group,
+                        fields: group.fields.map((field) =>
+                            field.fieldId === fieldId
+                                ? { ...field, value }
+                                : field
+                        ),
+                    }
+                    : group
+            )
+        );
+    };
+    
+
+
+    const handleFieldSaveOnEnter = async (
+        e: React.KeyboardEvent<HTMLInputElement>,
+        groupId: string,
+        fieldId: string
+    ) => {
+        if (e.key === "Enter") {
+            const value = (e.target as HTMLInputElement).value;
+
+            setFormData((prev) =>
+                prev.map((group) =>
+                    group.groupId === groupId
+                        ? {
+                            ...group,
+                            fields: group.fields.map((field) =>
+                                field.fieldId === fieldId ? { ...field, value } : field
+                            ),
+                        }
+                        : group
+                )
+            );
+
+            const payload = generateFullPayload();
+
+            try {
+                await updateCustomerProfile(payload);
+                message.success("Field updated successfully.");
             } catch (error) {
                 message.error("Failed to update field.");
             }
         }
+
     };
 
 
@@ -186,80 +261,152 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                             <div key={field.fieldId} className="flex mb-3">
                                                 <label className="w-1/3 text-gray-600">{field.fieldName}</label>
 
-                                                {field.attributeType === "select" ? (
-                                                    <select
-                                                        className="w-2/3 border p-2 rounded"
-                                                        value={field.value || ""}
-                                                        onChange={async (e) => {
-                                                            const selectedValue = e.target.value;
+                                                {/* Handle field types */}
+                                                {(() => {
+                                                    switch (field.attributeType) {
+                                                        case "select":
+                                                            return (
+                                                                <select
+                                                                    className="w-2/3 border p-2 rounded"
+                                                                    value={field.value || ""}
+                                                                    name={`${group.groupId}-${field.fieldId}`}
+                                                                    onChange={async (e) => {
+                                                                        const selectedValue = e.target.value;
+                                                                        await saveFieldValue(group.groupId, field.fieldId, selectedValue);
+                                                                    }}
+                                                                >
+                                                                    <option value="">Select an option</option>
+                                                                    {field.fieldValueOptions.map((option: string) => (
+                                                                        <option key={option} value={option}>
+                                                                            {option}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                            );
 
-                                                            const payload = {
-                                                                customerId: resolvedCustomerId,
-                                                                dynamicValue: [
-                                                                    {
-                                                                        groupId: group.groupId,
-                                                                        groupFields: [
-                                                                            {
-                                                                                fieldID: field.fieldId,
-                                                                                fieldValue: selectedValue,
-                                                                            },
-                                                                        ],
-                                                                    },
-                                                                ],
-                                                            };
+                                                        case "date":
+                                                            return (
+                                                                <input
+                                                                    type="date"
+                                                                    className="w-2/3 border p-2 rounded"
+                                                                    name={`${group.groupId}-${field.fieldId}`}
+                                                                    value={field.value || ""}
+                                                                    placeholder="Select a date"
+                                                                    onChange={(e) => handleFieldChange(group.groupId, field.fieldId, e.target.value)}
+                                                                    onKeyDown={(e) => handleFieldSaveOnEnter(e, group.groupId, field.fieldId)}
+                                                                />
+                                                            );
 
-                                                            try {
-                                                                await updateCustomerProfile(payload);
-                                                                message.success("Field updated successfully");
+                                                        case "number":
+                                                            return (
+                                                                <input
+                                                                    type="number"
+                                                                    className="w-2/3 border p-2 rounded"
+                                                                    value={field.value || ""}
+                                                                    placeholder="Enter a number"
+                                                                    onChange={(e) => handleFieldChange(group.groupId, field.fieldId, e.target.value)}
+                                                                    onKeyDown={(e) => handleFieldSaveOnEnter(e, group.groupId, field.fieldId)}
+                                                                />
+                                                            );
 
-                                                                setFormData((prev) =>
-                                                                    prev.map((g) =>
-                                                                        g.groupId === group.groupId
-                                                                            ? {
-                                                                                ...g,
-                                                                                fields: g.fields.map((f) =>
-                                                                                    f.fieldId === field.fieldId
-                                                                                        ? { ...f, value: selectedValue }
-                                                                                        : f
-                                                                                ),
-                                                                            }
-                                                                            : g
-                                                                    )
-                                                                );
-                                                            } catch (err) {
-                                                                message.error("Update failed");
-                                                            }
-                                                        }}
-                                                    >
-                                                        <option value="">Select an option</option>
-                                                        {field.fieldValueOptions.map((option: string) => (
-                                                            <option key={option} value={option}>
-                                                                {option}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                ) : (
-                                                    <input
-                                                        type="text"
-                                                        className="w-2/3 border p-2 rounded"
-                                                        value={typeof field.value === "string" ? field.value : ""}
-                                                        placeholder="Text here..."
-                                                        onChange={(e) =>
-                                                            handleFieldChange(group.groupId, field.fieldId, e.target.value)
-                                                        }
-                                                        onKeyDown={(e) =>
-                                                            handleFieldSaveOnEnter(e, group.groupId, field.fieldId)
-                                                        }
-                                                    />
-                                                )}
+                                                        case "text":
+                                                            return (
+                                                                <input
+                                                                    type="text"
+                                                                    className="w-2/3 border p-2 rounded"
+                                                                    value={field.value || ""}
+                                                                    placeholder="Enter text"
+                                                                    onChange={(e) => handleFieldChange(group.groupId, field.fieldId, e.target.value)}
+                                                                    onKeyDown={(e) => handleFieldSaveOnEnter(e, group.groupId, field.fieldId)}
+                                                                />
+                                                            );
+
+                                                        case "radio":
+                                                            return (
+                                                                <div className="w-2/3">
+                                                                    {field.fieldValueOptions.map((option: string) => (
+                                                                        <label key={option} className="mr-4">
+                                                                            <input
+                                                                                type="radio"
+                                                                                name={field.fieldId}
+                                                                                value={option}
+                                                                                checked={field.value === option}
+                                                                                onChange={() => handleFieldChange(group.groupId, field.fieldId, option)}
+                                                                                onKeyDown={(e) => handleFieldSaveOnEnter(e, group.groupId, field.fieldId)}
+                                                                            />
+                                                                            {option}
+                                                                        </label>
+                                                                    ))}
+                                                                </div>
+                                                            );
+
+                                                        case "checkbox":
+                                                            return (
+                                                                <div className="w-2/3">
+                                                                    {field.fieldValueOptions.map((option: string) => {
+                                                                        const currentValues = field.value?.split(",") || [];
+                                                                        const checked = currentValues.includes(option);
+                                                                        const newValue = checked
+                                                                            ? currentValues.filter((v) => v !== option).join(",")
+                                                                            : [...currentValues, option].join(",");
+
+                                                                        return (
+                                                                            <label key={option} className="mr-4">
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    value={option}
+                                                                                    checked={checked}
+                                                                                    onChange={() =>
+                                                                                        handleFieldChange(group.groupId, field.fieldId, newValue)
+                                                                                    }
+                                                                                    onKeyDown={(e) =>
+                                                                                        handleFieldSaveOnEnter(e, group.groupId, field.fieldId)
+                                                                                    }
+                                                                                />
+                                                                                {option}
+                                                                            </label>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            );
+
+                                                        case "Image":
+                                                            return (
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    placeholder="Upload an image"
+                                                                    onChange={async (e) => {
+                                                                        const file = e.target.files?.[0];
+                                                                        if (!file) return;
+
+                                                                        const uploadResult = await uploadImage(file);
+
+                                                                        if (uploadResult?.success) {
+                                                                            const uploadedUrl = uploadResult.fileUrl;
+                                                                            handleFieldChange(group.groupId, field.fieldId, uploadedUrl);
+                                                                            await saveFieldValue(group.groupId, field.fieldId, uploadedUrl);
+                                                                        } else {
+                                                                            console.error("Image upload failed:", uploadResult?.message || "Unknown error");
+                                                                            message.error("Image upload failed");
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            );
+
+                                                        default:
+                                                            return <span className="text-red-500">Unsupported field type</span>;
+                                                    }
+                                                })()}
+
                                             </div>
                                         ))}
-
                                     </Panel>
                                 ))}
                             </Collapse>
                         </div>
                     </TabPane>
+
 
                     <TabPane tab="Matching Preferences" key="2">
                         <div className="w-full">

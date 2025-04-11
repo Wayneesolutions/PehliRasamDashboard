@@ -34,7 +34,7 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
         position: "fixed",
         left: 0,
         top: 64,
-        zIndex: 1000,
+        zIndex: 900,
         borderRight: "1px solid #e0e0e0",
         overflowY: "auto",
       }}

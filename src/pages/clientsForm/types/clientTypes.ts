@@ -250,11 +250,12 @@ export  interface ClientList {
     attributeName: string;
     attributeType: string;
     attributeEnum: any[]; // Can be replaced with a more specific type if needed
-    attributeOption: string[]; // Assuming it's an array of strings
+    attributeOption: any[]; // Assuming it's an array of strings
   }
   
  export interface Group {
     _id: string;
+    groupId: string;
     groupName: string;
     fields: Field[];
   }

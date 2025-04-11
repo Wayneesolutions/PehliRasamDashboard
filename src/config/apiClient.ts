@@ -93,6 +93,51 @@ export const getFromGroupList = async () => {
     return (error as Error).response?.data;
   }
 }
+export const uploadImage = async (file: File) => {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await apiClient.post("/admin/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return response?.data;
+  } catch (error) {
+    return (error as any).response?.data;
+  }
+};
+export const addCustomerPhoto = async ({
+  customerId,
+  url,
+}: {
+  customerId: string;
+  url: string;
+}) => {
+  try {
+    const res = await apiClient.post("/admin/addCustomerPhoto", {
+      customerId,
+      url,
+    });
+    return res?.data;
+  } catch (error) {
+    return (error as any).response?.data;
+  }
+};
+
+// config/apiClient.ts
+export const addCustomerToClientList = async (payload: { clientListId: string; customerId: string }) => {
+  try {
+    const response = await apiClient.post("/admin/addCustomerToClientList", payload);
+    return response?.data;
+  }
+  catch (error: any) {
+    return error.response?.data;
+  }
+};
+
 
 export const getCustomerMatchPreferencesDetail = async (payload: { customerId: string }) => {
   try {

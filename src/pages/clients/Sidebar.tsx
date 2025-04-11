@@ -4,6 +4,7 @@ import { getCustomerBasicDetail, updateCustomerBasicDetail, uploadFile } from ".
 import { Customer } from "../../schema/customernew";
 import { message } from "antd";
 import { CustomerUpdate } from "../clientsForm/types/clientTypes";
+import ClientListManager from "./ClientList";
 
 type SidebarProps = {
   customerId: string;
@@ -309,7 +310,12 @@ const Sidebar = ({ customerId }: SidebarProps) => {
           </span>
         </div>
       </div>
-      <button className="bg-blue-500 text-white px-4 py-1 rounded mt-4">Set Location</button>
+
+      <ClientListManager
+  customerId={customerId}
+  fetchCustomerDetails={fetchCustomerDetails}
+/>
+
     </div>
   );
 };

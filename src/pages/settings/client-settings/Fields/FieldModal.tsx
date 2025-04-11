@@ -127,7 +127,7 @@ const FieldModal: React.FC<FieldModalProps> = ({ visible, onClose, editingField 
                         <Option value="select">Select</Option>
                         <Option value="radio">Radio</Option>
                         <Option value="checkbox">Checkbox</Option>
-                        <Option value="heading">Heading</Option>
+                        <Option value="Image">Image</Option>
                     </Select>
                 </Form.Item>
 
