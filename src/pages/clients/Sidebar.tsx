@@ -312,9 +312,8 @@ const Sidebar = ({ customerId }: SidebarProps) => {
       </div>
 
       <ClientListManager
-  customerId={customerId}
-  fetchCustomerDetails={fetchCustomerDetails}
-/>
+        customerId={customerId}
+      />
 
     </div>
   );

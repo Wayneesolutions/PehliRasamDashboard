@@ -6,7 +6,8 @@ import {
   getMatchGroupDetails,
   searchCustomerByName,
   createMatchGroupValue,
-} from "./Actions";
+  getMatchSuggestions
+} from "../../../config/apiClient";
 
 const ExpandableSection = ({ title, children }: { title: string; children: React.ReactNode }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -28,6 +29,9 @@ const ExpandableSection = ({ title, children }: { title: string; children: React
 
 const MatchesPage = () => {
   const { customerId } = useOutletContext<{ customerId: string }>();
+  const [matchSuggestions, setMatchSuggestions] = useState<any[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
   const [activeTab, setActiveTab] = useState<"matchGroups" | "suggestions">("matchGroups");
   const [showModal, setShowModal] = useState(false);
   const [groupList, setGroupList] = useState<any[]>([]);
@@ -50,7 +54,7 @@ const MatchesPage = () => {
       fetchGroups();
     }
   }, [customerId]);
-    
+
 
 
   const debouncedSearch = debounce(async (value: string) => {
@@ -78,21 +82,21 @@ const MatchesPage = () => {
 
   const handleCreate = async () => {
     if (!selectedClientId || !selectedGroupId || !description) return;
-  
+
     const payload = {
       matchGroupId: selectedGroupId,
       customerId,
       matchCustomerId: selectedClientId,
       matchingDescription: description,
     };
-  
+
     try {
       const res = await createMatchGroupValue(payload);
       message.success(res?.message || "Client match created successfully.");
-  
+
       // ✅ Fetch updated groups from API
       await fetchGroups();
-  
+
       // ✅ Reset modal state
       setShowModal(false);
       setSearchTerm("");
@@ -105,7 +109,24 @@ const MatchesPage = () => {
       message.error("Failed to create client match");
     }
   };
-  
+  useEffect(() => {
+    if (activeTab === "suggestions" && customerId) {
+      fetchSuggestions();
+    }
+  }, [activeTab, customerId]);
+
+  const fetchSuggestions = async () => {
+    try {
+      setLoadingSuggestions(true);
+      const suggestions = await getMatchSuggestions(customerId);
+      setMatchSuggestions(suggestions || []);
+    } catch (error) {
+      console.error("Failed to fetch match suggestions:", error);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -193,8 +214,32 @@ const MatchesPage = () => {
       )}
 
       {activeTab === "suggestions" && (
-        <div className="text-gray-400 text-sm text-center py-10">No suggestions available yet.</div>
+        <div className="p-4">
+          {loadingSuggestions ? (
+            <div className="text-center text-gray-500">Loading suggestions...</div>
+          ) : matchSuggestions.length === 0 ? (
+            <div className="text-gray-400 text-sm text-center py-10">
+              No suggestions available yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {matchSuggestions.map((suggestion, idx) => (
+                <div
+                  key={idx}
+                  className="bg-white p-4 rounded shadow hover:shadow-md transition-shadow"
+                >
+                  <h4 className="font-semibold text-gray-700">
+                    {suggestion.name || "Unnamed"}
+                  </h4>
+                  <p className="text-sm text-gray-500">{suggestion.email || "No email"}</p>
+                  {/* Add more fields if available */}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
+
 
       {/* Modal */}
 

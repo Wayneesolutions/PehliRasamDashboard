@@ -51,6 +51,29 @@ apiClient.interceptors.response.use(
 
 export default apiClient;
 
+
+
+//submission form for client
+export const submissionFormById = async (submissionFormId: string) => {
+  try {
+    const response = await apiClient.post('admin/SubmissionFormById', { submissionFormId: submissionFormId })
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
+//submit form by client
+export const submitSubmissionForm = async (payload: any) => {
+  try {
+    const response = await apiClient.post('/client/SubmissionFormDetail', payload);
+    return response?.data;
+  } catch (error) {
+    return (error as any).response?.data;
+  }
+};
+
+
 export const addCustomerByAdmin = async (data: AddClientFormData) => {
   try {
     const response = await apiClient.post('admin/addCustomerByAdmin', data)
@@ -127,7 +150,6 @@ export const addCustomerPhoto = async ({
   }
 };
 
-// config/apiClient.ts
 export const addCustomerToClientList = async (payload: { clientListId: string; customerId: string }) => {
   try {
     const response = await apiClient.post("/admin/addCustomerToClientList", payload);
@@ -138,6 +160,15 @@ export const addCustomerToClientList = async (payload: { clientListId: string; c
   }
 };
 
+export const removeCustomerToClientList = async (payload: { clientListId: string; customerId: string }) => {
+  try {
+    const response = await apiClient.post("/admin/removeCustomerFromClientList", payload);
+    return response?.data;
+  }
+  catch (error: any) {
+    return error.response?.data;
+  }
+};
 
 export const getCustomerMatchPreferencesDetail = async (payload: { customerId: string }) => {
   try {
@@ -256,3 +287,27 @@ export const editClientList = async (data: ClientList) => {
 }
 
 
+export const getMatchGroupDetails = async (customerId: string) => {
+  const res = await apiClient.post("/admin/getMatchGroupDetails", { customerId });
+  return res.data.data;
+};
+
+export const getMatchSuggestions = async (customerId: string) => {
+  const res = await apiClient.post("/admin/matchingSuggestions", { customerId });
+  return res.data.data;
+};
+
+  export const searchCustomerByName = async (name: string) => {
+    const res = await apiClient.post("/admin/searchCustomerByName", { name });
+    return res.data.data;
+  };
+  
+  export const createMatchGroupValue = async (payload: {
+    matchGroupId: string;
+    customerId: string;
+    matchCustomerId: string;
+    matchingDescription: string;
+  }) => {
+    const res = await apiClient.post("/admin/createMatchGroupValue", payload);
+    return res.data;
+  };
