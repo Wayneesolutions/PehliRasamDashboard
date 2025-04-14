@@ -424,21 +424,26 @@ const Suggestions = () => {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [gender, setGender] = useState<string | null>(null);
 
-    useEffect(() => {
-        const isRegistered = localStorage.getItem("isRegistered");
-        const registeredGender = localStorage.getItem("registeredGender");
+    // useEffect(() => {
+    //     const isRegistered = localStorage.getItem("isRegistered");
+    //     const registeredGender = localStorage.getItem("registeredGender");
 
-        if (!isRegistered) {
-            navigate("/submissionform");
-            return;
-        }
+    //     if (!isRegistered) {
+    //         navigate("/submissionform");
+    //         return;
+    //     }
 
-        setGender(registeredGender);
-    }, [navigate]);
+    //     setGender(registeredGender);
+    // }, [navigate]);
 
     // Filter suggestions based on gender
-    const filteredSuggestions = suggestionsData.filter((person) => person.gender.toLowerCase() === gender?.toLowerCase());
-
+    // const filteredSuggestions = suggestionsData.filter((person) => person.gender.toLowerCase() === gender?.toLowerCase());
+    const filteredSuggestions = gender
+    ? suggestionsData.filter(
+        (person) => person.gender.toLowerCase() === gender.toLowerCase()
+      )
+    : suggestionsData;
+  
     const loadMore = () => {
         setVisibleCount((prevCount) => Math.min(prevCount + 12, filteredSuggestions.length));
     };

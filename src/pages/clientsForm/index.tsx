@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { submissionFormById, submitSubmissionForm, uploadImage } from "../../config/apiClient";
-import { Form, Input, Select, Button, Row, Col, Card, message } from "antd";
+import { Form, Input, Select, Button, Row, Col, Card, message, DatePicker } from "antd";
+import type { Dayjs } from "dayjs";
 import logo from "../../components/images/logo.png";
 
 type FormValues = {
@@ -10,6 +11,7 @@ type FormValues = {
         middleName: string;
         lastName: string;
         email: string;
+        Number: string;
         address: {
             street: string;
             city: string;
@@ -25,6 +27,7 @@ const basicDetailKeys: Array<keyof FormValues["BasicDetail"]> = [
     "middleName",
     "lastName",
     "email",
+    "Number",
 ];
 
 const addressKeys: Array<keyof FormValues["BasicDetail"]["address"]> = [
@@ -45,6 +48,7 @@ const Index = () => {
                 middleName: "",
                 lastName: "",
                 email: "",
+                Number: "",
                 address: {
                     street: "",
                     city: "",
@@ -67,6 +71,7 @@ const Index = () => {
                     middleName: data.BasicDetail.middleName,
                     lastName: data.BasicDetail.lastName,
                     email: data.BasicDetail.email,
+                    Number: data.BasicDetail.Number, // Include the new field
                     address: {
                         street: data.BasicDetail.address.street,
                         city: data.BasicDetail.address.city,
@@ -164,68 +169,136 @@ const Index = () => {
 
     if (loading) return <div>Loading...</div>;
 
-    const renderFieldByType = (field: any, name: string, options: string[] = []) => {
-        const rules = field.attributeStatus ? { required: `${field.attributeName} is required` } : {};
+    const requiredBasicFields = ["firstName", "lastName", "email", "Number"];
+    const requiredProfileFieldNames = ["Gender"];
 
-        switch (field.attributeType) {
-            case "text":
-                return (
-                    <Controller
-                        name={name as `profile.${string}` | `match.${string}`}
-                        control={control}
-                        rules={rules}
-                        render={({ field: controllerField }) => (
-                            <Input {...controllerField} placeholder={field.attributePlaceHolder} />
-                        )}
-                    />
-                );
-            case "select":
-                return (
-                    <Controller
-                        name={name as `profile.${string}` | `match.${string}`}
-                        control={control}
-                        rules={rules}
-                        render={({ field: controllerField }) => (
-                            <Select
-                                {...controllerField}
-                                placeholder={field.attributePlaceHolder}
-                                onChange={controllerField.onChange}
-                            >
-                                {options.map((opt) => (
-                                    <Select.Option key={opt} value={opt}>
-                                        {opt}
-                                    </Select.Option>
-                                ))}
-                            </Select>
-                        )}
-                    />
-                );
-            case "Image":
-                return (
-                    <>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                    await handleImageUpload(field._id, file);
-                                }
-                            }}
+    const renderFieldByType = (field: any, name: string, options: string[] = []) => {
+        const rules = requiredProfileFieldNames.includes(field.attributeName)
+            ? { required: `${field.attributeName} is required` }
+            : undefined;
+
+        if (field.attributeName.toLowerCase().includes("birthday")) {
+            return (
+                <Controller
+                    name={name}
+                    control={control}
+                    rules={rules}
+                    render={({ field: controllerField }) => (
+                        <DatePicker
+                            {...controllerField}
+                            format="YYYY-MM-DD"
+                            className="w-full"
+                            placeholder={field.attributePlaceHolder}
+                            onChange={(date, dateString) =>
+                                controllerField.onChange(
+                                    typeof dateString === "string" ? dateString : dateString[0]
+                                )
+                            }
                         />
-                        {uploadedImages[field._id] && (
-                            <img
-                                src={uploadedImages[field._id]}
-                                alt="Uploaded"
-                                className="mt-2 rounded border w-32"
-                            />
-                        )}
-                    </>
-                );
-            default:
-                return <Input disabled placeholder="Unsupported field type" />;
+                    )}
+                />
+            );
         }
+
+        if (field.attributeName.toLowerCase().includes("height")) {
+            const heightOptions: string[] = [];
+            for (let feet = 4; feet <= 7; feet++) {
+                for (let inch = 0; inch <= 11; inch++) {
+                    heightOptions.push(`${feet}'${inch}"`);
+                }
+            }
+
+            return (
+                <Controller
+                    name={name}
+                    control={control}
+                    rules={rules}
+                    render={({ field: controllerField }) => (
+                        <Select
+                            {...controllerField}
+                            className="w-full"
+                            placeholder={field.attributePlaceHolder || "Select Height"}
+                            onChange={controllerField.onChange}
+                            value={controllerField.value}
+                        >
+                            {heightOptions.map((opt) => (
+                                <Select.Option key={opt} value={opt}>
+                                    {opt}
+                                </Select.Option>
+                            ))}
+                        </Select>
+                    )}
+                />
+            );
+        }
+
+        // 📝 Default text
+        if (field.attributeType === "text") {
+            return (
+                <Controller
+                    name={name}
+                    control={control}
+                    rules={rules}
+                    render={({ field: controllerField }) => (
+                        <Input {...controllerField} placeholder={field.attributePlaceHolder} />
+                    )}
+                />
+            );
+        }
+
+        // 📋 Dropdowns
+        if (field.attributeType === "select") {
+            return (
+                <Controller
+                    name={name}
+                    control={control}
+                    rules={rules}
+                    render={({ field: controllerField }) => (
+                        <Select
+                            {...controllerField}
+                            placeholder={field.attributePlaceHolder}
+                            onChange={controllerField.onChange}
+                            value={controllerField.value}
+                        >
+                            {options.map((opt) => (
+                                <Select.Option key={opt} value={opt}>
+                                    {opt}
+                                </Select.Option>
+                            ))}
+                        </Select>
+                    )}
+                />
+            );
+        }
+
+        // 🖼️ Image upload
+        if (field.attributeType === "Image") {
+            return (
+                <>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                                await handleImageUpload(field._id, file);
+                            }
+                        }}
+                    />
+                    {uploadedImages[field._id] && (
+                        <img
+                            src={uploadedImages[field._id]}
+                            alt="Uploaded"
+                            className="mt-2 rounded border w-32"
+                        />
+                    )}
+                </>
+            );
+        }
+
+        return <Input disabled placeholder="Unsupported field type" />;
     };
+
 
 
     return (
@@ -245,7 +318,8 @@ const Index = () => {
                                     <Controller
                                         name={`BasicDetail.${key}` as const}
                                         control={control}
-                                        rules={{ required: `${key} is required` }}
+                                        rules={requiredBasicFields.includes(key) ? { required: `${key} is required` } : undefined}
+
                                         defaultValue={formData?.BasicDetail?.[key] ?? ""}
                                         render={({ field }) => (
                                             <Input
@@ -281,23 +355,30 @@ const Index = () => {
                         <div key={group._id}>
                             <h4 className="text-lg font-medium text-[rgb(174,8,71)] mt-5 mb-3">{group.group?.name}</h4>
                             <Row gutter={16}>
-                                {group.fields.map((field: any) => (
-                                    <Col span={12} key={field._id} className="mb-4">
-                                        <Form.Item
-                                            label={
-                                                <>
-                                                    {field.attributeName}
-                                                    {field.attributeStatus && <span className="text-red-500 ml-1">*</span>}
-                                                </>
-                                            }
-                                        >
-                                            {renderFieldByType(field, `profile.${field._id}`, field.attributeOption)}
-                                        </Form.Item>
-                                    </Col>
-                                ))}
+                                {group.fields.map((field: any) => {
+                                    const name = `profile.${field.attributeName}`; // Use attributeName consistently
+                                    return (
+                                        <Col span={12} key={field._id} className="mb-4">
+                                            <Form.Item
+                                                label={
+                                                    <>
+                                                        {field.attributeName}
+                                                        {(requiredProfileFieldNames.includes(field.attributeName) || field.attributeStatus) && (
+                                                            <span className="text-red-500 ml-1">*</span>
+                                                        )}
+                                                    </>
+                                                }
+                                            >
+                                                {renderFieldByType(field, name, field.attributeOption)}
+                                            </Form.Item>
+                                        </Col>
+                                    );
+                                })}
                             </Row>
                         </div>
                     ))}
+
+
 
 
                     {formData?.matchDetails?.map((group: any) => (
