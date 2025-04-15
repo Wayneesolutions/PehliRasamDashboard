@@ -131,8 +131,16 @@ const Fields = () => {
     const preferenceFieldColumns = [
         { title: "Label", dataIndex: "label", key: "label" },
         { title: "Profile Field", dataIndex: "profileField", key: "profileField" },
+        { title: "Help Text", dataIndex: "helpText", key: "helpText" },
         { title: "Client Types", dataIndex: "clientTypes", key: "clientTypes" },
         { title: "Weight", dataIndex: "weight", key: "weight" },
+        {
+            title: "Choices",
+            dataIndex: "choices",
+            key: "choices",
+            render: (choices: string[] | undefined) =>
+                choices?.length ? choices.join(", ") : "-",
+        },
         {
             title: "Use in Match",
             dataIndex: "useInMatch",
@@ -162,81 +170,81 @@ const Fields = () => {
         },
     ];
 
+
     return (
         <div style={{ padding: 20 }}>
             {/* Preference Fields */}
-      {/* Preference Fields */}
-<div className="flex justify-between items-center mb-6">
-    <Title level={4} className="!mb-0">Preference Fields</Title>
-    <Space>
-        <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-                setEditingField(null);
-                setFieldModalVisible(true);
-            }}
-        >
-            Add Field
-        </Button>
-        <Button
-            icon={<PlusOutlined />}
-            onClick={() => {
-                setEditingGroup(null);
-                setGroupModalVisible(true);
-            }}
-        >
-            Add Group
-        </Button>
-    </Space>
-</div>
+            <div className="flex justify-between items-center mb-6">
+                <Title level={4} className="!mb-0">Preference Fields</Title>
+                <Space>
+                    <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() => {
+                            setEditingField(null);
+                            setFieldModalVisible(true);
+                        }}
+                    >
+                        Add Field
+                    </Button>
+                    <Button
+                        icon={<PlusOutlined />}
+                        onClick={() => {
+                            setEditingGroup(null);
+                            setGroupModalVisible(true);
+                        }}
+                    >
+                        Add Group
+                    </Button>
+                </Space>
+            </div>
 
-<Collapse accordion>
-    {groups.map((group: Group) => (
-        <Panel
-            header={
-                <div className="flex justify-between items-center w-full pr-4">
-                    <span>{group.name}</span>
-                    <Space>
-                        <EditOutlined
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingGroup(group);
-                                setGroupModalVisible(true);
-                            }}
+            <Collapse accordion>
+                {groups.map((group: Group) => (
+                    <Panel
+                        header={
+                            <div className="flex justify-between items-center w-full pr-4">
+                                <span>{group.name}</span>
+                                <Space>
+                                    <EditOutlined
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingGroup(group);
+                                            setGroupModalVisible(true);
+                                        }}
+                                    />
+                                    <DeleteOutlined
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            showDeleteConfirm(group._id, "group");
+                                        }}
+                                    />
+                                </Space>
+                            </div>
+                        }
+                        key={group._id}
+                    >
+                        <Table
+                            columns={preferenceFieldColumns}
+                            dataSource={group.formFields}
+                            pagination={false}
+                            rowKey="_id"
                         />
-                        <DeleteOutlined
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                showDeleteConfirm(group._id, "group");
+                        <Button
+                            type="dashed"
+                            icon={<PlusOutlined />}
+                            className="mt-4"
+                            onClick={() => {
+                                setSelectedGroup(group);
+                                setEditingField(null);
+                                setFieldModalVisible(true);
                             }}
-                        />
-                    </Space>
-                </div>
-            }
-            key={group._id}
-        >
-            <Table
-                columns={preferenceFieldColumns}
-                dataSource={group.formFields}
-                pagination={false}
-                rowKey="_id"
-            />
-            <Button
-                type="dashed"
-                icon={<PlusOutlined />}
-                className="mt-4"
-                onClick={() => {
-                    setSelectedGroup(group);
-                    setEditingField(null);
-                    setFieldModalVisible(true);
-                }}
-            >
-                Add Field to {group.name}
-            </Button>
-        </Panel>
-    ))}
-</Collapse>
+                        >
+                            Add Field to {group.name}
+                        </Button>
+                    </Panel>
+                ))}
+            </Collapse>
 
 
             {/* Match Groups */}

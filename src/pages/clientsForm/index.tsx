@@ -1,9 +1,31 @@
 import { useEffect, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, Control, FieldPath } from "react-hook-form";
 import { submissionFormById, submitSubmissionForm, uploadImage } from "../../config/apiClient";
 import { Form, Input, Select, Button, Row, Col, Card, message, DatePicker } from "antd";
-import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
+
+
+
 import logo from "../../components/images/logo.png";
+
+
+interface Field {
+    _id: string;
+    label: string;
+    attributeName: string;
+    attributeType: string;
+    attributeOption?: string[];
+    attributePlaceHolder?: string;
+}
+
+
+interface Group {
+    group: { _id: string };
+    fields: Field[];
+}
+
+
 
 type FormValues = {
     BasicDetail: {
@@ -36,7 +58,27 @@ const addressKeys: Array<keyof FormValues["BasicDetail"]["address"]> = [
     "stateOrProvince",
     "postalCode",
 ];
+
+type CustomField = {
+    _id: string;
+    label: string;
+    attributeName: string;
+    attributeType: "text" | "select" | "Image";
+    attributePlaceHolder?: string;
+};
+
+interface RenderFieldProps {
+    field: CustomField;
+    name: FieldPath<FormValues>;
+    options?: string[];
+    control: Control<FormValues>;
+    requiredProfileFieldNames: string[];
+    handleImageUpload: (fieldId: string, file: File) => Promise<void>;
+    uploadedImages: Record<string, string>;
+}
+
 const Index = () => {
+    const navigate = useNavigate();
     const [formData, setFormData] = useState<any>(null);
     const [uploadedImages, setUploadedImages] = useState<Record<string, string>>({});
 
@@ -61,7 +103,7 @@ const Index = () => {
         },
     });
 
-    const [backendMessage, setBackendMessage] = useState<string | null>(null);
+    const [, setBackendMessage] = useState<string | null>(null);
 
     const onSubmit = async (data: any) => {
         try {
@@ -71,7 +113,7 @@ const Index = () => {
                     middleName: data.BasicDetail.middleName,
                     lastName: data.BasicDetail.lastName,
                     email: data.BasicDetail.email,
-                    Number: data.BasicDetail.Number, // Include the new field
+                    Number: data.BasicDetail.Number,
                     address: {
                         street: data.BasicDetail.address.street,
                         city: data.BasicDetail.address.city,
@@ -81,62 +123,88 @@ const Index = () => {
                 },
             };
 
-            // Only include ProfileDetails if they are filled
-            if (formData?.ProfileDetails) {
-                payload.ProfileDetails = formData.ProfileDetails.map((group: any) => {
-                    const filledFields = group.fields
-                        .filter((field: any) => data.profile?.[field._id] && data.profile?.[field._id] !== "") // Only include non-empty fields
-                        .map((field: any) => ({
-                            fieldId: field._id,
-                            value: data.profile?.[field._id] || "", // Default to empty if not filled
-                        }));
+            // ✅ ProfileDetails logic...
+            if (formData?.ProfileDetails && Array.isArray(formData.ProfileDetails)) {
+                const profileGroups = (formData.ProfileDetails as Group[])
+                    .map((group: Group) => {
+                        const filledFields = group.fields
+                            .filter((field: Field) => {
+                                const value = data.profile?.[field.attributeName];
+                                return value !== undefined && value !== null && value !== "";
+                            })
+                            .map((field: Field) => {
+                                const fieldValue = data.profile[field.attributeName];
 
-                    if (filledFields.length > 0) {
-                        return {
-                            group: group.group._id,
-                            fields: filledFields,
-                        };
-                    }
-                    return null; // Skip groups with all empty fields
-                }).filter((group: any) => group !== null); // Remove null groups
+                                // ✅ Store gender in localStorage if this field is gender
+                                if (field.attributeName.toLowerCase() === "gender") {
+                                    localStorage.setItem("gender", fieldValue);
+                                }
+
+                                return {
+                                    fieldId: field._id,
+                                    value: fieldValue,
+                                };
+                            });
+
+                        if (filledFields.length > 0) {
+                            return {
+                                group: group.group._id,
+                                fields: filledFields,
+                            };
+                        }
+                        return null;
+                    })
+                    .filter((group): group is { group: string; fields: { fieldId: string; value: any }[] } => group !== null);
+
+                payload.ProfileDetails = profileGroups;
             }
 
-            // Only include matchDetails if they are filled
-            if (formData?.matchDetails) {
-                payload.matchDetails = formData.matchDetails.map((group: any) => {
+
+
+            // ✅ MatchDetails logic...
+            if (formData?.matchDetails && data.match) {
+                const matchGroups = formData.matchDetails.map((group: any) => {
                     const filledFields = group.fields
-                        .filter((field: any) => data.match?.[field._id] && data.match?.[field._id] !== "") // Only include non-empty fields
+                        .filter((field: any) => {
+                            const value = data.match?.[field._id];
+                            return value !== undefined && value !== null && value !== "";
+                        })
                         .map((field: any) => ({
                             fieldId: field._id,
-                            value: data.match?.[field._id] || "", // Default to empty if not filled
+                            value: data.match[field._id],
                         }));
 
-                    if (filledFields.length > 0) {
-                        return {
-                            group: group.group._id,
-                            fields: filledFields,
-                        };
-                    }
-                    return null; // Skip groups with all empty fields
-                }).filter((group: any) => group !== null); // Remove null groups
+                    return {
+                        group: group.group._id,
+                        fields: filledFields,
+                    };
+                });
+
+                payload.matchDetails = matchGroups;
             }
 
             const response = await submitSubmissionForm(payload);
             console.log("Submission successful:", response);
 
             if (response.success) {
-                setBackendMessage(response.message); // Display success message
-                message.success(response.message); // Show success notification
+                localStorage.setItem("isRegistered", "true");
+                setBackendMessage(response.message);
+                message.success(response.message);
+                navigate("/suggestions");
             } else {
                 setBackendMessage("Submission failed, please try again later.");
-                message.error("Submission failed, please try again later."); // Show error notification
+                message.error("Submission failed, please try again later.");
             }
         } catch (error) {
             console.error("Submission error:", error);
             setBackendMessage("Submission failed, please try again later.");
-            message.error("Submission failed, please try again later."); // Show error notification
+            message.error("Submission failed, please try again later.");
         }
     };
+
+
+
+
     const handleImageUpload = async (fieldId: string, file: File) => {
         try {
             const response = await uploadImage(file);
@@ -169,15 +237,38 @@ const Index = () => {
 
     if (loading) return <div>Loading...</div>;
 
-    const requiredBasicFields = ["firstName", "lastName", "email", "Number"];
-    const requiredProfileFieldNames = ["Gender"];
+    const requiredBasicFields: Array<keyof FormValues["BasicDetail"]> = [
+        "firstName",
+        "lastName",
+        "email",
+        "Number",
+    ];
+    const requiredProfileFieldNames = ["Gender", "Religion"];
+    const requiredMatchFieldLabels = ["Preferred Gender", "Preferred Religion"];
 
-    const renderFieldByType = (field: any, name: string, options: string[] = []) => {
-        const rules = requiredProfileFieldNames.includes(field.attributeName)
-            ? { required: `${field.attributeName} is required` }
-            : undefined;
+    const renderFieldByType = ({
+        field,
+        name,
+        options = [],
+        control,
+        requiredProfileFieldNames,
+        requiredBasicFields,
+        requiredMatchFieldLabels,
+        handleImageUpload,
+        uploadedImages,
+    }: RenderFieldProps & {
+        requiredProfileFieldNames: string[];
+        requiredBasicFields: Array<keyof FormValues["BasicDetail"]>;
+        requiredMatchFieldLabels: string[];
+    }) => {
+        const isProfileRequired = requiredProfileFieldNames.includes(field.attributeName);
+        const isBasicRequired = requiredBasicFields.includes(field.attributeName as keyof FormValues["BasicDetail"]);
+        const isMatchRequired = requiredMatchFieldLabels.includes(field.label);
+        const isRequired = isProfileRequired || isBasicRequired || isMatchRequired;
+        const rules = isRequired ? { required: `${field.attributeName || field.label} is required` } : undefined;
 
-        if (field.attributeName.toLowerCase().includes("birthday")) {
+        // Date field (Birthday, etc.)
+        if (field.attributeName?.toLowerCase().includes("birthday")) {
             return (
                 <Controller
                     name={name}
@@ -189,10 +280,13 @@ const Index = () => {
                             format="YYYY-MM-DD"
                             className="w-full"
                             placeholder={field.attributePlaceHolder}
-                            onChange={(date, dateString) =>
-                                controllerField.onChange(
-                                    typeof dateString === "string" ? dateString : dateString[0]
-                                )
+                            value={
+                                typeof controllerField.value === "string" || typeof controllerField.value === "number"
+                                    ? dayjs(controllerField.value)
+                                    : null
+                            }
+                            onChange={(date) =>
+                                controllerField.onChange(date ? date.format("YYYY-MM-DD") : "")
                             }
                         />
                     )}
@@ -200,14 +294,14 @@ const Index = () => {
             );
         }
 
-        if (field.attributeName.toLowerCase().includes("height")) {
+        // Height field (Height selector)
+        if (field.attributeName?.toLowerCase().includes("height")) {
             const heightOptions: string[] = [];
             for (let feet = 4; feet <= 7; feet++) {
                 for (let inch = 0; inch <= 11; inch++) {
                     heightOptions.push(`${feet}'${inch}"`);
                 }
             }
-
             return (
                 <Controller
                     name={name}
@@ -232,7 +326,6 @@ const Index = () => {
             );
         }
 
-        // 📝 Default text
         if (field.attributeType === "text") {
             return (
                 <Controller
@@ -240,13 +333,20 @@ const Index = () => {
                     control={control}
                     rules={rules}
                     render={({ field: controllerField }) => (
-                        <Input {...controllerField} placeholder={field.attributePlaceHolder} />
+                        <Input
+                            {...controllerField}
+                            placeholder={field.attributePlaceHolder || "Enter text"}
+                            value={String(controllerField.value || "")} // Ensuring value is always a string
+                            onChange={(e) => controllerField.onChange(e.target.value)} // Manually handling input changes
+                        />
                     )}
                 />
             );
         }
 
-        // 📋 Dropdowns
+
+
+        // Select field (dropdown)
         if (field.attributeType === "select") {
             return (
                 <Controller
@@ -256,7 +356,7 @@ const Index = () => {
                     render={({ field: controllerField }) => (
                         <Select
                             {...controllerField}
-                            placeholder={field.attributePlaceHolder}
+                            placeholder={field.attributePlaceHolder || "Select"}
                             onChange={controllerField.onChange}
                             value={controllerField.value}
                         >
@@ -271,10 +371,10 @@ const Index = () => {
             );
         }
 
-        // 🖼️ Image upload
+        // Image upload field
         if (field.attributeType === "Image") {
             return (
-                <>
+                <div>
                     <input
                         type="file"
                         accept="image/*"
@@ -289,15 +389,19 @@ const Index = () => {
                         <img
                             src={uploadedImages[field._id]}
                             alt="Uploaded"
-                            className="mt-2 rounded border w-32"
+                            className="mt-2 rounded border w-32 h-auto"
                         />
                     )}
-                </>
+                </div>
             );
         }
 
+        // Fallback for unsupported field types
         return <Input disabled placeholder="Unsupported field type" />;
     };
+
+
+
 
 
 
@@ -314,12 +418,18 @@ const Index = () => {
                     <Row gutter={16}>
                         {basicDetailKeys.map((key) => (
                             <Col span={12} key={key} className="mb-4">
-                                <Form.Item label={key.charAt(0).toUpperCase() + key.slice(1)}>
+                                <Form.Item
+                                    label={`${key.charAt(0).toUpperCase() + key.slice(1)}`}
+                                    required={requiredBasicFields.includes(key)}
+                                >
                                     <Controller
                                         name={`BasicDetail.${key}` as const}
                                         control={control}
-                                        rules={requiredBasicFields.includes(key) ? { required: `${key} is required` } : undefined}
-
+                                        rules={
+                                            requiredBasicFields.includes(key)
+                                                ? { required: `${key} is required` }
+                                                : undefined
+                                        }
                                         defaultValue={formData?.BasicDetail?.[key] ?? ""}
                                         render={({ field }) => (
                                             <Input
@@ -328,7 +438,6 @@ const Index = () => {
                                                 placeholder={`Enter ${key}`}
                                             />
                                         )}
-
                                     />
                                 </Form.Item>
                             </Col>
@@ -353,23 +462,37 @@ const Index = () => {
 
                     {formData?.ProfileDetails?.map((group: any) => (
                         <div key={group._id}>
-                            <h4 className="text-lg font-medium text-[rgb(174,8,71)] mt-5 mb-3">{group.group?.name}</h4>
+                            <h4 className="text-lg font-medium text-[rgb(174,8,71)] mt-5 mb-3">
+                                {group.group?.name}
+                            </h4>
                             <Row gutter={16}>
                                 {group.fields.map((field: any) => {
-                                    const name = `profile.${field.attributeName}`; // Use attributeName consistently
+                                    // Ensure correct name formatting
+                                    const name = `profile.${field.attributeName}` as FieldPath<FormValues>;
+
                                     return (
                                         <Col span={12} key={field._id} className="mb-4">
                                             <Form.Item
                                                 label={
                                                     <>
                                                         {field.attributeName}
-                                                        {(requiredProfileFieldNames.includes(field.attributeName) || field.attributeStatus) && (
+                                                        {requiredProfileFieldNames.includes(field.attributeName) && (
                                                             <span className="text-red-500 ml-1">*</span>
                                                         )}
                                                     </>
                                                 }
                                             >
-                                                {renderFieldByType(field, name, field.attributeOption)}
+                                                {renderFieldByType({
+                                                    field,
+                                                    name: name as FieldPath<FormValues>,
+                                                    options: field.attributeOption,
+                                                    control,
+                                                    requiredProfileFieldNames,
+                                                    requiredBasicFields,
+                                                    requiredMatchFieldLabels,
+                                                    handleImageUpload,
+                                                    uploadedImages,
+                                                })}
                                             </Form.Item>
                                         </Col>
                                     );
@@ -377,6 +500,7 @@ const Index = () => {
                             </Row>
                         </div>
                     ))}
+
 
 
 
@@ -391,7 +515,9 @@ const Index = () => {
                                             label={
                                                 <>
                                                     {field.label}
-                                                    {field.dealBreak && <span className="text-red-500 ml-1">*</span>}
+                                                    {requiredMatchFieldLabels.includes(field.label) && (
+                                                        <span className="text-red-500 ml-1">*</span>
+                                                    )}
                                                 </>
                                             }
                                         >
@@ -416,7 +542,6 @@ const Index = () => {
                     </Form.Item>
                 </Form>
             </Card>
-            {backendMessage && <div className="mt-4 text-center text-lg font-semibold">{backendMessage}</div>}
         </div>
     );
 };

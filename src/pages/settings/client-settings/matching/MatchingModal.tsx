@@ -8,11 +8,13 @@ interface Field {
     _id: string;
     label: string;
     profileField: string;
+    helpText?: string;
     clientTypes?: string;
     weight?: "Low" | "Medium" | "High";
     useInMatch?: boolean;
     dealBreak?: boolean;
     preferencesGroupId: string;
+    choices?: string[]; // Added this
 }
 
 interface Group {
@@ -28,31 +30,37 @@ interface FieldModalProps {
     fetchGroups: () => Promise<void>;
 }
 
-const MatchingModal: React.FC<FieldModalProps> = ({ visible, onClose, editingField }) => {
+const MatchingModal: React.FC<FieldModalProps> = ({ visible, onClose, editingField, fetchGroups }) => {
     const [form] = Form.useForm();
     const [groups, setGroups] = useState<Group[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
+    const [selectedProfileField, setSelectedProfileField] = useState<string | undefined>();
 
     useEffect(() => {
         if (visible) {
-            fetchGroups();
+            fetchGroupList();
             if (editingField) {
+                setSelectedProfileField(editingField.profileField);
                 form.setFieldsValue({
                     label: editingField.label,
                     profileField: editingField.profileField,
+                    helpText: editingField.helpText || "",
                     clientTypes: editingField.clientTypes || "General",
                     weight: editingField.weight || "Medium",
                     useInMatch: editingField.useInMatch ?? false,
                     dealBreak: editingField.dealBreak ?? false,
                     preferencesGroupId: editingField.preferencesGroupId,
+                    choices: editingField.choices || [],
                 });
             } else {
                 form.resetFields();
+                setSelectedProfileField(undefined);
+                form.setFieldValue("choices", []);
             }
         }
     }, [visible, editingField, form]);
 
-    const fetchGroups = async () => {
+    const fetchGroupList = async () => {
         try {
             const response = await apiClient.get("/admin/allPreferencesGroupList");
             setGroups(response.data.data || []);
@@ -65,16 +73,20 @@ const MatchingModal: React.FC<FieldModalProps> = ({ visible, onClose, editingFie
     const handleFinish = async (values: any) => {
         try {
             setLoading(true);
-
-            const payload = {
+            const payload: any = {
                 label: values.label,
                 profileField: values.profileField,
+                helpText: values.helpText || "",
                 clientTypes: values.clientTypes || "General",
                 weight: values.weight || "Medium",
                 useInMatch: values.useInMatch ?? false,
                 dealBreak: values.dealBreak ?? false,
                 preferencesGroupId: values.preferencesGroupId,
             };
+
+            if (values.profileField === "select") {
+                payload.choices = values.choices || [];
+            }
 
             if (editingField) {
                 await apiClient.post("/admin/updatePreferencesField", {
@@ -87,8 +99,8 @@ const MatchingModal: React.FC<FieldModalProps> = ({ visible, onClose, editingFie
                 message.success("Field created successfully!");
             }
 
-            await fetchGroups(); // ✅ Re-fetch updated data
-            onClose(); // ✅ Then close modal
+            await fetchGroups();
+            onClose();
         } catch (error) {
             console.error("Error in handleFinish:", error);
             message.error("Failed to create or update the field.");
@@ -97,12 +109,24 @@ const MatchingModal: React.FC<FieldModalProps> = ({ visible, onClose, editingFie
         }
     };
 
-
     return (
-        <Modal title={editingField ? "Edit Field" : "Create Field"} open={visible} onCancel={onClose} footer={null}>
+        <Modal
+            title={editingField ? "Edit Field" : "Create Field"}
+            open={visible}
+            onCancel={onClose}
+            footer={null}
+        >
             <Form form={form} onFinish={handleFinish} layout="vertical">
-                <Form.Item name="preferencesGroupId" label="Group" rules={[{ required: true, message: "Please select a group" }]}>
-                    <Select placeholder="Select a group" disabled={!!editingField} loading={groups.length === 0}>
+                <Form.Item
+                    name="preferencesGroupId"
+                    label="Group"
+                    rules={[{ required: true, message: "Please select a group" }]}
+                >
+                    <Select
+                        placeholder="Select a group"
+                        disabled={!!editingField}
+                        loading={groups.length === 0}
+                    >
                         {groups.map((group) => (
                             <Option key={group._id} value={group._id}>
                                 {group.name}
@@ -111,12 +135,54 @@ const MatchingModal: React.FC<FieldModalProps> = ({ visible, onClose, editingFie
                     </Select>
                 </Form.Item>
 
-                <Form.Item name="label" label="Label" rules={[{ required: true, message: "Please enter label" }]}>
+                <Form.Item
+                    name="label"
+                    label="Label"
+                    rules={[{ required: true, message: "Please enter label" }]}
+                >
                     <Input />
                 </Form.Item>
 
-                <Form.Item name="profileField" label="Profile Field" rules={[{ required: true, message: "Please enter profile field" }]}>
-                    <Input />
+                <Form.Item
+                    name="profileField"
+                    label="Profile Field"
+                    rules={[{ required: true, message: "Please select profile field type" }]}
+                >
+                    <Select
+                        placeholder="Select profile field type"
+                        onChange={(value) => {
+                            setSelectedProfileField(value);
+                            if (value === "select") {
+                                form.setFieldValue("choices", []);
+                            } else {
+                                form.setFieldValue("choices", undefined);
+                            }
+                        }}
+                    >
+                        <Option value="long text">Long Text</Option>
+                        <Option value="select">Select</Option>
+                        <Option value="number">Number</Option>
+                        <Option value="date">Date</Option>
+                        <Option value="height">Height</Option>
+                    </Select>
+                </Form.Item>
+
+                {(selectedProfileField === "select" || selectedProfileField === "multiselect") && (
+                    <Form.Item
+                        name="choices"
+                        label="Choices"
+                        rules={[{ required: true, message: "Please enter at least one choice" }]}
+                    >
+                        <Select
+                            mode="tags"
+                            style={{ width: "100%" }}
+                            placeholder="Enter choices and press Enter"
+                        />
+                    </Form.Item>
+                )}
+
+                <Form.Item name="helpText" label="Help Text">
+                    <Input.TextArea rows={2} placeholder="Add help text for this field (optional)" />
                 </Form.Item>
 
                 <Form.Item name="clientTypes" label="Client Type">

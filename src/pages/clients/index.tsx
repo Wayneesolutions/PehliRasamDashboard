@@ -142,7 +142,7 @@ const Clients: React.FC = () => {
           <Form.Item label="Last Name" name="lastName" rules={[{ required: true, message: "Last name is required" }]}>
             <Input placeholder="Enter last name" />
           </Form.Item>
-          <Form.Item label="Email" name="email" rules={[{ required: true, type: "email", message: "Enter a valid email" }]}>
+          <Form.Item label="Email" name="email" rules={[{ type: "email", message: "Enter a valid email" }]}>
             <Input placeholder="Enter email" />
           </Form.Item>
         </Form>
