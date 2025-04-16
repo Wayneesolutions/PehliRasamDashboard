@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Modal, Form, Input, Select } from 'antd';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-
+import { createEmailTemplate } from '../../../config/apiClient';
+import { message } from "antd";
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -10,18 +11,32 @@ interface Props {
 
 const { Option } = Select;
 
-const AddEmailTemplateModal: React.FC<Props> = ({ isOpen, onClose }) => {
+const AddEmailTemplateModal: React.FC<Props> = ({ isOpen,func,val, onClose }) => {
   const [form] = Form.useForm();
   const [content, setContent] = useState('');
 
   const handleOk = () => {
     form
       .validateFields()
-      .then(values => {
-        console.log('Template Data:', { ...values, content });
+      .then(async(values) => {
+        console.log('Template Data:', values,content);
+        let obj = {
+          subject:values?.subject,
+          body:content
+        }
+        console.log(obj);
+        
+         let res = await createEmailTemplate(obj)
+         console.log('==',res);
+         if(!res.success){
+          message.error(res?.message)
+          return
+         }
+
         onClose();
         form.resetFields();
         setContent('');
+        func(!val)
       })
       .catch(info => {
         console.log('Validation Failed:', info);
