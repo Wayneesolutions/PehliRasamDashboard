@@ -96,8 +96,14 @@ export interface Customer {
   lastName: string;
   email: string;
   Number?: string;
+  address?: {
+    street: string | null;
+    city: string | null;
+    stateOrProvince: string | null;
+    postalCode: string | null;
+    country: string | null; 
+  };
   imagePath?: string;
-  address: Address;
   createdAt: string;
   updatedAt: string;
 }

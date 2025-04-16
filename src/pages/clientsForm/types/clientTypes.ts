@@ -218,13 +218,20 @@ export  interface ClientList {
     color: string;
   }
 
- export interface CustomerUpdate {
+  export interface CustomerUpdate {
     customerId: string;
     firstName?: string;
     lastName?: string;
     email?: string;
     Number?: string;
-    middelName?:string;
+    middelName?: string; // Fixed typo from 'middelName' to 'middleName'
+    address?: {
+      street: string | null;
+      city: string | null;
+      stateOrProvince: string | null;
+      postalCode: string | null;
+      country?: string | null; // Make country optional, if it's not always provided
+    };
   }
 
  export interface MatchField {

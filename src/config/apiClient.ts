@@ -100,6 +100,15 @@ export const getCustomerBasicDetail = async (customerId: string) => {
     return (error as Error).response?.data;
   }
 }
+
+export const deleteMatchGroupValue = async (id: string) => {
+  try {
+    const response = await apiClient.post('admin/deleteMatchGroupValue', { id: id })
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
 export const getCustomerProfileDetail = async (customerId: string) => {
   try {
     const response = await apiClient.post('admin/getCustomerProfileDetail', { customerId: customerId })
@@ -311,7 +320,6 @@ export const getMatchSuggestions = async (customerId: string) => {
     const res = await apiClient.post("/admin/createMatchGroupValue", payload);
     return res.data;
   };
- 
 
 
  export const createEmailTemplate = async (data) => {

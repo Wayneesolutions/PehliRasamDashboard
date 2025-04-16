@@ -6,8 +6,10 @@ import {
   getMatchGroupDetails,
   searchCustomerByName,
   createMatchGroupValue,
-  getMatchSuggestions
+  getMatchSuggestions, deleteMatchGroupValue, updateMatchGroupValue
 } from "../../../config/apiClient";
+import { Dropdown, Menu, Modal } from "antd";
+import { EllipsisOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 
 const ExpandableSection = ({ title, children }: { title: string; children: React.ReactNode }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -40,6 +42,7 @@ const MatchesPage = () => {
   const [selectedClientId, setSelectedClientId] = useState("");
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [description, setDescription] = useState("");
+
 
   const fetchGroups = async () => {
     try {
@@ -128,6 +131,8 @@ const MatchesPage = () => {
   };
 
 
+
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Tabs */}
@@ -173,42 +178,105 @@ const MatchesPage = () => {
                   <div className="text-gray-400 text-sm py-4 text-center">No matches in this group.</div>
                 ) : (
                   <div className="flex flex-col gap-4 p-4">
-                    {group.values.map((value: any) => (
-                      <div
-                        key={value.valueId}
-                        className="flex gap-4 p-4 rounded-2xl shadow-sm border border-gray-200 bg-white"
-                      >
-                        <img
-                          src={value.imagePath}
-                          alt={`${value.firstName} ${value.lastName}`}
-                          className="w-28 h-28 rounded-xl object-cover border"
-                        />
-                        <div className="flex flex-col justify-center text-sm text-gray-700">
-                          <div className="mb-1">
-                            <span className="font-semibold">Name:</span>{" "}
-                            {value.firstName} {value.middleName} {value.lastName}
+                    {group.values.map((value: any) => {
+
+                      const showDeleteConfirm = () => {
+                        Modal.confirm({
+                          title: "Are you sure you want to delete this match?",
+                          icon: <ExclamationCircleOutlined />,
+                          content: "This action cannot be undone.",
+                          okText: "Yes, Delete",
+                          okType: "danger",
+                          cancelText: "Cancel",
+                          async onOk() {
+                            try {
+                              await deleteMatchGroupValue(value.valueId);
+                              await fetchGroups(); 
+                              // Optional: Refresh UI here
+                            } catch (error) {
+                              console.error("Error deleting match:", error);
+                            }
+                          },
+                        });
+                      };
+
+                      const menu = (
+                        <Menu>
+                          <Menu.ItemGroup title="Move to Group">
+                            {groupList.map((g) => (
+                              <Menu.Item
+                                key={g.groupId}
+                                onClick={async () => {
+                                  try {
+                                    await updateMatchGroupValue({
+                                      matchGroupId: g.groupId,
+                                      id: value.valueId, // assuming this is the match value ID
+                                      customerId: value.customerId, // the actual customer ID
+                                      matchingDescription: value.matchingDescription || ""
+                                    });
+                                    await fetchGroups(); 
+                                  } catch (error) {
+                                    console.error("Failed to move customer:", error);
+                                  }
+                                }}
+                              >
+                                {g.groupName}
+                              </Menu.Item>
+                            ))}
+                          </Menu.ItemGroup>
+                          <Menu.Divider />
+                          <Menu.Item danger onClick={showDeleteConfirm}>
+                            Delete Match
+                          </Menu.Item>
+                        </Menu>
+                      );
+
+
+                      return (
+                        <div
+                          key={value.valueId}
+                          className="relative flex gap-4 p-4 rounded-2xl shadow-sm border border-gray-200 bg-white"
+                        >
+                          {/* Dropdown Button */}
+                          <div className="absolute top-4 right-4">
+                            <Dropdown overlay={menu} trigger={['click']}>
+                              <EllipsisOutlined className="text-xl cursor-pointer" />
+                            </Dropdown>
                           </div>
-                          <div className="mb-1">
-                            <span className="font-semibold">Email:</span> {value.email || "N/A"}
-                          </div>
-                          <div className="mb-1">
-                            <span className="font-semibold">Description:</span> {value.matchingDescription || "N/A"}
-                          </div>
-                          <div>
-                            <span className="font-semibold">Address:</span>{" "}
-                            {value.address?.street}, {value.address?.city}, {value.address?.stateOrProvince}, {value.address?.country} - {value.address?.postalCode}
+
+                          <img
+                            src={value.imagePath}
+                            alt={`${value.firstName} ${value.lastName}`}
+                            className="w-28 h-28 rounded-xl object-cover border"
+                          />
+                          <div className="flex flex-col justify-center text-sm text-gray-700">
+                            <div className="mb-1">
+                              <span className="font-semibold">Name:</span>{" "}
+                              {value.firstName} {value.middleName} {value.lastName}
+                            </div>
+                            <div className="mb-1">
+                              <span className="font-semibold">Email:</span> {value.email || "N/A"}
+                            </div>
+                            <div className="mb-1">
+                              <span className="font-semibold">Description:</span> {value.matchingDescription || "N/A"}
+                            </div>
+                            <div>
+                              <span className="font-semibold">Address:</span>{" "}
+                              {value.address?.street}, {value.address?.city}, {value.address?.stateOrProvince}, {value.address?.country} - {value.address?.postalCode}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
-
                 )}
               </ExpandableSection>
             ))
           ) : (
             <div className="text-gray-500 text-center">No match groups found.</div>
           )}
+
+
 
         </>
       )}
@@ -266,51 +334,50 @@ const MatchesPage = () => {
                     setSelectedClientId("");
                   }}
                 />
-            <div className="mt-2 border rounded w-full max-h-40 overflow-y-auto bg-white shadow">
-  {searchResults.map((client) => {
-    const fullName = `${client.firstName} ${client.lastName}`;
-    const isSelected = selectedClientId === client._id;
-    return (
-      <div
-        key={client._id}
-        onClick={() => {
-          setSelectedClientId(client._id);
-          setSearchTerm(fullName);
-          setSearchResults([]); // hide results after selection
-        }}
-        className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-blue-50 ${
-          isSelected ? "bg-blue-100" : ""
-        }`}
-      >
-        {client.imagePath ? (
-          <img
-            src={client.imagePath}
-            alt={fullName}
-            className="w-8 h-8 rounded-full object-cover"
-          />
-        ) : (
-          <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-sm font-semibold text-gray-700">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5 text-gray-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5.121 17.804A9 9 0 1119.07 7.75m-5.05 11.196a4.978 4.978 0 01-6.829-6.829"
-              />
-            </svg>
-          </div>
-        )}
-        <span className="text-sm">{fullName}</span>
-      </div>
-    );
-  })}
-</div>
+                <div className="mt-2 border rounded w-full max-h-40 overflow-y-auto bg-white shadow">
+                  {searchResults.map((client) => {
+                    const fullName = `${client.firstName} ${client.lastName}`;
+                    const isSelected = selectedClientId === client._id;
+                    return (
+                      <div
+                        key={client._id}
+                        onClick={() => {
+                          setSelectedClientId(client._id);
+                          setSearchTerm(fullName);
+                          setSearchResults([]); // hide results after selection
+                        }}
+                        className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-blue-50 ${isSelected ? "bg-blue-100" : ""
+                          }`}
+                      >
+                        {client.imagePath ? (
+                          <img
+                            src={client.imagePath}
+                            alt={fullName}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-sm font-semibold text-gray-700">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="w-5 h-5 text-gray-500"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5.121 17.804A9 9 0 1119.07 7.75m-5.05 11.196a4.978 4.978 0 01-6.829-6.829"
+                              />
+                            </svg>
+                          </div>
+                        )}
+                        <span className="text-sm">{fullName}</span>
+                      </div>
+                    );
+                  })}
+                </div>
 
 
               </div>
