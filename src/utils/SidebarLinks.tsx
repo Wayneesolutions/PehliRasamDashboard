@@ -55,7 +55,7 @@ export const sidebarLinks: SidebarLink[] = [
         label: "Agency",
         children: [
           { key: "/dashboard/profile-setting-info", icon: <BiUser />, label: "Admin Info" },
-          { key: "/dashboard/", icon: <BiUser />, label: "Email Settings" },
+          { key: "/dashboard/emailsettings", icon: <BiUser />, label: "Email Settings" },
         ],
       },
     ],
