@@ -37,3 +37,30 @@ body {
     transform: rotate(1turn);
   }
 }
+/* Style PhoneInput for stacked layout */
+.custom-stacked-phone-input {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* Flag container */
+.custom-stacked-phone-input .PhoneInputCountry {
+  position: relative;
+  margin-bottom: 6px;
+  align-self: flex-start;
+}
+
+/* Phone number input field */
+.custom-stacked-phone-input .PhoneInputInput {
+  padding-left: 10px;
+  height: 36px;
+  font-size: 14px;
+  border: 1px solid #d1d5db; /* tailwind border-gray-300 */
+  border-radius: 6px;
+}
+/* Decrease the flag icon size */
+.custom-stacked-phone-input .PhoneInputCountryIcon {
+  width: 18px;
+  height: 12px;
+}

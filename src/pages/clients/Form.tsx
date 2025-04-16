@@ -38,7 +38,19 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
     const [formData, setFormData] = useState<IGroup[]>([]);
     const [matchdata, setMatchData] = useState<MatchGroup[]>([]);
     const [loading, setLoading] = useState(false);
-    const [activePanels, setActivePanels] = useState<string[]>([]);
+    const [activePanels, setActivePanels] = useState<string[]>([
+        ...formData.map((group) => group.groupId),
+        ...matchdata.map((group) => group.groupId),
+    ]);
+
+    useEffect(() => {
+        const allGroupIds = [
+            ...formData.map((group) => group.groupId),
+            ...matchdata.map((group) => group.groupId),
+        ];
+        setActivePanels(allGroupIds);
+    }, [formData, matchdata]);
+
 
     useEffect(() => {
         if (customerId) {
@@ -95,8 +107,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                             }))
                             : [],
                     }));
-
-                    console.log("✅ Formatted formData with proper groupIds:", JSON.stringify(formattedData, null, 2));
                     setFormData(formattedData);
                 }
 
@@ -114,19 +124,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
 
         fetchData();
     }, [resolvedCustomerId]);
-    const fetchCustomerProfileDetail = async () => {
-        try {
-            const response = await getCustomerProfileDetail(resolvedCustomerId);
-            if (response?.success) {
-                setFormData(response.profileData); // assuming response has profileData
-            } else {
-                message.error("Failed to fetch profile data.");
-            }
-        } catch (err) {
-            message.error("Error loading profile data.");
-        }
-    };
-    
 
     const generateFullPayload = () => {
         return {
@@ -150,7 +147,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                 fieldValue: valueToSend,
                             };
                         })
-                        .filter(Boolean); // Removes nulls
+                        .filter(Boolean);
 
                     if (filledFields.length === 0) return null;
 
@@ -163,36 +160,20 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
         };
     };
 
+    const saveFieldValue = async () => {
+        const payload = generateFullPayload();
 
-    const saveFieldValue = async (groupId: string, fieldId: string, value: string) => {
-        if (!value?.trim()) {
-            message.warning("Empty values are not saved.");
+        if (payload.profileValue.length === 0) {
+            message.warning("Nothing to update.");
             return;
         }
-    
-        const payload = {
-            customerId: resolvedCustomerId,
-            profileValue: [
-                {
-                    groupId,
-                    groupFields: [
-                        {
-                            fieldID: fieldId,
-                            fieldValue: value,
-                        },
-                    ],
-                },
-            ],
-        };
-    
+
         try {
             const res = await updateCustomerProfile(payload);
-    
+
             if (res.success) {
-                message.success("Field updated successfully");
-    
-                // ✅ Fetch full profile again to sync all fields
-                await fetchCustomerProfileDetail();
+                message.success("Profile updated successfully");
+                // 🔥 Don't fetch again — updated values stay in formData
             } else {
                 message.error(res.message || "Update failed");
             }
@@ -200,24 +181,23 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
             message.error("Update failed");
         }
     };
-    
+
+
 
     const handleFieldChange = (groupId: string, fieldId: string, value: string) => {
         setFormData((prev) =>
             prev.map((group) =>
                 group.groupId === groupId
                     ? {
-                          ...group,
-                          fields: group.fields.map((field) =>
-                              field.fieldId === fieldId ? { ...field, value } : field
-                          ),
-                      }
+                        ...group,
+                        fields: group.fields.map((field) =>
+                            field.fieldId === fieldId ? { ...field, value } : field
+                        ),
+                    }
                     : group
             )
         );
     };
-    
-
 
 
     const handleFieldSaveOnEnter = async (
@@ -227,12 +207,11 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
     ) => {
         if (e.key === "Enter") {
             const value = (e.target as HTMLInputElement).value;
-            await saveFieldValue(groupId, fieldId, value);
+
+            handleFieldChange(groupId, fieldId, value); // Update local first
+            await saveFieldValue(); // Save full payload
         }
     };
-    
-
-
 
     if (loading) return <Spin size="large" className="flex justify-center mt-10" />;
     if (!formData.length) return <div>No data found</div>;
@@ -270,7 +249,9 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                     name={`${group.groupId}-${field.fieldId}`}
                                                                     onChange={async (e) => {
                                                                         const selectedValue = e.target.value;
-                                                                        await saveFieldValue(group.groupId, field.fieldId, selectedValue);
+                                                                        handleFieldChange(group.groupId, field.fieldId, selectedValue);
+                                                                        await saveFieldValue(); // Save full form state
+
                                                                     }}
                                                                 >
                                                                     <option value="">Select an option</option>
@@ -280,6 +261,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                         </option>
                                                                     ))}
                                                                 </select>
+
                                                             );
 
                                                         case "date":
@@ -290,9 +272,13 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                     name={`${group.groupId}-${field.fieldId}`}
                                                                     value={field.value || ""}
                                                                     placeholder="Select a date"
-                                                                    onChange={(e) => handleFieldChange(group.groupId, field.fieldId, e.target.value)}
-                                                                    onKeyDown={(e) => handleFieldSaveOnEnter(e, group.groupId, field.fieldId)}
+                                                                    onChange={async (e) => {
+                                                                        const selectedDate = e.target.value;
+                                                                        handleFieldChange(group.groupId, field.fieldId, selectedDate);
+                                                                        await saveFieldValue();
+                                                                    }}
                                                                 />
+
                                                             );
 
                                                         case "number":
@@ -354,17 +340,17 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                                     type="checkbox"
                                                                                     value={option}
                                                                                     checked={checked}
-                                                                                    onChange={() =>
-                                                                                        handleFieldChange(group.groupId, field.fieldId, newValue)
-                                                                                    }
-                                                                                    onKeyDown={(e) =>
-                                                                                        handleFieldSaveOnEnter(e, group.groupId, field.fieldId)
-                                                                                    }
+                                                                                    onChange={async () => {
+                                                                                        handleFieldChange(group.groupId, field.fieldId, newValue);
+                                                                                        await saveFieldValue();
+
+                                                                                    }}
                                                                                 />
                                                                                 {option}
                                                                             </label>
                                                                         );
                                                                     })}
+
                                                                 </div>
                                                             );
 
@@ -383,7 +369,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                         if (uploadResult?.success) {
                                                                             const uploadedUrl = uploadResult.fileUrl;
                                                                             handleFieldChange(group.groupId, field.fieldId, uploadedUrl);
-                                                                            await saveFieldValue(group.groupId, field.fieldId, uploadedUrl);
+                                                                            await saveFieldValue();
                                                                         } else {
                                                                             console.error("Image upload failed:", uploadResult?.message || "Unknown error");
                                                                             message.error("Image upload failed");
@@ -424,14 +410,14 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
 
                                                 const handleUpdate = async (updatedFieldId: string, updatedValue: any) => {
                                                     const currentGroup = matchdata.find((g) => g.groupId === group.groupId);
-                                                
+
                                                     if (!currentGroup) return;
-                                                
+
                                                     const updatedFields = currentGroup.fields.map((f) => ({
                                                         fieldId: f.fieldId,
                                                         fieldValue: f.fieldId === updatedFieldId ? updatedValue : (f.value || ""),
                                                     }));
-                                                
+
                                                     const payload = {
                                                         customerId: resolvedCustomerId,
                                                         matchPreferences: [
@@ -441,7 +427,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                             },
                                                         ],
                                                     };
-                                                
+
                                                     try {
                                                         await updateCustomerMatchPreferencesDetail(payload);
                                                         message.success("Preference updated successfully.");
@@ -450,7 +436,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                         message.error("Failed to update preference.");
                                                     }
                                                 };
-                                                
+
 
 
                                                 const generateHeights = () => {
@@ -503,7 +489,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                         value={fieldValue?.split(" - ")[0] || ""}
                                                                         onChange={(e) => {
                                                                             const max = fieldValue?.split(" - ")[1] || "";
-                                                                            handleUpdate(field.fieldId,`${e.target.value} - ${max}`);
+                                                                            handleUpdate(field.fieldId, `${e.target.value} - ${max}`);
                                                                         }}
                                                                     >
                                                                         <option value="">Min Height</option>
@@ -519,7 +505,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                         value={fieldValue?.split(" - ")[1] || ""}
                                                                         onChange={(e) => {
                                                                             const min = fieldValue?.split(" - ")[0] || "";
-                                                                            handleUpdate(field.fieldId,`${min} - ${e.target.value}`);
+                                                                            handleUpdate(field.fieldId, `${min} - ${e.target.value}`);
                                                                         }}
                                                                     >
                                                                         <option value="">Max Height</option>
@@ -543,17 +529,17 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                         onChange={(e) => {
                                                                             setMatchData((prev) =>
                                                                                 prev.map((g) =>
-                                                                                  g.groupId === group.groupId
-                                                                                    ? {
-                                                                                        ...g,
-                                                                                        fields: g.fields.map((f) =>
-                                                                                          f.fieldId === field.fieldId ? { ...f, value: e.target.value } : f
-                                                                                        ),
-                                                                                      }
-                                                                                    : g
+                                                                                    g.groupId === group.groupId
+                                                                                        ? {
+                                                                                            ...g,
+                                                                                            fields: g.fields.map((f) =>
+                                                                                                f.fieldId === field.fieldId ? { ...f, value: e.target.value } : f
+                                                                                            ),
+                                                                                        }
+                                                                                        : g
                                                                                 )
-                                                                              );
-                                                                              
+                                                                            );
+
                                                                         }}
                                                                         onKeyDown={(e) => {
                                                                             if (e.key === "Enter") {
@@ -561,8 +547,8 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                                 handleUpdate(field.fieldId, target.value);
                                                                             }
                                                                         }}
-                                                                        
-                                                                        
+
+
                                                                     />
                                                                 )}
                                                         </div>

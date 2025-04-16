@@ -223,7 +223,8 @@ export  interface ClientList {
     firstName?: string;
     lastName?: string;
     email?: string;
-    contact?: string;
+    Number?: string;
+    middelName?:string;
   }
 
  export interface MatchField {

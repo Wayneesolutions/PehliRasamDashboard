@@ -92,9 +92,10 @@ export interface ActiveClientDetails {
 export interface Customer {
   _id: string;
   firstName: string;
+  middelName:string;
   lastName: string;
   email: string;
-  contact?: string;
+  Number?: string;
   imagePath?: string;
   address: Address;
   createdAt: string;

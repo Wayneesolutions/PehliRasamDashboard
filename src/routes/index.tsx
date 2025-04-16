@@ -11,7 +11,6 @@ const Login = lazy(() => import("../pages/auth/Login"));
 const ProfileInfo = lazy(() => import("../pages/profile-setting"));
 const Overview = lazy(() => import("../pages/overview"));
 const TimelineMain = lazy(() => import("../pages/overview/TimelineMain"));
-const ProfileUpdate = lazy(() => import("../pages/overview/ProfileUpdate"));
 const Clients = lazy(() => import("../pages/clients"));
 const AddClient = lazy(() => import("../pages/clients/AddClient"));
 const Form = lazy(() => import("../pages/clients/Form"));
@@ -45,7 +44,6 @@ const AppRoutes = () => {
                         <Route index element={<Overview />} />
                         <Route path="overview" element={<Overview />} />
                         <Route path="timelinemain" element={<TimelineMain />} />
-                        <Route path="profile-update" element={<ProfileUpdate />} />
                         <Route path="clients" element={<Clients />} />
 
                         <Route path="add-client" element={<AddClient />}>

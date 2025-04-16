@@ -1,5 +1,6 @@
 import { useEffect, useState, KeyboardEvent, ChangeEvent, useRef } from "react";
-import { Mail, Phone, MapPin, Camera, Check, X, Upload } from "lucide-react";
+import { Mail, MapPin, Camera, Check, X, Upload } from "lucide-react";
+import PhoneInput from "react-phone-number-input";
 import { getCustomerBasicDetail, updateCustomerBasicDetail, uploadFile } from "../../config/apiClient";
 import { Customer } from "../../schema/customernew";
 import { message } from "antd";
@@ -47,44 +48,47 @@ const Sidebar = ({ customerId }: SidebarProps) => {
 
   const handleSave = async () => {
     if (!editMode || !customer) return;
-
+  
     setIsUpdating(true);
-
+  
     try {
-      // Send data directly in the format the API expects
       const updateData: CustomerUpdate = {
-        customerId: customerId
+        customerId: customerId,
+        firstName: customer.firstName,
+        middelName: customer.middelName,
+        lastName: customer.lastName,
+        email: customer.email,
+        Number: customer.Number,
       };
-
-      // Set the field to update based on editMode
-      if (editMode === "firstName") {
-        updateData.firstName = editValue;
-      } else if (editMode === "lastName") {
-        updateData.lastName = editValue;
-      } else if (editMode === "email") {
-        updateData.email = editValue;
-      } else if (editMode === "contact") {
-        updateData.contact = editValue;
+  
+      if (editMode) {
+        (updateData as any)[editMode] = editValue;
       }
-
-      // Send the updateData directly without nesting it
+  
       const res = await updateCustomerBasicDetail(updateData);
-
+  
       if (res.success) {
-        setCustomer(res.customer);
+        if (res.customer) {
+          setCustomer(res.customer);
+        } else {
+          await fetchCustomerDetails();
+        }
         setEditMode(null);
         setEditValue("");
-        message.success(res.message)
+        message.success(res.message);
       } else {
         message.error(res.message || "Failed to update");
       }
-
     } catch (error) {
       console.error("Error updating customer:", error);
+      message.error("An error occurred while updating");
     } finally {
       setIsUpdating(false);
     }
   };
+  
+
+
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -200,6 +204,34 @@ const Sidebar = ({ customerId }: SidebarProps) => {
           </h2>
         )}
       </div>
+      <div className="mt-3 text-center w-full">
+        {editMode === "middelName" ? (
+          <div className="flex items-center justify-center">
+            <input
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="px-2 py-1 border rounded mr-1 w-32"
+              autoFocus
+              placeholder="Enter middle name" // ✅ Add this
+            />
+            <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
+              <Check size={16} />
+            </button>
+            <button onClick={handleCancel} className="text-red-500 ml-1">
+              <X size={16} />
+            </button>
+          </div>
+        ) : (
+          <h2
+            className="text-lg font-semibold cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+            onClick={() => customer && handleEdit("middelName", customer.middelName)}
+          >
+            {customer ? customer.middelName || "No middle name" : "Loading..."}
+          </h2>
+        )}
+      </div>
 
       {/* Last Name - separate field */}
       <div className="mt-1 text-center w-full">
@@ -274,34 +306,53 @@ const Sidebar = ({ customerId }: SidebarProps) => {
           </span>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <Phone size={18} />
-          {editMode === "contact" ? (
-            <div className="flex items-center flex-1">
-              <input
-                type="text"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="px-2 py-1 border rounded mr-1 w-full"
-                autoFocus
-              />
-              <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
-                <Check size={16} />
-              </button>
-              <button onClick={handleCancel} className="text-red-500 ml-1">
-                <X size={16} />
-              </button>
+        <div className="flex items-start space-x-2">
+          {editMode === "Number" ? (
+            <div className="flex flex-col w-full">
+
+
+              {/* Stack flag above number visually */}
+              <div className="relative w-full">
+                <PhoneInput
+                  value={editValue}
+                  onChange={(value) => setEditValue(value || "")}
+                  international
+                  defaultCountry="US"
+                  placeholder="Enter your Contact Number"
+                  className="custom-stacked-phone-input w-full"
+                />
+
+              </div>
+
+              <div className="flex justify-end mt-2 space-x-2">
+                <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
+                  <Check size={16} />
+                </button>
+                <button onClick={handleCancel} className="text-red-500">
+                  <X size={16} />
+                </button>
+              </div>
             </div>
           ) : (
-            <span
-              className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
-              onClick={() => customer && handleEdit("contact", customer.contact || "")}
+            <div
+              className="flex items-center space-x-2 flex-1 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+              onClick={() => customer && handleEdit("Number", customer.Number || "")}
             >
-              {customer?.contact || "N/A"}
-            </span>
+              <PhoneInput
+                value={customer?.Number || ""}
+                onChange={() => { }}
+                disabled
+                international
+                defaultCountry="US"
+                className="custom-stacked-phone-input w-full pointer-events-none"
+              />
+            </div>
           )}
         </div>
+
+
+
+
 
         <div className="flex items-center space-x-2">
           <MapPin size={18} />
