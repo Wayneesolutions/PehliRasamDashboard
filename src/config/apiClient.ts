@@ -320,3 +320,14 @@ export const getMatchSuggestions = async (customerId: string) => {
     const res = await apiClient.post("/admin/createMatchGroupValue", payload);
     return res.data;
   };
+
+  export const updateMatchGroupValue = async (payload: {
+    matchGroupId: string;
+    id: string;
+    customerId: string;
+    matchingDescription: string;
+  }) => {
+    const res = await apiClient.post("/admin/updateMatchGroupValue", payload);
+    return res.data;
+  };
+  
