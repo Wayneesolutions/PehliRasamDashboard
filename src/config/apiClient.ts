@@ -311,3 +311,32 @@ export const getMatchSuggestions = async (customerId: string) => {
     const res = await apiClient.post("/admin/createMatchGroupValue", payload);
     return res.data;
   };
+ 
+
+
+ export const createEmailTemplate = async (data) => {
+  try {
+    const response = await apiClient.post('admin/createEmailTemplate',data)
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
+export const getAllEmailTemplates = async () => {
+  try {
+    const response = await apiClient.get('admin/getAllEmailTemplates')
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
+export const deleteEmailTemplate = async (id:string) => {
+  try {
+    const response = await apiClient.post('admin/deleteEmailTemplate',id)
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
