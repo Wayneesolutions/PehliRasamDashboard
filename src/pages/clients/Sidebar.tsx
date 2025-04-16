@@ -364,6 +364,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
       </Dropdown>
 
       <SendMessage
+        customerId={customer}
         isOpen={modalVisible}
         onClose={handleCloseModal}
         func={() => { }}

@@ -389,5 +389,16 @@ export const clientSubm = async () => {
   }
 }
 
+export const sendCustomerMail = async (data) => {
+  try {
+    const response = await apiClient.post('admin/sendCustomerMail',data)
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
 }
+
+
+
+
 
