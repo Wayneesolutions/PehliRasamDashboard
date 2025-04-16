@@ -28,6 +28,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
   const fetchCustomerDetails = async () => {
     try {
       const res = await getCustomerBasicDetail(customerId);
+      console.log('res===',res)
       if (res.success) {
         setCustomer(res.data);
       }
@@ -336,10 +337,10 @@ const Sidebar = ({ customerId }: SidebarProps) => {
           ) : (
             <div
               className="flex items-center space-x-2 flex-1 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
-              onClick={() => customer && handleEdit("Number", customer.Number || "")}
+              onClick={() => customer && handleEdit("Number", customer?.Number?.toString() || "")}
             >
               <PhoneInput
-                value={customer?.Number || ""}
+                value={customer?.Number.toString() || ""}
                 onChange={() => { }}
                 disabled
                 international
