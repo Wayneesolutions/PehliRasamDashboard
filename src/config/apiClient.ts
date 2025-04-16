@@ -321,6 +321,18 @@ export const getMatchSuggestions = async (customerId: string) => {
     return res.data;
   };
 
+  export const updateMatchGroupValue = async (payload: {
+    matchGroupId: string;
+    id: string;
+    customerId: string;
+    matchingDescription: string;
+  }) => {
+    const res = await apiClient.post("/admin/updateMatchGroupValue", payload);
+    return res.data;
+  };
+  
+  
+
 
  export const createEmailTemplate = async (data) => {
   try {
@@ -347,6 +359,7 @@ export const deleteEmailTemplate = async (id:string) => {
   } catch (error) {
     return (error as Error).response?.data;
   }
+
 }
 
 export const recentlySubmittedClients = async () => {
@@ -375,3 +388,6 @@ export const clientSubm = async () => {
     return (error as Error).response?.data;
   }
 }
+
+}
+

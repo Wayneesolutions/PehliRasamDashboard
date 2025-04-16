@@ -1,5 +1,5 @@
 import { useEffect, useState, KeyboardEvent, ChangeEvent, useRef } from "react";
-import { Mail, Camera, Check, X, Upload } from "lucide-react";
+import { Mail, MapPin, Camera, Check, X, Upload } from "lucide-react";
 import PhoneInput from "react-phone-number-input";
 import { Dropdown, Menu, Button } from 'antd';
 import SendMessage from './SendMessage';
@@ -67,14 +67,26 @@ const Sidebar = ({ customerId }: SidebarProps) => {
   const fetchCustomerDetails = async () => {
     try {
       const res = await getCustomerBasicDetail(customerId);
-      console.log('res===', res)
       if (res.success) {
-        setCustomer(res.data);
+        const customerData = res.data;
+        setCustomer(customerData);
+
+        // Ensure address state is populated correctly
+        if (customerData.address) {
+          setAddress({
+            street: customerData.address.street || "",
+            city: customerData.address.city || "",
+            stateOrProvince: customerData.address.stateOrProvince || "",
+            postalCode: customerData.address.postalCode || "",
+            country: customerData.address.country || "",
+          });
+        }
       }
     } catch (error) {
       console.error("Error fetching customer details:", error);
     }
   };
+
 
   const handleEdit = (field: string, value: string) => {
     setEditMode(field);
@@ -92,31 +104,28 @@ const Sidebar = ({ customerId }: SidebarProps) => {
     setIsUpdating(true);
 
     try {
-      // Create a structured address object, ensuring no empty strings or invalid data
-      const addressData = {
-        street: address.street || "", // Provide an empty string if not available
-        city: address.city || "",
-        stateOrProvince: address.stateOrProvince || "",
-        postalCode: address.postalCode || "",
-        country: address.country || "", // Ensure country is set correctly
-      };
+      // Construct address object dynamically, excluding empty fields
+      const addressData: any = {};
+      Object.entries(address).forEach(([key, value]) => {
+        if (value && value.trim() !== "") {
+          addressData[key] = value;
+        }
+      });
 
-      // Prepare the update data
       const updateData: CustomerUpdate = {
         customerId: customerId,
         firstName: customer.firstName,
         middelName: customer.middelName,
         lastName: customer.lastName,
         email: customer.email,
-        Number: customer.Number?.toString() || "", // Ensure Number is a string
-        address: addressData, // Pass the structured address
+        Number: customer.Number?.toString() || "",
+        address: addressData, // Only filled fields
       };
 
-      if (editMode) {
+      if (editMode && editMode !== "address") {
         (updateData as any)[editMode] = editValue;
       }
 
-      // Make the API call to update customer details
       const res = await updateCustomerBasicDetail(updateData);
 
       if (res.success) {
@@ -127,7 +136,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
         }
         setEditMode(null);
         setEditValue("");
-        setAddress({ street: "", city: "", stateOrProvince: "", postalCode: "", country: "" }); // Reset the address fields after save
+        setAddress({ street: "", city: "", stateOrProvince: "", postalCode: "", country: "" });
         message.success(res.message);
       } else {
         message.error(res.message || "Failed to update");
@@ -139,6 +148,8 @@ const Sidebar = ({ customerId }: SidebarProps) => {
       setIsUpdating(false);
     }
   };
+
+
 
 
 
@@ -355,7 +366,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
       <SendMessage
         isOpen={modalVisible}
         onClose={handleCloseModal}
-        func={() => {}}
+        func={() => { }}
         val={null}
       />
 
@@ -420,7 +431,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
 
 
 
-        {/* <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2">
           <MapPin size={18} />
           {editMode === "address" ? (
             <div className="flex flex-col w-full">
@@ -457,6 +468,14 @@ const Sidebar = ({ customerId }: SidebarProps) => {
                 className="px-2 py-1 border rounded w-full mb-2"
                 placeholder="Postal Code"
               />
+              <input
+                type="text"
+                value={address.country}
+                onChange={(e) => setAddress({ ...address, country: e.target.value })}
+                onKeyDown={handleKeyDown}
+                className="px-2 py-1 border rounded w-full mb-2"
+                placeholder="Country"
+              />
               <div className="flex justify-end space-x-2">
                 <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
                   <Check size={16} />
@@ -469,22 +488,26 @@ const Sidebar = ({ customerId }: SidebarProps) => {
           ) : (
             <span
               className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
-              onClick={() =>
-                customer &&
-                handleEdit(
-                  "address",
-                  ${customer.address?.street || ""}, ${customer.address?.city || ""}, ${customer.address?.stateOrProvince || ""
-                  }, ${customer.address?.postalCode || ""}
-                )
-              }
+              onClick={() => {
+                if (customer?.address) {
+                  setEditMode("address");
+                  setAddress({
+                    street: customer.address.street || "",
+                    city: customer.address.city || "",
+                    stateOrProvince: customer.address.stateOrProvince || "",
+                    postalCode: customer.address.postalCode || "",
+                    country: customer.address.country || "",
+                  });
+                }
+              }}
             >
               {customer?.address
-                ? ${customer.address.street || ""}, ${customer.address.city || ""}, ${customer.address.stateOrProvince || ""
-                }, ${customer.address.postalCode || ""}
+                ? `${customer.address.street || ""}, ${customer.address.city || ""}, ${customer.address.stateOrProvince || ""}, ${customer.address.postalCode || ""}, ${customer.address.country || ""}`
                 : "N/A"}
             </span>
           )}
-        </div> */}
+        </div>
+
 
 
 

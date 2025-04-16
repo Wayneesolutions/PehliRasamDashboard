@@ -4,7 +4,6 @@ import { EllipsisOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import AddEmailTemplateModal from './AddEmailTemplateModal';
 import { deleteEmailTemplate, getAllEmailTemplates } from '../../../config/apiClient';
-import { message } from "antd";
 interface EmailTemplateType {
   key: string;
   subject: string;
