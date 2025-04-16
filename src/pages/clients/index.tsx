@@ -107,7 +107,7 @@ const Clients: React.FC = () => {
                 <strong>📍 Location:</strong> {`${selectedClient.address.city}, ${selectedClient.address.stateOrProvince}, ${selectedClient.address.country}`}
               </p>
               <p className="text-gray-600 text-sm"><strong>📧 Email:</strong> {selectedClient.email}</p>
-              <p className="text-gray-600 text-sm"><strong>📞 Phone:</strong> {selectedClient.contact || "N/A"}</p>
+              <p className="text-gray-600 text-sm"><strong>📞 Phone:</strong> {selectedClient.Number || "N/A"}</p>
               {selectedClient.registrationDate && (
                 <p className="text-gray-600 text-sm">
                   <strong>📅 Registered:</strong> {new Date(selectedClient.registrationDate).toLocaleDateString()}

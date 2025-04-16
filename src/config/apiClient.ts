@@ -359,3 +359,16 @@ export const deleteEmailTemplate = async (id:string) => {
     return (error as Error).response?.data;
   }
 }
+
+interface MailLogParams {
+  search?: string;
+}
+
+export const mailLogs = async (params?: MailLogParams) => {
+  try {
+    const response = await apiClient.post('admin/mailLogs', params || {});
+    return response?.data;
+  } catch (error) {
+    return (error as any)?.response?.data;
+  }
+};
