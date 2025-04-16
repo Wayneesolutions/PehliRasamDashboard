@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, Dropdown, Menu, Modal, Table, message } from 'antd';
+import { Button, Dropdown, Menu, Modal, Table } from 'antd';
 import { EllipsisOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import AddEmailTemplateModal from './AddEmailTemplateModal';

@@ -340,3 +340,30 @@ export const deleteEmailTemplate = async (id:string) => {
     return (error as Error).response?.data;
   }
 }
+
+export const recentlySubmittedClients = async () => {
+  try {
+    const response = await apiClient.get('admin/recentlySubmittedClients')
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
+export const getTodayStatsCount = async () => {
+  try {
+    const response = await apiClient.get('admin/getTodayStatsCount')
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
+export const clientSubm = async () => {
+  try {
+    const response = await apiClient.get('admin/getCustomerCountLastFiveDays')
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
