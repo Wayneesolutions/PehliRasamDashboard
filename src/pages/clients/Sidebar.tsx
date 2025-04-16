@@ -314,14 +314,14 @@ const Sidebar = ({ customerId }: SidebarProps) => {
 
               {/* Stack flag above number visually */}
               <div className="relative w-full">
-                <PhoneInput
+                {/* <PhoneInput
                   value={editValue}
                   onChange={(value) => setEditValue(value || "")}
                   international
                   defaultCountry="US"
                   placeholder="Enter your Contact Number"
                   className="custom-stacked-phone-input w-full"
-                />
+                /> */}
 
               </div>
 
@@ -339,14 +339,14 @@ const Sidebar = ({ customerId }: SidebarProps) => {
               className="flex items-center space-x-2 flex-1 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
               onClick={() => customer && handleEdit("Number", customer?.Number?.toString() || "")}
             >
-              <PhoneInput
+              {/* <PhoneInput
                 value={customer?.Number.toString() || ""}
                 onChange={() => { }}
                 disabled
                 international
                 defaultCountry="US"
                 className="custom-stacked-phone-input w-full pointer-events-none"
-              />
+              /> */}
             </div>
           )}
         </div>
