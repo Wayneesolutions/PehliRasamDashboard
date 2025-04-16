@@ -27,6 +27,7 @@ const Fields = lazy(() => import("../pages/settings/client-settings/Fields/Field
 const Lists = lazy(() => import('../pages/settings/client-settings/List'));
 const Matching = lazy(() => import('../pages/settings/client-settings/matching/Fields'));
 const Users = lazy(() => import('../pages/settings/users'));
+const EmailSettings = lazy(() => import('../pages/settings/email-settings'));
 
 const AppRoutes = () => {
     return (
@@ -63,6 +64,7 @@ const AppRoutes = () => {
                         <Route path="matching" element={<Matching />} />
                         <Route path="users" element={<Users />} />
                         <Route path="profile-setting-info" element={<ProfileInfo />} />
+                        <Route path="emailsettings" element={<EmailSettings/>}/>
                     </Route>
                 </Route>
             </Routes>
