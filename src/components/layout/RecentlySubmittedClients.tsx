@@ -1,5 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal } from "antd";
+import { recentlySubmittedClients } from "../../config/apiClient";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
 
 interface Client {
   name: string;
@@ -9,20 +14,42 @@ interface Client {
   avatar?: string;
 }
 
-const clients: Client[] = [
-  { name: "Imran", location: "Sharjah saja", time: "4 hours, 50 minutes", initials: "I" },
-  { name: "Amarjit Singh", location: "Winnipeg", time: "2 days, 1 hour", initials: "A" },
-  { name: "Anuradha Ahuja", location: "Hicksville Newyork", time: "3 days, 5 hours", initials: "A", avatar: "red" },
-  { name: "Jagdeep Singh", location: "Brampton", time: "4 days, 7 hours", initials: "J" },
-  { name: "Mohammed Rahbar Alam", location: "Kuwait", time: "4 days, 9 hours", initials: "M" },
-  { name: "Satnam Chheena", location: "Brampton ON", time: "4 days, 9 hours", initials: "S", avatar: "yellow" },
-  { name: "Dilpreet Singh", location: "Ontario", time: "4 days, 23 hours", initials: "D" },
-  { name: "Jagjit Singh", location: "Brampton", time: "5 days, 8 hours", initials: "J" },
-];
-
 const RecentlySubmittedClients = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [clients, setClients] = useState<Client[]>([]);
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const res = await recentlySubmittedClients();
+        if (res.success && Array.isArray(res.data)) {
+          const formattedClients: Client[] = res.data.map((item: any) => {
+            const fullName = [item.firstName, item.middelName, item.lastName].filter(Boolean).join(" ");
+            const location = item.address?.city || "Not specified";
+            const time = dayjs(item.createdAt).fromNow(true); // e.g. "3 days ago" -> "3 days"
+            const initials = fullName
+              .split(" ")
+              .map((part: string) => part.charAt(0))
+              .join("")
+              .slice(0, 2)
+              .toUpperCase();
+            return {
+              name: fullName,
+              location,
+              time,
+              initials,
+              avatar: item.imagePath || undefined,
+            };
+          });
+          setClients(formattedClients);
+        }
+      } catch (error) {
+        console.error("Error fetching clients", error);
+      }
+    };
+    fetchClients();
+  }, []);
 
   const showModal = (client: Client) => {
     setSelectedClient(client);
@@ -44,29 +71,30 @@ const RecentlySubmittedClients = () => {
         {clients.map((client, index) => (
           <div key={index} className="flex items-center gap-4">
             {client.avatar ? (
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center`} style={{ backgroundColor: client.avatar }}></div>
+              <img src={client.avatar} alt={client.name} className="w-12 h-12 rounded-full object-cover" />
             ) : (
               <div className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-900 text-white text-lg font-bold">
                 {client.initials}
               </div>
             )}
             <div>
-              <p className="text-md font-medium">{client.name}
+              <p className="text-md font-medium">
+                {client.name}
                 <button className="ml-1 text-gray-500" onClick={() => showModal(client)}>ℹ</button>
               </p>
               <p className="text-xs text-gray-500">{client.location}</p>
-              <p className="text-xs text-gray-400">{client.time}</p>
+              <p className="text-xs text-gray-400">{client.time} ago</p>
             </div>
           </div>
         ))}
       </div>
 
-      <Modal title="Client Information" visible={isModalVisible} onCancel={handleCancel} footer={null}>
+      <Modal title="Client Information" open={isModalVisible} onCancel={handleCancel} footer={null}>
         {selectedClient && (
           <div>
             <p><strong>Name:</strong> {selectedClient.name}</p>
             <p><strong>Location:</strong> {selectedClient.location}</p>
-            <p><strong>Submitted:</strong> {selectedClient.time}</p>
+            <p><strong>Submitted:</strong> {selectedClient.time} ago</p>
           </div>
         )}
       </Modal>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Form, Input, Button, message } from 'antd';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { sendCustomerMail } from '../../config/apiClient';
 
 interface Props {
   isOpen: boolean;
@@ -10,14 +11,34 @@ interface Props {
   val: any;
 }
 
-const SendMessage: React.FC<Props> = ({ isOpen, onClose, func, val }) => {
+const SendMessage: React.FC<Props> = ({customerId, isOpen, onClose, func, val }) => {
   const [form] = Form.useForm();
   const [content, setContent] = useState('');
+  const [subject,setSubject] = useState('')
   const [messageText, setMessageText] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
-
-  const handleSend = () => {
+  console.log('d',customerId?._id);
+  const handleSend = async() => {
     message.success('Message sent successfully!');
+    console.log(customerId?._id,content,subject);
+    console.log("Sending Mail Payload:", {
+      customerId: customerId?._id,
+      subject: subject,
+      body: content
+    });
+    
+    let obj = {
+      customerId:customerId?._id,
+      subject:subject,
+      body:content
+    }
+    let res = await sendCustomerMail(obj)
+     if(!res.success){
+      message.error(res.message)
+      return
+     }
+    
+    message.success(res?.message)
     setIsSendingMessage(false);
     onClose();
   };
@@ -64,7 +85,7 @@ const SendMessage: React.FC<Props> = ({ isOpen, onClose, func, val }) => {
             name="subject"
             rules={[{ required: true, message: 'Please enter subject' }]}
           >
-            <Input placeholder="Subject" />
+            <Input placeholder="Subject" value={subject} onChange={(e)=>setSubject(e.target.value)}/>
           </Form.Item>
 
           <Form.Item

@@ -333,6 +333,7 @@ export const getMatchSuggestions = async (customerId: string) => {
   
   
 
+
  export const createEmailTemplate = async (data) => {
   try {
     const response = await apiClient.post('admin/createEmailTemplate',data)
@@ -358,6 +359,7 @@ export const deleteEmailTemplate = async (id:string) => {
   } catch (error) {
     return (error as Error).response?.data;
   }
+<<<<<<< HEAD
 }
 
 interface MailLogParams {
@@ -372,3 +374,48 @@ export const mailLogs = async (params?: MailLogParams) => {
     return (error as any)?.response?.data;
   }
 };
+=======
+
+}
+
+export const recentlySubmittedClients = async () => {
+  try {
+    const response = await apiClient.get('admin/recentlySubmittedClients')
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
+export const getTodayStatsCount = async () => {
+  try {
+    const response = await apiClient.get('admin/getTodayStatsCount')
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
+export const clientSubm = async () => {
+  try {
+    const response = await apiClient.get('admin/getCustomerCountLastFiveDays')
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
+export const sendCustomerMail = async (data) => {
+  try {
+    const response = await apiClient.post('admin/sendCustomerMail',data)
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
+
+
+
+
+>>>>>>> dev_krishna
