@@ -38,7 +38,7 @@ const GroupModal: React.FC<GroupModalProps> = ({ visible, onClose, editingGroup,
             }
             fetchGroups();
             onClose();
-            form.resetFields(); // Clear form after submission
+            form.resetFields();
         } catch (error) {
             message.error("Failed to process request.");
         }

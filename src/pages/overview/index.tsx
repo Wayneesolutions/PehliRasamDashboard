@@ -64,20 +64,6 @@ const Overview = () => {
     countData();
   }, []);
 
-  const recentlyViewedClientsData = [
-    { name: "Imran", avatar: "", initials: "I" },
-    { name: "Sohi", avatar: "", initials: "S" },
-    { name: "Jeet", avatar: "", initials: "J" },
-    { name: "Charn", avatar: "", initials: "C" },
-    { name: "Taranjit", avatar: "", initials: "T" },
-    { name: "Amarjit", avatar: "", initials: "A" },
-    { name: "Smart", avatar: "", initials: "S" },
-    { name: "Simran", avatar: "", initials: "S" },
-    { name: "Krishn", avatar: "", initials: "K" },
-    { name: "Alenri", avatar: "", initials: "A" },
-    { name: "Mannik", avatar: "", initials: "M" },
-    { name: "Mehak", avatar: "", initials: "M" },
-  ];
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
@@ -90,7 +76,7 @@ const Overview = () => {
 
       {/* Recently Viewed Clients */}
       <div className="mt-8">
-        <RecentlyViewedClients  />
+        <RecentlyViewedClients />
       </div>
 
       {/* Main Content Section */}

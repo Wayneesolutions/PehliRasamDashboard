@@ -306,42 +306,47 @@ export const getMatchSuggestions = async (customerId: string) => {
   return res.data.data;
 };
 
-  export const searchCustomerByName = async (name: string) => {
-    const res = await apiClient.post("/admin/searchCustomerByName", { name });
-    return res.data.data;
-  };
-  
-  export const createMatchGroupValue = async (payload: {
-    matchGroupId: string;
-    customerId: string;
-    matchCustomerId: string;
-    matchingDescription: string;
-  }) => {
-    const res = await apiClient.post("/admin/createMatchGroupValue", payload);
-    return res.data;
-  };
+export const searchCustomerByName = async (name: string) => {
+  const res = await apiClient.post("/admin/searchCustomerByName", { name });
+  return res.data.data;
+};
 
-  export const updateMatchGroupValue = async (payload: {
-    matchGroupId: string;
-    id: string;
-    customerId: string;
-    matchingDescription: string;
-  }) => {
-    const res = await apiClient.post("/admin/updateMatchGroupValue", payload);
-    return res.data;
-  };
-  
-  
+export const createMatchGroupValue = async (payload: {
+  matchGroupId: string;
+  customerId: string;
+  matchCustomerId: string;
+  matchingDescription: string;
+}) => {
+  const res = await apiClient.post("/admin/createMatchGroupValue", payload);
+  return res.data;
+};
+
+export const updateMatchGroupValue = async (payload: {
+  matchGroupId: string;
+  id: string;
+  customerId: string;
+  matchingDescription: string;
+}) => {
+  const res = await apiClient.post("/admin/updateMatchGroupValue", payload);
+  return res.data;
+};
 
 
- export const createEmailTemplate = async (data) => {
+
+interface CreateEmailTemplateData {
+  subject: string;
+  body: string;
+}
+
+export const createEmailTemplate = async (data: CreateEmailTemplateData) => {
   try {
-    const response = await apiClient.post('admin/createEmailTemplate',data)
-    return response?.data
+    const response = await apiClient.post('admin/createEmailTemplate', data);
+    return response?.data;
   } catch (error) {
     return (error as Error).response?.data;
   }
-}
+};
+
 
 export const getAllEmailTemplates = async () => {
   try {
@@ -352,14 +357,13 @@ export const getAllEmailTemplates = async () => {
   }
 }
 
-export const deleteEmailTemplate = async (id:string) => {
+export const deleteEmailTemplate = async (id: string) => {
   try {
-    const response = await apiClient.post('admin/deleteEmailTemplate',id)
+    const response = await apiClient.post('admin/deleteEmailTemplate', { id });
     return response?.data
   } catch (error) {
     return (error as Error).response?.data;
   }
-<<<<<<< HEAD
 }
 
 interface MailLogParams {
@@ -374,9 +378,7 @@ export const mailLogs = async (params?: MailLogParams) => {
     return (error as any)?.response?.data;
   }
 };
-=======
 
-}
 
 export const recentlySubmittedClients = async () => {
   try {
@@ -405,17 +407,41 @@ export const clientSubm = async () => {
   }
 }
 
-export const sendCustomerMail = async (data) => {
+export const updateEmailTemplate = async (data: {
+  id: string;
+  subject: string;
+  body: string;
+}) => {
   try {
-    const response = await apiClient.post('admin/sendCustomerMail',data)
-    return response?.data
+    const response = await apiClient.post('/admin/updateEmailTemplate', data);
+    return response?.data;
+  } catch (error) {
+    return (error as Error)?.response?.data;
+  }
+};
+
+export const getEmailTemplateById = async (id: string) => {
+  try {
+    const response = await apiClient.post('/admin/getEmailTemplateById', { id });
+    return response?.data;
+  } catch (error) {
+    return (error as Error)?.response?.data;
+  }
+};
+
+interface SendCustomerMailData {
+  customerId: string;
+  subject: string;
+  body: string;
+}
+
+export const sendCustomerMail = async (data: SendCustomerMailData) => {
+  try {
+    const response = await apiClient.post('admin/sendCustomerMail', data);
+    return response?.data;
   } catch (error) {
     return (error as Error).response?.data;
   }
-}
+};
 
 
-
-
-
->>>>>>> dev_krishna

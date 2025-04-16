@@ -36,44 +36,55 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
         top: 64,
         zIndex: 900,
         borderRight: "1px solid #e0e0e0",
-        overflowY: "auto",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      <Menu
-        mode="inline"
-        defaultSelectedKeys={["/dashboard"]}
-        openKeys={openKeys}
-        onOpenChange={handleOpenChange}
-        onClick={(e) => navigate(e.key)}
+      <div
         style={{
-          fontSize: "16px",
-          fontWeight: 500,
-          padding: "12px 0",
+          flex: 1,
+          overflowY: "auto",
+          maxHeight: "calc(100vh - 64px)", // 64px is your header height
         }}
       >
-        {sidebarLinks.map((link) =>
-          link.children ? (
-            <SubMenu key={link.key} icon={link.icon || <MdSettings />} title={link.label}>
-              {link.children.map((child) =>
-                child.children ? (
-                  <SubMenu key={child.key} title={child.label} icon={child.icon}>
-                    {child.children.map((subChild) => (
-                      <Menu.Item key={subChild.key}>{subChild.label}</Menu.Item>
-                    ))}
-                  </SubMenu>
-                ) : (
-                  <Menu.Item key={child.key}>{child.label}</Menu.Item>
-                )
-              )}
-            </SubMenu>
-          ) : (
-            <Menu.Item key={link.key} icon={link.icon}>
-              {link.label}
-            </Menu.Item>
-          )
-        )}
-      </Menu>
+        <Menu
+          mode="inline"
+          defaultSelectedKeys={["/dashboard"]}
+          openKeys={openKeys}
+          onOpenChange={handleOpenChange}
+          onClick={(e) => navigate(e.key)}
+          style={{
+            fontSize: "16px",
+            fontWeight: 500,
+            padding: "12px 0",
+          }}
+        >
+          {sidebarLinks.map((link) =>
+            link.children ? (
+              <SubMenu key={link.key} icon={link.icon || <MdSettings />} title={link.label}>
+                {link.children.map((child) =>
+                  child.children ? (
+                    <SubMenu key={child.key} title={child.label} icon={child.icon}>
+                      {child.children.map((subChild) => (
+                        <Menu.Item key={subChild.key}>{subChild.label}</Menu.Item>
+                      ))}
+                    </SubMenu>
+                  ) : (
+                    <Menu.Item key={child.key}>{child.label}</Menu.Item>
+                  )
+                )}
+              </SubMenu>
+            ) : (
+              <Menu.Item key={link.key} icon={link.icon}>
+                {link.label}
+              </Menu.Item>
+            )
+          )}
+        </Menu>
+      </div>
     </Sider>
+
+
   );
 };
 

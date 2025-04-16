@@ -1,7 +1,8 @@
 import { useEffect, useState, KeyboardEvent, ChangeEvent, useRef } from "react";
 import { Mail, MapPin, Camera, Check, X, Upload } from "lucide-react";
-import PhoneInput from "react-phone-number-input";
-import { Dropdown, Menu, Button } from 'antd';
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
+import { Dropdown, Menu } from 'antd';
 import SendMessage from './SendMessage';
 import { getCustomerBasicDetail, updateCustomerBasicDetail, uploadFile } from "../../config/apiClient";
 import { Customer } from "../../schema/customernew";
@@ -244,7 +245,8 @@ const Sidebar = ({ customerId }: SidebarProps) => {
       )}
 
       {/* First Name - separate field */}
-      <div className="mt-3 text-center w-full">
+      {/* First Name */}
+      <div className="my-1 text-center w-full">
         {editMode === "firstName" ? (
           <div className="flex items-center justify-center">
             <input
@@ -252,64 +254,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="px-2 py-1 border rounded mr-1 w-32"
-              autoFocus
-            />
-            <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
-              <Check size={16} />
-            </button>
-            <button onClick={handleCancel} className="text-red-500 ml-1">
-              <X size={16} />
-            </button>
-          </div>
-        ) : (
-          <h2
-            className="text-lg font-semibold cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
-            onClick={() => customer && handleEdit("firstName", customer.firstName)}
-          >
-            {customer ? customer.firstName : "Loading..."}
-          </h2>
-        )}
-      </div>
-      <div className="mt-3 text-center w-full">
-        {editMode === "middelName" ? (
-          <div className="flex items-center justify-center">
-            <input
-              type="text"
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="px-2 py-1 border rounded mr-1 w-32"
-              autoFocus
-              placeholder="Enter middle name" // ✅ Add this
-            />
-            <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
-              <Check size={16} />
-            </button>
-            <button onClick={handleCancel} className="text-red-500 ml-1">
-              <X size={16} />
-            </button>
-          </div>
-        ) : (
-          <h2
-            className="text-lg font-semibold cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
-            onClick={() => customer && handleEdit("middelName", customer.middelName)}
-          >
-            {customer ? customer.middelName || "No middle name" : "Loading..."}
-          </h2>
-        )}
-      </div>
-
-      {/* Last Name - separate field */}
-      <div className="mt-1 text-center w-full">
-        {editMode === "lastName" ? (
-          <div className="flex items-center justify-center">
-            <input
-              type="text"
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="px-2 py-1 border rounded mr-1 w-32"
+              className="px-2 py-1 border rounded mr-1 w-32 text-sm"
               autoFocus
             />
             <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
@@ -321,13 +266,73 @@ const Sidebar = ({ customerId }: SidebarProps) => {
           </div>
         ) : (
           <h3
-            className="text-md cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
-            onClick={() => customer && handleEdit("lastName", customer.lastName)}
+            className="text-sm font-medium cursor-pointer hover:bg-gray-100 px-2 py-1 rounded inline-block"
+            onClick={() => customer && handleEdit("firstName", customer.firstName)}
           >
-            {customer ? customer.lastName : ""}
+            {customer ? customer.firstName : "Loading..."}
           </h3>
         )}
       </div>
+
+      {/* Middle Name */}
+      <div className="my-1 text-center w-full">
+        {editMode === "middelName" ? (
+          <div className="flex items-center justify-center">
+            <input
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="px-2 py-1 border rounded mr-1 w-32 text-sm"
+              autoFocus
+              placeholder="Enter middle name"
+            />
+            <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
+              <Check size={16} />
+            </button>
+            <button onClick={handleCancel} className="text-red-500 ml-1">
+              <X size={16} />
+            </button>
+          </div>
+        ) : (
+          <h4
+            className="text-sm font-medium cursor-pointer hover:bg-gray-100 px-2 py-1 rounded inline-block"
+            onClick={() => customer && handleEdit("middelName", customer.middelName)}
+          >
+            {customer ? customer.middelName || "No middle name" : "Loading..."}
+          </h4>
+        )}
+      </div>
+
+      {/* Last Name */}
+      <div className="my-1 text-center w-full">
+        {editMode === "lastName" ? (
+          <div className="flex items-center justify-center">
+            <input
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="px-2 py-1 border rounded mr-1 w-32 text-sm"
+              autoFocus
+            />
+            <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
+              <Check size={16} />
+            </button>
+            <button onClick={handleCancel} className="text-red-500 ml-1">
+              <X size={16} />
+            </button>
+          </div>
+        ) : (
+          <h4
+            className="text-sm font-medium cursor-pointer hover:bg-gray-100 px-2 py-1 rounded inline-block"
+            onClick={() => customer && handleEdit("lastName", customer.lastName)}
+          >
+            {customer ? customer.lastName : ""}
+          </h4>
+        )}
+      </div>
+
 
       {/* Email display/edit */}
       <div className="w-full mt-2">
@@ -393,10 +398,9 @@ const Sidebar = ({ customerId }: SidebarProps) => {
                 <PhoneInput
                   value={editValue}
                   onChange={(value) => setEditValue(value || "")}
-                  international
-                  defaultCountry="US"
-                  placeholder="Enter your Contact Number"
-                  className="custom-stacked-phone-input w-full"
+                  country={'us'}
+                  placeholder="Enter phone number"
+                  inputStyle={{ width: '100%' }}
                 />
 
               </div>
@@ -418,10 +422,8 @@ const Sidebar = ({ customerId }: SidebarProps) => {
               <PhoneInput
                 value={customer?.Number ? customer.Number.toString() : ""}
                 onChange={() => { }}
-                disabled
-                international
-                defaultCountry="US"
-                className="custom-stacked-phone-input w-full pointer-events-none"
+                placeholder="Enter phone number"
+                inputStyle={{ width: '100%' }}
               />
 
             </div>

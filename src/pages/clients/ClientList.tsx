@@ -88,13 +88,10 @@ const ClientList: React.FC<ClientListManagerProps> = ({ customerId }) => {
 
       setSelectedClientListId("");
 
-      // Smart message logic
       if (response?.success) {
         const msg = response.message?.toLowerCase();
         if (msg?.includes("already")) {
-          message.info(response.message); // Neutral tone
-        } else {
-          message.success(response.message || "Client list updated.");
+          message.info(response.message);
         }
       } else {
         message.error(response?.message || "Could not add client to the list.");

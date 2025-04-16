@@ -5,6 +5,7 @@ import { SearchOutlined, AppstoreOutlined, UserAddOutlined, InfoCircleOutlined }
 import { addCustomerByAdmin, allActiveCustomer } from "../../config/apiClient";
 import { ActiveClientDetails } from "../../schema/customernew";
 
+
 const Clients: React.FC = () => {
   const [view, setView] = useState<"grid" | "list">("grid");
   const [selectedClient, setSelectedClient] = useState<any>(null);
@@ -107,7 +108,6 @@ const Clients: React.FC = () => {
                 <strong>📍 Location:</strong> {`${selectedClient.address.city}, ${selectedClient.address.stateOrProvince}, ${selectedClient.address.country}`}
               </p>
               <p className="text-gray-600 text-sm"><strong>📧 Email:</strong> {selectedClient.email}</p>
-              <p className="text-gray-600 text-sm"><strong>📞 Phone:</strong> {selectedClient.Number || "N/A"}</p>
               {selectedClient.registrationDate && (
                 <p className="text-gray-600 text-sm">
                   <strong>📅 Registered:</strong> {new Date(selectedClient.registrationDate).toLocaleDateString()}

@@ -191,7 +191,7 @@ const MatchesPage = () => {
                           async onOk() {
                             try {
                               await deleteMatchGroupValue(value.valueId);
-                              await fetchGroups(); 
+                              await fetchGroups();
                               // Optional: Refresh UI here
                             } catch (error) {
                               console.error("Error deleting match:", error);
@@ -214,7 +214,7 @@ const MatchesPage = () => {
                                       customerId: value.customerId, // the actual customer ID
                                       matchingDescription: value.matchingDescription || ""
                                     });
-                                    await fetchGroups(); 
+                                    await fetchGroups();
                                   } catch (error) {
                                     console.error("Failed to move customer:", error);
                                   }
@@ -338,6 +338,8 @@ const MatchesPage = () => {
                   {searchResults.map((client) => {
                     const fullName = `${client.firstName} ${client.lastName}`;
                     const isSelected = selectedClientId === client._id;
+                    const firstLetter = client.firstName.charAt(0).toUpperCase();
+
                     return (
                       <div
                         key={client._id}
@@ -346,8 +348,7 @@ const MatchesPage = () => {
                           setSearchTerm(fullName);
                           setSearchResults([]); // hide results after selection
                         }}
-                        className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-blue-50 ${isSelected ? "bg-blue-100" : ""
-                          }`}
+                        className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-blue-50 ${isSelected ? "bg-blue-100" : ""}`}
                       >
                         {client.imagePath ? (
                           <img
@@ -357,26 +358,14 @@ const MatchesPage = () => {
                           />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-sm font-semibold text-gray-700">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="w-5 h-5 text-gray-500"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M5.121 17.804A9 9 0 1119.07 7.75m-5.05 11.196a4.978 4.978 0 01-6.829-6.829"
-                              />
-                            </svg>
+                            <span className="text-white">{firstLetter}</span>
                           </div>
                         )}
                         <span className="text-sm">{fullName}</span>
                       </div>
                     );
                   })}
+
                 </div>
 
 

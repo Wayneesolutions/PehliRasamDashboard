@@ -64,7 +64,7 @@ const AppRoutes = () => {
                         <Route path="matching" element={<Matching />} />
                         <Route path="users" element={<Users />} />
                         <Route path="profile-setting-info" element={<ProfileInfo />} />
-                        <Route path="emailsettings" element={<EmailSettings/>}/>
+                        <Route path="emailsettings" element={<EmailSettings />} />
                     </Route>
                 </Route>
             </Routes>

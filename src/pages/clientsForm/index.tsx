@@ -4,6 +4,8 @@ import { submissionFormById, submitSubmissionForm, uploadImage } from "../../con
 import { Form, Input, Select, Button, Row, Col, Card, message, DatePicker } from "antd";
 import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
 
 
 
@@ -431,13 +433,36 @@ const Index = () => {
                                                 : undefined
                                         }
                                         defaultValue={formData?.BasicDetail?.[key] ?? ""}
-                                        render={({ field }) => (
-                                            <Input
-                                                {...field}
-                                                value={typeof field.value === "string" ? field.value : ""}
-                                                placeholder={`Enter ${key}`}
-                                            />
-                                        )}
+                                        render={({ field }) => {
+                                            if (key === 'Number') {
+                                                let phoneNumber = '';
+                                                if (typeof field.value === 'string') {
+                                                    phoneNumber = field.value;
+                                                } else if (typeof field.value === 'object' && field.value !== null) {
+                                                    phoneNumber = '';
+                                                }
+                                                const phoneWithCountryCode = phoneNumber ? `+1${phoneNumber.replace(/^\+?1/, '')}` : '';
+
+                                                return (
+                                                    <PhoneInput
+                                                        {...field}
+                                                        country={'us'}
+                                                        value={phoneWithCountryCode}
+                                                        onChange={(value) => field.onChange(value)}
+                                                        placeholder="Enter phone number"
+                                                        inputStyle={{ width: '100%' }}
+                                                    />
+                                                );
+                                            }
+                                            // Default Input for other fields
+                                            return (
+                                                <Input
+                                                    {...field}
+                                                    value={typeof field.value === 'string' ? field.value : ''}
+                                                    placeholder={`Enter ${key}`}
+                                                />
+                                            );
+                                        }}
                                     />
                                 </Form.Item>
                             </Col>

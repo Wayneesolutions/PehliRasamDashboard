@@ -79,14 +79,14 @@ const ProfileUpdate = () => {
                   <td className="p-3">
                     <span
                       className={`px-2 py-1 rounded-md text-sm font-medium ${client.status === "Sent"
-                          ? "bg-blue-100 text-blue-600"
-                          : client.status === "Opened"
-                            ? "bg-yellow-100 text-yellow-600"
-                            : client.status === "Updated"
-                              ? "bg-green-100 text-green-600"
-                              : client.status === "Completed"
-                                ? "bg-gray-100 text-gray-600"
-                                : "bg-red-100 text-red-600"
+                        ? "bg-blue-100 text-blue-600"
+                        : client.status === "Opened"
+                          ? "bg-yellow-100 text-yellow-600"
+                          : client.status === "Updated"
+                            ? "bg-green-100 text-green-600"
+                            : client.status === "Completed"
+                              ? "bg-gray-100 text-gray-600"
+                              : "bg-red-100 text-red-600"
                         }`}
                     >
                       {client.status}

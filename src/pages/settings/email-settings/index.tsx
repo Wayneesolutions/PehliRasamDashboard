@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Button, Dropdown, Menu, Modal, Table } from 'antd';
+import { Button, Dropdown, Menu, Modal, Table, message } from 'antd';
 import { EllipsisOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import AddEmailTemplateModal from './AddEmailTemplateModal';
 import { deleteEmailTemplate, getAllEmailTemplates } from '../../../config/apiClient';
+
 interface EmailTemplateType {
   key: string;
   subject: string;
@@ -14,7 +15,9 @@ interface EmailTemplateType {
 const Index = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [templates, setTemplates] = useState<EmailTemplateType[]>([]);
-  const [val,setVal] = useState(false)
+  const [val, setVal] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+
   useEffect(() => {
     const getAllEmail = async () => {
       const res = await getAllEmailTemplates();
@@ -31,6 +34,25 @@ const Index = () => {
     getAllEmail();
   }, [val]);
 
+  const handleDeleteConfirm = (record: EmailTemplateType) => {
+    Modal.confirm({
+      title: 'Are you sure you want to delete this template?',
+      content: record.subject,
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        const res = await deleteEmailTemplate(record._id);
+        if (!res.success) {
+          message.error(res?.message);
+          return;
+        }
+        message.success(res?.message);
+        setVal(!val);
+      },
+    });
+  };
+
   const columns: ColumnsType<EmailTemplateType> = [
     {
       title: 'Email Templates',
@@ -46,11 +68,13 @@ const Index = () => {
         <Dropdown
           overlay={
             <Menu>
-              <Menu.Item
-                key="delete"
-                danger
-                onClick={() => handleDeleteConfirm(record)}
-              >
+              <Menu.Item key="edit" onClick={() => {
+                setEditId(record._id);
+                setIsModalOpen(true);
+              }}>
+                Edit
+              </Menu.Item>
+              <Menu.Item key="delete" danger onClick={() => handleDeleteConfirm(record)}>
                 Delete
               </Menu.Item>
             </Menu>
@@ -64,45 +88,18 @@ const Index = () => {
     },
   ];
 
-  const handleDeleteConfirm = (record: EmailTemplateType) => {
-    Modal.confirm({
-      title: 'Are you sure you want to delete this template?',
-      content: record.subject,
-      okText: 'Delete',
-      okType: 'danger',
-      cancelText: 'Cancel',
-      onOk: async () => {
-        console.log(record);
-        let obj = {
-          id:record._id
-        }
-        const res = await deleteEmailTemplate(obj)
-        if(!res.success){
-          message.error(res?.message)
-          return
-        }
-        message.success(res?.message)
-        setVal(!val)
-        // try {
-        //   const res = await deleteEmailTemplate({ id: record._id });
-        //   if (res.success) {
-        //     message.success('Template deleted successfully!');
-        //     setTemplates((prev) => prev.filter((item) => item._id !== record._id));
-        //   } else {
-        //     message.error(res.message || 'Failed to delete template');
-        //   }
-        // } catch (err) {
-        //   message.error('Something went wrong!');
-        // }
-      },
-    });
-  };
-
   return (
     <div className="p-4 bg-white rounded shadow">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Email Templates</h2>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => {
+            setEditId(null);
+            setIsModalOpen(true);
+          }}
+        >
           Email Template
         </Button>
       </div>
@@ -119,7 +116,11 @@ const Index = () => {
         isOpen={isModalOpen}
         func={setVal}
         val={val}
-        onClose={() => setIsModalOpen(false)}
+        editId={editId}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditId(null);
+        }}
       />
     </div>
   );

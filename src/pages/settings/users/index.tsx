@@ -48,11 +48,11 @@ const UserManagement: React.FC = () => {
             setUsers(formattedUsers);
         } catch (error: unknown) {
             console.error("Error fetching users:", error);
-        
+
             if (error instanceof Error) {
                 // If error is an Axios error with a response object
                 const axiosError = error as { response?: { status?: number } };
-                
+
                 if (axiosError.response?.status === 401) {
                     message.error("Session expired. Please log in again.");
                 } else {
@@ -84,7 +84,7 @@ const UserManagement: React.FC = () => {
             fetchUsers();
         } catch (error: unknown) {
             console.error("Error creating admin:", error);
-        
+
             if (error instanceof Error) {
                 // Check if error has a response property (common in Axios errors)
                 const axiosError = error as { response?: { data?: { error?: string } } };
@@ -93,7 +93,7 @@ const UserManagement: React.FC = () => {
                 message.error("An unexpected error occurred.");
             }
         }
-        
+
     };
 
     const handleDelete = async (userId: string) => {
@@ -113,7 +113,7 @@ const UserManagement: React.FC = () => {
             fetchUsers();
         } catch (error: unknown) {
             console.error("Error deleting admin:", error);
-        
+
             if (error instanceof Error) {
                 // Type assertion for Axios-style errors
                 const axiosError = error as { response?: { data?: { message?: string } } };
@@ -122,7 +122,7 @@ const UserManagement: React.FC = () => {
                 message.error("An unexpected error occurred.");
             }
         }
-        
+
     };
 
     const columns = [

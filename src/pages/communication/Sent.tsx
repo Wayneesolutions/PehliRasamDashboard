@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { mailLogs } from "../../config/apiClient"; // adjust the path if needed
+import { mailLogs } from "../../config/apiClient";
 
 interface Email {
   to: string;
@@ -64,7 +64,8 @@ const Sent = () => {
                   <tr key={idx} className="border-b hover:bg-gray-50">
                     <td className="p-3 flex items-center">
                       <span className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-white font-semibold">
-                        {email.from[0]}
+                        {email.from?.[0] || "?"}
+
                       </span>
                       <span className="ml-2 text-gray-800">
                         {email.from} ➝ <span className="text-blue-600">{email.customerName || email.to}</span>

@@ -167,10 +167,10 @@ const List = () => {
                 </Form>
             </Modal>
 
-            <Modal 
-                title="Edit List" 
-                open={isEditModalOpen} 
-                onCancel={() => setIsEditModalOpen(false)} 
+            <Modal
+                title="Edit List"
+                open={isEditModalOpen}
+                onCancel={() => setIsEditModalOpen(false)}
                 onOk={handleEditSubmit}
             >
                 <Form form={form} layout="vertical">

@@ -19,7 +19,7 @@ const ClientSubmissions = () => {
             }),
             value: entry.count,
           }));
-  console.log("Formatted Data:", formatted);
+          console.log("Formatted Data:", formatted);
 
           setChartData(formatted);
         }

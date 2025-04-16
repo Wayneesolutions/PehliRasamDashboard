@@ -65,10 +65,10 @@ const schema = z.object({
 
 export default schema;
 
-export interface AddClientFormData{
-  firstname:String;
-  lastname:String;
-  email:String;
+export interface AddClientFormData {
+  firstname: String;
+  lastname: String;
+  email: String;
 }
 
 export interface Address {
@@ -92,7 +92,7 @@ export interface ActiveClientDetails {
 export interface Customer {
   _id: string;
   firstName: string;
-  middelName:string;
+  middelName: string;
   lastName: string;
   email: string;
   Number?: string;
@@ -101,7 +101,7 @@ export interface Customer {
     city: string | null;
     stateOrProvince: string | null;
     postalCode: string | null;
-    country: string | null; 
+    country: string | null;
   };
   imagePath?: string;
   createdAt: string;
