@@ -432,29 +432,25 @@ const Index = () => {
                                                 ? { required: `${key} is required` }
                                                 : undefined
                                         }
-                                        defaultValue={formData?.BasicDetail?.[key] ?? ""}
+                                        defaultValue={
+                                            typeof formData?.BasicDetail?.[key] === 'string'
+                                                ? formData.BasicDetail[key]
+                                                : ''
+                                        }
                                         render={({ field }) => {
                                             if (key === 'Number') {
-                                                let phoneNumber = '';
-                                                if (typeof field.value === 'string') {
-                                                    phoneNumber = field.value;
-                                                } else if (typeof field.value === 'object' && field.value !== null) {
-                                                    phoneNumber = '';
-                                                }
-                                                const phoneWithCountryCode = phoneNumber ? `+1${phoneNumber.replace(/^\+?1/, '')}` : '';
-
                                                 return (
                                                     <PhoneInput
                                                         {...field}
-                                                        country={'us'}
-                                                        value={phoneWithCountryCode}
+                                                        country="us"
+                                                        value={typeof field.value === 'string' ? field.value : ''}
                                                         onChange={(value) => field.onChange(value)}
                                                         placeholder="Enter phone number"
                                                         inputStyle={{ width: '100%' }}
                                                     />
                                                 );
                                             }
-                                            // Default Input for other fields
+
                                             return (
                                                 <Input
                                                     {...field}
@@ -464,6 +460,7 @@ const Index = () => {
                                             );
                                         }}
                                     />
+
                                 </Form.Item>
                             </Col>
                         ))}
