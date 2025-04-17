@@ -37,28 +37,34 @@ const MatchingModal: React.FC<FieldModalProps> = ({ visible, onClose, editingFie
     const [selectedProfileField, setSelectedProfileField] = useState<string | undefined>();
 
     useEffect(() => {
-        if (visible) {
-            fetchGroupList();
-            if (editingField) {
-                setSelectedProfileField(editingField.profileField);
-                form.setFieldsValue({
-                    label: editingField.label,
-                    profileField: editingField.profileField,
-                    helpText: editingField.helpText || "",
-                    clientTypes: editingField.clientTypes || "General",
-                    weight: editingField.weight || "Medium",
-                    useInMatch: editingField.useInMatch ?? false,
-                    dealBreak: editingField.dealBreak ?? false,
-                    preferencesGroupId: editingField.preferencesGroupId,
-                    choices: editingField.choices || [],
-                });
-            } else {
-                form.resetFields();
-                setSelectedProfileField(undefined);
-                form.setFieldValue("choices", []);
+        const fetchAndSetData = async () => {
+            if (visible) {
+                await fetchGroupList();
+
+                if (editingField) {
+                    setSelectedProfileField(editingField.profileField);
+                    form.setFieldsValue({
+                        preferencesGroupId: editingField.preferencesGroupId,
+                        label: editingField.label,
+                        profileField: editingField.profileField,
+                        helpText: editingField.helpText || "",
+                        clientTypes: editingField.clientTypes || "General",
+                        weight: editingField.weight || "Medium",
+                        useInMatch: editingField.useInMatch ?? false,
+                        dealBreak: editingField.dealBreak ?? false,
+                        choices: editingField.choices || [],
+                    });
+                } else {
+                    form.resetFields();
+                    setSelectedProfileField(undefined);
+                    form.setFieldValue("choices", []);
+                }
             }
-        }
-    }, [visible, editingField, form]);
+        };
+
+        fetchAndSetData();
+    }, [visible]);
+
 
     const fetchGroupList = async () => {
         try {
@@ -124,16 +130,19 @@ const MatchingModal: React.FC<FieldModalProps> = ({ visible, onClose, editingFie
                 >
                     <Select
                         placeholder="Select a group"
-                        disabled={!!editingField}
                         loading={groups.length === 0}
+                        optionFilterProp="children"
+                        showSearch
                     >
                         {groups.map((group) => (
-                            <Option key={group._id} value={group._id}>
+                            <Option key={group._id} value={String(group._id)}>
                                 {group.name}
                             </Option>
                         ))}
+
                     </Select>
                 </Form.Item>
+
 
                 <Form.Item
                     name="label"

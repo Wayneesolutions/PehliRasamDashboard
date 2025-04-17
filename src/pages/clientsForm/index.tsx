@@ -523,13 +523,11 @@ const Index = () => {
                         </div>
                     ))}
 
-
-
-
-
                     {formData?.matchDetails?.map((group: any) => (
                         <div key={group._id}>
-                            <h4 className="text-lg font-medium text-[rgb(174,8,71)] mt-5 mb-3">{group.group?.name}</h4>
+                            <h4 className="text-lg font-medium text-[rgb(174,8,71)] mt-5 mb-3">
+                                {group.group?.name}
+                            </h4>
                             <Row gutter={16}>
                                 {group.fields.map((field: any) => (
                                     <Col span={12} key={field._id} className="mb-4">
@@ -546,9 +544,62 @@ const Index = () => {
                                             <Controller
                                                 name={`match.${field._id}`}
                                                 control={control}
-                                                render={({ field: controllerField }) => (
-                                                    <Input {...controllerField} placeholder={field.label} />
-                                                )}
+                                                render={({ field: controllerField }) => {
+                                                    switch (field.profileField) {
+                                                        case "long text":
+                                                            return (
+                                                                <Input.TextArea
+                                                                    {...controllerField}
+                                                                    rows={3}
+                                                                    placeholder={field.label}
+                                                                />
+                                                            );
+                                                        case "select":
+                                                            return (
+                                                                <Select
+                                                                    {...controllerField}
+                                                                    placeholder={`Select ${field.label}`}
+                                                                    options={
+                                                                        field.choices?.map((choice: string) => ({
+                                                                            label: choice,
+                                                                            value: choice,
+                                                                        })) || []
+                                                                    }
+                                                                />
+                                                            );
+                                                        case "number":
+                                                            return (
+                                                                <Input
+                                                                    {...controllerField}
+                                                                    type="number"
+                                                                    placeholder={field.label}
+                                                                />
+                                                            );
+                                                        case "date":
+                                                            return (
+                                                                <DatePicker
+                                                                    value={controllerField.value ? dayjs(controllerField.value) : null}
+                                                                    onChange={(date) =>
+                                                                        controllerField.onChange(date ? date.format("YYYY-MM-DD") : "")
+                                                                    }
+                                                                    style={{ width: "100%" }}
+                                                                    placeholder={field.label}
+                                                                    format="YYYY-MM-DD"
+                                                                />
+                                                            );
+                                                        case "height":
+                                                            return (
+                                                                <Input
+                                                                    {...controllerField}
+                                                                    placeholder={`${field.label} (e.g. 5'11")`}
+                                                                />
+                                                            );
+                                                        default:
+                                                            return (
+                                                                <Input {...controllerField} placeholder={field.label} />
+                                                            );
+                                                    }
+                                                }}
                                             />
                                         </Form.Item>
                                     </Col>
@@ -556,6 +607,7 @@ const Index = () => {
                             </Row>
                         </div>
                     ))}
+
 
                     <Form.Item className="flex justify-center mt-6">
                         <Button type="primary" htmlType="submit" className="!bg-[rgb(174,8,71)] !border-none">
