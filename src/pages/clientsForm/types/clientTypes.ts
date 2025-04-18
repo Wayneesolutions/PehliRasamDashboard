@@ -228,7 +228,7 @@ export interface CustomerUpdate {
   address?: {
     street: string | null;
     city: string | null;
-    stateOrProvince: string | null;
+    state: string | null;
     postalCode: string | null;
     country?: string | null; // Make country optional, if it's not always provided
   };

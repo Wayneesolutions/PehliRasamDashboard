@@ -262,7 +262,7 @@ const MatchesPage = () => {
                             </div>
                             <div>
                               <span className="font-semibold">Address:</span>{" "}
-                              {value.address?.street}, {value.address?.city}, {value.address?.stateOrProvince}, {value.address?.country} - {value.address?.postalCode}
+                              {value.address?.street}, {value.address?.city}, {value.address?.state}, {value.address?.country} - {value.address?.postalCode}
                             </div>
                           </div>
                         </div>

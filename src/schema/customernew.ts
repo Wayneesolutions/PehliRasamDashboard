@@ -74,7 +74,7 @@ export interface AddClientFormData {
 export interface Address {
   street: string;
   city: string;
-  stateOrProvince: string;
+  state: string;
   postalCode: string;
   country: string;
 }
@@ -99,7 +99,7 @@ export interface Customer {
   address?: {
     street: string | null;
     city: string | null;
-    stateOrProvince: string | null;
+    state: string | null;
     postalCode: string | null;
     country: string | null;
   };

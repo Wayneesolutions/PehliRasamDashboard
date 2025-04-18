@@ -14,7 +14,16 @@ type SidebarProps = {
   customerId: string;
 };
 
-
+const cityOptions = [
+  "Amritsar", "Barnala", "Bathinda", "Dera Bassi", "Delhi", "Chandigarh",
+  "Faridkot", "Fatehgarh Sahib", "Firozpur", "Gurdaspur", "Gujarat",
+  "Hoshiarpur", "Himachal Pradesh", "Haryana", "Jalandhar", "Jammu and Kashmir",
+  "Kapurthala", "Khanna", "Ludhiana", "Mansa", "Moga", "Muktsar(Sri Muktsar Sahib)",
+  "Nakodar", "Patiala", "Phagwara", "Rupnagar", "Rajasthan",
+  "(Mohali)Sahibzada Ajit Singh Nagar", "Sangrur",
+  "(Nawanshahr)Shahid Bhagat Singh Nagar", "Tarn Taran", "Uttarakhand",
+  "Uttar Pradesh", "Zirakpur"
+];
 
 const Sidebar = ({ customerId }: SidebarProps) => {
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -47,13 +56,13 @@ const Sidebar = ({ customerId }: SidebarProps) => {
   const [address, setAddress] = useState<{
     street: string;
     city: string;
-    stateOrProvince: string;
+    state: string;
     postalCode: string;
     country: string; // Add this line for the 'country' property
   }>({
     street: "",
     city: "",
-    stateOrProvince: "",
+    state: "",
     postalCode: "",
     country: "", // Initialize country as an empty string
   });
@@ -77,7 +86,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
           setAddress({
             street: customerData.address.street || "",
             city: customerData.address.city || "",
-            stateOrProvince: customerData.address.stateOrProvince || "",
+            state: customerData.address.state || "",
             postalCode: customerData.address.postalCode || "",
             country: customerData.address.country || "",
           });
@@ -137,7 +146,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
         }
         setEditMode(null);
         setEditValue("");
-        setAddress({ street: "", city: "", stateOrProvince: "", postalCode: "", country: "" });
+        setAddress({ street: "", city: "", state: "", postalCode: "", country: "" });
         message.success(res.message);
       } else {
         message.error(res.message || "Failed to update");
@@ -447,22 +456,21 @@ const Sidebar = ({ customerId }: SidebarProps) => {
                 autoFocus
                 placeholder="Street"
               />
-              <input
-                type="text"
+
+              {/* ✅ Removed input for city, now only using select */}
+              <select
                 value={address.city}
                 onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                onKeyDown={handleKeyDown}
                 className="px-2 py-1 border rounded w-full mb-2"
-                placeholder="City"
-              />
-              <input
-                type="text"
-                value={address.stateOrProvince}
-                onChange={(e) => setAddress({ ...address, stateOrProvince: e.target.value })}
-                onKeyDown={handleKeyDown}
-                className="px-2 py-1 border rounded w-full mb-2"
-                placeholder="State/Province"
-              />
+              >
+                <option value="" disabled>Select City</option>
+                {cityOptions.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
+
               <input
                 type="text"
                 value={address.postalCode}
@@ -471,6 +479,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
                 className="px-2 py-1 border rounded w-full mb-2"
                 placeholder="Postal Code"
               />
+
               <input
                 type="text"
                 value={address.country}
@@ -479,6 +488,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
                 className="px-2 py-1 border rounded w-full mb-2"
                 placeholder="Country"
               />
+
               <div className="flex justify-end space-x-2">
                 <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
                   <Check size={16} />
@@ -497,7 +507,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
                   setAddress({
                     street: customer.address.street || "",
                     city: customer.address.city || "",
-                    stateOrProvince: customer.address.stateOrProvince || "",
+                    state: customer.address.state || "",
                     postalCode: customer.address.postalCode || "",
                     country: customer.address.country || "",
                   });
@@ -505,11 +515,12 @@ const Sidebar = ({ customerId }: SidebarProps) => {
               }}
             >
               {customer?.address
-                ? `${customer.address.street || ""}, ${customer.address.city || ""}, ${customer.address.stateOrProvince || ""}, ${customer.address.postalCode || ""}, ${customer.address.country || ""}`
+                ? `${customer.address.street || ""}, ${customer.address.city || ""}, ${customer.address.state || ""}, ${customer.address.postalCode || ""}, ${customer.address.country || ""}`
                 : "N/A"}
             </span>
           )}
         </div>
+
 
 
 

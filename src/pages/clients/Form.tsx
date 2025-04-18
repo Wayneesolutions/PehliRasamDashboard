@@ -173,7 +173,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
 
             if (res.success) {
                 message.success("Profile updated successfully");
-                // 🔥 Don't fetch again — updated values stay in formData
             } else {
                 message.error(res.message || "Update failed");
             }
@@ -473,14 +472,37 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                             )}
 
                                                             {profileField === "date" && (
-                                                                <input
-                                                                    type="date"
-                                                                    className="w-full border p-2 rounded"
-                                                                    value={fieldValue}
-                                                                    onChange={(e) => handleUpdate(field.fieldId, e.target.value)}
-
-                                                                />
+                                                                <div className="flex gap-2">
+                                                                    <input
+                                                                        type="number"
+                                                                        className="w-1/2 border p-2 rounded"
+                                                                        placeholder="From"
+                                                                        defaultValue={fieldValue?.split(" - ")[0] || ""}
+                                                                        onKeyDown={(e) => {
+                                                                            if (e.key === "Enter") {
+                                                                                const to = fieldValue?.split(" - ")[1] || "";
+                                                                                const from = (e.target as HTMLInputElement).value;
+                                                                                handleUpdate(field.fieldId, `${from} - ${to}`);
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                    <input
+                                                                        type="number"
+                                                                        className="w-1/2 border p-2 rounded"
+                                                                        placeholder="To"
+                                                                        defaultValue={fieldValue?.split(" - ")[1] || ""}
+                                                                        onKeyDown={(e) => {
+                                                                            if (e.key === "Enter") {
+                                                                                const from = fieldValue?.split(" - ")[0] || "";
+                                                                                const to = (e.target as HTMLInputElement).value;
+                                                                                handleUpdate(field.fieldId, `${from} - ${to}`);
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </div>
                                                             )}
+
+
 
                                                             {profileField === "height" && (
                                                                 <div className="flex gap-2">

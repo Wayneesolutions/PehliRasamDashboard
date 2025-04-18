@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input, Button, Card, Modal, Form } from "antd";
-import { SearchOutlined, AppstoreOutlined, UserAddOutlined, InfoCircleOutlined } from "@ant-design/icons";
+import { SearchOutlined, UserAddOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { addCustomerByAdmin, allActiveCustomer } from "../../config/apiClient";
 import { ActiveClientDetails } from "../../schema/customernew";
 
 
 const Clients: React.FC = () => {
-  const [view, setView] = useState<"grid" | "list">("grid");
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
@@ -25,22 +25,24 @@ const Clients: React.FC = () => {
   };
 
   const handleSaveClient = async () => {
-    form.validateFields().then(async (values) => {
-      console.log(values)
-      const res = await addCustomerByAdmin(values)
-      if (!res.success) {
-        alert(res.message)
-        return
-      }
-      alert(res.data.success)
+    try {
+      const values = await form.validateFields();
+      const res = await addCustomerByAdmin(values);
+
+      const customerId = res.data._id;
       setIsAddClientModalOpen(false);
-      navigate("/dashboard/add-client", { state: values });
-    });
+
+      navigate("/dashboard/add-client", {
+        state: { customerId, customerData: res.data }
+      });
+    } catch (error) {
+      console.error("Validation or API error:", error);
+    }
   };
+
   useEffect(() => {
     const fetchingCustomers = async () => {
       const res = await allActiveCustomer()
-      console.log('res from ========', res.data);
       if (res.success) {
         setActiveClients(res?.data)
       } else {
@@ -51,33 +53,63 @@ const Clients: React.FC = () => {
     fetchingCustomers()
   }, [])
 
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value.toLowerCase());
+  };
+
+  const filteredClients = useMemo(() => {
+    return activeclients.filter((client) =>
+      `${client.firstName} ${client.lastName}`.toLowerCase().includes(searchTerm)
+    );
+  }, [searchTerm, activeclients]);
+
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
-      {/* Search & Filters */}
-      <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
-        <Input prefix={<SearchOutlined />} placeholder="Type name to search" className="w-full sm:w-1/3" />
-        <div className="flex flex-wrap gap-2">
-          <Button icon={<UserAddOutlined />} type="primary" onClick={openAddClientModal}>
-            + Client
-          </Button>
-          <Button icon={<AppstoreOutlined />} onClick={() => setView("grid")} />
+      {/* Header with search and button */}
+      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+        {/* Left: Search input with fixed width */}
+        <div className="flex-1 min-w-[200px] max-w-[300px]">
+          <Input
+            prefix={<SearchOutlined />}
+            placeholder="Search by name"
+            onChange={handleSearch}
+          />
         </div>
+
+        {/* Right: Add Client button */}
+        <Button icon={<UserAddOutlined />} type="primary" onClick={openAddClientModal}>
+          + Client
+        </Button>
       </div>
 
-      {/* Client Display */}
-      <div className={`grid ${view === "grid" ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3" : "flex flex-col"} gap-4`}>
-        {activeclients.map((client) => (
+
+
+
+      {/* Client Grid Display */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        {filteredClients.map((client) => (
           <Card key={client._id} className="p-4 shadow-md flex flex-col items-center gap-3 text-center">
             {client.imagePath ? (
-              <img src={client.imagePath} alt={`${client.firstName} ${client.lastName}`} className="w-24 h-24 object-cover rounded-full shadow-md" />
+              <img
+                src={client.imagePath}
+                alt={`${client.firstName} ${client.lastName}`}
+                className="w-24 h-24 object-cover rounded-full shadow-md"
+              />
             ) : (
               <div className="w-24 h-24 flex items-center justify-center bg-gray-200 rounded-full text-xl font-semibold">
                 {`${client.firstName[0]}${client.lastName[0]}`}
               </div>
             )}
             <h3 className="text-lg font-semibold">{`${client.firstName} ${client.lastName}`}</h3>
-            <p className="text-gray-500">{`${client.address.city}, ${client.address.country}`}</p>
-            <Button type="primary" icon={<InfoCircleOutlined />} onClick={() => openClientModal(client)}>
+            <p className="text-gray-500">
+              {`${client.address?.city || "City"}, ${client.address?.country || "Country"}`}
+            </p>
+            <Button
+              type="primary"
+              icon={<InfoCircleOutlined />}
+              onClick={() => openClientModal(client)}
+            >
               View Details
             </Button>
           </Card>
@@ -105,7 +137,7 @@ const Clients: React.FC = () => {
             )}
             <div className="mt-4 w-full space-y-2">
               <p className="text-gray-600 text-sm">
-                <strong>📍 Location:</strong> {`${selectedClient.address.city}, ${selectedClient.address.stateOrProvince}, ${selectedClient.address.country}`}
+                <strong>📍 Location:</strong> {`${selectedClient.address.city}, ${selectedClient.address.state}, ${selectedClient.address.country}`}
               </p>
               <p className="text-gray-600 text-sm"><strong>📧 Email:</strong> {selectedClient.email}</p>
               {selectedClient.registrationDate && (
@@ -114,14 +146,18 @@ const Clients: React.FC = () => {
                 </p>
               )}
             </div>
-            <Button type="link" className="mt-4 text-blue-600 hover:underline text-sm" onClick={() =>
-              navigate("/dashboard/add-client", {
-                state: { clientId: selectedClient._id },
-              })
-            }
+            <Button
+              type="link"
+              className="mt-4 text-blue-600 hover:underline text-sm"
+              onClick={() =>
+                navigate("/dashboard/add-client", {
+                  state: { customerId: selectedClient._id },
+                })
+              }
             >
               🔗 View Full Profile
             </Button>
+
           </div>
         )}
       </Modal>

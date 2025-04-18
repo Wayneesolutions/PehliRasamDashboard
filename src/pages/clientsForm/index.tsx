@@ -39,7 +39,7 @@ type FormValues = {
         address: {
             street: string;
             city: string;
-            stateOrProvince: string;
+            state: string;
             postalCode: string;
         };
     };
@@ -55,11 +55,10 @@ const basicDetailKeys: Array<keyof FormValues["BasicDetail"]> = [
 ];
 
 const addressKeys: Array<keyof FormValues["BasicDetail"]["address"]> = [
-    "street",
     "city",
-    "stateOrProvince",
-    "postalCode",
+    "state"
 ];
+
 
 type CustomField = {
     _id: string;
@@ -84,6 +83,9 @@ const Index = () => {
     const [formData, setFormData] = useState<any>(null);
     const [uploadedImages, setUploadedImages] = useState<Record<string, string>>({});
 
+    const [fileNames, setFileNames] = useState<Record<string, string>>({});
+
+
     const [loading, setLoading] = useState(true);
     const { control, handleSubmit } = useForm<FormValues>({
         defaultValues: {
@@ -96,7 +98,7 @@ const Index = () => {
                 address: {
                     street: "",
                     city: "",
-                    stateOrProvince: "",
+                    state: "",
                     postalCode: "",
                 },
             },
@@ -119,13 +121,12 @@ const Index = () => {
                     address: {
                         street: data.BasicDetail.address.street,
                         city: data.BasicDetail.address.city,
-                        stateOrProvince: data.BasicDetail.address.stateOrProvince,
+                        state: data.BasicDetail.address.state,
                         postalCode: data.BasicDetail.address.postalCode,
                     },
                 },
             };
 
-            // ✅ ProfileDetails logic...
             if (formData?.ProfileDetails && Array.isArray(formData.ProfileDetails)) {
                 const profileGroups = (formData.ProfileDetails as Group[])
                     .map((group: Group) => {
@@ -137,7 +138,6 @@ const Index = () => {
                             .map((field: Field) => {
                                 const fieldValue = data.profile[field.attributeName];
 
-                                // ✅ Store gender in localStorage if this field is gender
                                 if (field.attributeName.toLowerCase() === "gender") {
                                     localStorage.setItem("gender", fieldValue);
                                 }
@@ -163,7 +163,6 @@ const Index = () => {
 
 
 
-            // ✅ MatchDetails logic...
             if (formData?.matchDetails && data.match) {
                 const matchGroups = formData.matchDetails.map((group: any) => {
                     const filledFields = group.fields
@@ -205,8 +204,6 @@ const Index = () => {
     };
 
 
-
-
     const handleImageUpload = async (fieldId: string, file: File) => {
         try {
             const response = await uploadImage(file);
@@ -239,6 +236,7 @@ const Index = () => {
 
     if (loading) return <div>Loading...</div>;
 
+    const cityOptions: string[] = formData?.BasicDetail?.address?.cityOptions ?? [];
     const requiredBasicFields: Array<keyof FormValues["BasicDetail"]> = [
         "firstName",
         "lastName",
@@ -257,7 +255,6 @@ const Index = () => {
         requiredBasicFields,
         requiredMatchFieldLabels,
         handleImageUpload,
-        uploadedImages,
     }: RenderFieldProps & {
         requiredProfileFieldNames: string[];
         requiredBasicFields: Array<keyof FormValues["BasicDetail"]>;
@@ -338,8 +335,8 @@ const Index = () => {
                         <Input
                             {...controllerField}
                             placeholder={field.attributePlaceHolder || "Enter text"}
-                            value={String(controllerField.value || "")} // Ensuring value is always a string
-                            onChange={(e) => controllerField.onChange(e.target.value)} // Manually handling input changes
+                            value={String(controllerField.value || "")}
+                            onChange={(e) => controllerField.onChange(e.target.value)}
                         />
                     )}
                 />
@@ -377,28 +374,43 @@ const Index = () => {
         if (field.attributeType === "Image") {
             return (
                 <div>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                                await handleImageUpload(field._id, file);
-                            }
-                        }}
-                    />
-                    {uploadedImages[field._id] && (
-                        <img
-                            src={uploadedImages[field._id]}
-                            alt="Uploaded"
-                            className="mt-2 rounded border w-32 h-auto"
+                    <div className="mb-2">
+                        <label
+                            htmlFor={`upload-${field._id}`}
+                            className="cursor-pointer px-4 py-2 bg-[#ae0847] text-white rounded hover:bg-[#8c0639] transition"
+                        >
+                            Upload Image
+                        </label>
+                        <input
+                            id={`upload-${field._id}`}
+                            type="file"
+                            accept="image/*"
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    await handleImageUpload(field._id, file);
+                                    setFileNames((prev) => ({
+                                        ...prev,
+                                        [field._id]: file.name,
+                                    }));
+                                }
+                            }}
+                            style={{ display: "none" }}
                         />
+                    </div>
+
+                    {fileNames?.[field._id] && (
+                        <div className="text-sm text-gray-700 font-medium">
+                            Uploaded: {fileNames[field._id]}
+                        </div>
                     )}
                 </div>
             );
         }
 
-        // Fallback for unsupported field types
+
+
+
         return <Input disabled placeholder="Unsupported field type" />;
     };
 
@@ -472,15 +484,33 @@ const Index = () => {
                                         name={`BasicDetail.address.${key}` as const}
                                         control={control}
                                         defaultValue={formData?.BasicDetail?.address?.[key] ?? ""}
-                                        render={({ field }) => (
-                                            <Input {...field} placeholder={`Enter ${key}`} />
-                                        )}
+                                        render={({ field }) => {
+                                            if (key === "city") {
+                                                return (
+                                                    <Select
+                                                        {...field}
+                                                        placeholder="Select City"
+                                                        options={cityOptions.map((city: string) => ({
+                                                            label: city,
+                                                            value: city,
+                                                        }))}
+                                                        showSearch
+                                                        optionFilterProp="label"
+                                                    />
+                                                );
+                                            }
+
+                                            return (
+                                                <Input {...field} placeholder={`Enter ${key}`} />
+                                            );
+                                        }}
                                     />
                                 </Form.Item>
                             </Col>
                         ))}
-                    </Row>
 
+
+                    </Row>
 
                     {formData?.ProfileDetails?.map((group: any) => (
                         <div key={group._id}>
@@ -545,6 +575,77 @@ const Index = () => {
                                                 name={`match.${field._id}`}
                                                 control={control}
                                                 render={({ field: controllerField }) => {
+                                                    // Custom logic for specific fields
+                                                    if (field.label === "Preferred Age Range") {
+                                                        const [minAge, maxAge] = controllerField.value?.split(" to ") || ["", ""];
+                                                        return (
+                                                            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                                                <Input
+                                                                    style={{ flex: 1 }}
+                                                                    type="number"
+                                                                    placeholder="Min Age"
+                                                                    value={minAge}
+                                                                    onChange={(e) => {
+                                                                        const newVal = `${e.target.value} to ${maxAge}`;
+                                                                        controllerField.onChange(newVal);
+                                                                    }}
+                                                                />
+                                                                <div style={{ fontWeight: 500 }}>to</div>
+                                                                <Input
+                                                                    style={{ flex: 1 }}
+                                                                    type="number"
+                                                                    placeholder="Max Age"
+                                                                    value={maxAge}
+                                                                    onChange={(e) => {
+                                                                        const newVal = `${minAge} to ${e.target.value}`;
+                                                                        controllerField.onChange(newVal);
+                                                                    }}
+                                                                />
+                                                            </div>
+
+
+                                                        );
+                                                    }
+
+                                                    if (field.label === "Preferred Height (ft & in)") {
+                                                        const heightOptions = [];
+                                                        for (let ft = 4; ft <= 7; ft++) {
+                                                            for (let inch = 0; inch <= 11; inch++) {
+                                                                heightOptions.push(`${ft}'${inch}"`);
+                                                            }
+                                                        }
+
+                                                        const [minHeight, maxHeight] = controllerField.value?.split(" to ") || ["", ""];
+
+                                                        return (
+
+                                                            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                                                <Select
+                                                                    style={{ flex: 1 }}
+                                                                    value={minHeight || undefined}
+                                                                    onChange={(val) => {
+                                                                        controllerField.onChange(`${val} to ${maxHeight}`);
+                                                                    }}
+                                                                    options={heightOptions.map((val) => ({ label: val, value: val }))}
+                                                                    placeholder="Min Height"
+                                                                />
+                                                                <div style={{ fontWeight: 500 }}>to</div>
+                                                                <Select
+                                                                    style={{ flex: 1 }}
+                                                                    value={maxHeight || undefined}
+                                                                    onChange={(val) => {
+                                                                        controllerField.onChange(`${minHeight} to ${val}`);
+                                                                    }}
+                                                                    options={heightOptions.map((val) => ({ label: val, value: val }))}
+                                                                    placeholder="Max Height"
+                                                                />
+                                                            </div>
+
+
+                                                        );
+                                                    }
+
+                                                    // Other field types
                                                     switch (field.profileField) {
                                                         case "long text":
                                                             return (
@@ -607,7 +708,6 @@ const Index = () => {
                             </Row>
                         </div>
                     ))}
-
 
                     <Form.Item className="flex justify-center mt-6">
                         <Button type="primary" htmlType="submit" className="!bg-[rgb(174,8,71)] !border-none">
