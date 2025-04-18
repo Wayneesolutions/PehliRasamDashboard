@@ -24,10 +24,10 @@ const Fields = () => {
     const fetchGroups = async () => {
         try {
             const response = await apiClient.get("/admin/getFromGroupList");
-            const formattedGroups: Group[] = response.data.data.map((group: any) => ({
+            const formattedGroups: Group[] = response.data.data.map((group: { _id: string; groupName: string; fields: any[]; }) => ({
                 _id: group._id,
                 name: group.groupName,
-                formFields: group.fields.map((field: any) => ({
+                formFields: group.fields.map((field) => ({
                     _id: field.attributeId,
                     attributeName: field.attributeName,
                     attributeType: field.attributeType,

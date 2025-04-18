@@ -17,7 +17,6 @@ export const sidebarLinks: SidebarLink[] = [
     children: [
       { key: "/dashboard/overview", icon: <IoMdHome />, label: "Overview" },
       { key: "/dashboard/timelinemain", icon: <IoMdHome />, label: "Timeline" },
-      { key: "/dashboard/profile-update", icon: <IoMdHome />, label: "Profile Update" },
     ],
   },
   {
@@ -50,7 +49,15 @@ export const sidebarLinks: SidebarLink[] = [
         ],
       },
       { key: "/dashboard/users", icon: <MdSettings />, label: "Users" },
-      { key: "/dashboard/profile-setting-info", icon: <MdSettings />, label: "Admin Info" },
+      {
+        key: "agency",
+        icon: <MdSettings />,
+        label: "Agency",
+        children: [
+          { key: "/dashboard/profile-setting-info", icon: <BiUser />, label: "Admin Info" },
+          { key: "/dashboard/emailsettings", icon: <BiUser />, label: "Email Settings" },
+        ],
+      },
     ],
   },
 ];

@@ -1,17 +1,62 @@
 import { useEffect, useState, KeyboardEvent, ChangeEvent, useRef } from "react";
-import { Mail, Phone, MapPin, Camera, Check, X, Upload } from "lucide-react";
+import { Mail, MapPin, Camera, Check, X, Upload } from "lucide-react";
+import PhoneInput from "react-phone-number-input";
+import { Dropdown, Menu, Button } from 'antd';
+import SendMessage from './SendMessage';
 import { getCustomerBasicDetail, updateCustomerBasicDetail, uploadFile } from "../../config/apiClient";
 import { Customer } from "../../schema/customernew";
 import { message } from "antd";
+import { CustomerUpdate } from "../clientsForm/types/clientTypes";
+import ClientListManager from "./ClientList";
 
-const Sidebar = ({ customerId }: { customerId: string }) => {
+type SidebarProps = {
+  customerId: string;
+};
+
+
+
+const Sidebar = ({ customerId }: SidebarProps) => {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [editMode, setEditMode] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>("");
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const handleSendMessageClick = () => {
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+  };
+
+  const menu = (
+    <Menu>
+      <Menu.Item key="sendMessage" onClick={handleSendMessageClick}>
+        Send Message
+      </Menu.Item>
+      {/* Add more actions here */}
+    </Menu>
+  );
+
+  const [address, setAddress] = useState<{
+    street: string;
+    city: string;
+    stateOrProvince: string;
+    postalCode: string;
+    country: string; // Add this line for the 'country' property
+  }>({
+    street: "",
+    city: "",
+    stateOrProvince: "",
+    postalCode: "",
+    country: "", // Initialize country as an empty string
+  });
+
 
   useEffect(() => {
     if (customerId) {
@@ -23,67 +68,94 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
     try {
       const res = await getCustomerBasicDetail(customerId);
       if (res.success) {
-        setCustomer(res.data);
+        const customerData = res.data;
+        setCustomer(customerData);
+
+        // Ensure address state is populated correctly
+        if (customerData.address) {
+          setAddress({
+            street: customerData.address.street || "",
+            city: customerData.address.city || "",
+            stateOrProvince: customerData.address.stateOrProvince || "",
+            postalCode: customerData.address.postalCode || "",
+            country: customerData.address.country || "",
+          });
+        }
       }
     } catch (error) {
       console.error("Error fetching customer details:", error);
     }
   };
 
+
   const handleEdit = (field: string, value: string) => {
     setEditMode(field);
     setEditValue(value);
-    setError(null);
   };
 
   const handleCancel = () => {
     setEditMode(null);
     setEditValue("");
-    setError(null);
   };
 
   const handleSave = async () => {
     if (!editMode || !customer) return;
 
     setIsUpdating(true);
-    setError(null);
 
     try {
-      // Send data directly in the format the API expects
-      const updateData :any= {
-        customerId: customerId
+      // Construct address object dynamically, excluding empty fields
+      const addressData: any = {};
+      Object.entries(address).forEach(([key, value]) => {
+        if (value && value.trim() !== "") {
+          addressData[key] = value;
+        }
+      });
+
+      const updateData: CustomerUpdate = {
+        customerId: customerId,
+        firstName: customer.firstName,
+        middelName: customer.middelName,
+        lastName: customer.lastName,
+        email: customer.email,
+        Number: customer.Number?.toString() || "",
+        address: addressData, // Only filled fields
       };
 
-      // Set the field to update based on editMode
-      if (editMode === "firstName") {
-        updateData.firstName = editValue;
-      } else if (editMode === "lastName") {
-        updateData.lastName = editValue;
-      } else if (editMode === "email") {
-        updateData.email = editValue;
-      } else if (editMode === "contact") {
-        updateData.contact = editValue;
+      if (editMode && editMode !== "address") {
+        (updateData as any)[editMode] = editValue;
       }
 
-      // Send the updateData directly without nesting it
       const res = await updateCustomerBasicDetail(updateData);
-      
+
       if (res.success) {
-        setCustomer(res.customer);
+        if (res.customer) {
+          setCustomer(res.customer);
+        } else {
+          await fetchCustomerDetails();
+        }
         setEditMode(null);
         setEditValue("");
-        message.success(res.message)
+        setAddress({ street: "", city: "", stateOrProvince: "", postalCode: "", country: "" });
+        message.success(res.message);
       } else {
         message.error(res.message || "Failed to update");
       }
-      
-    } catch (error: any) {
-      setError(error.message || "An error occurred");
+    } catch (error) {
       console.error("Error updating customer:", error);
+      message.error("An error occurred while updating");
     } finally {
       setIsUpdating(false);
     }
   };
+
+
+
+
+
+
+
+
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -105,7 +177,6 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
     if (!file) return;
 
     setIsUploading(true);
-    setError(null);
 
     try {
       const formData = new FormData();
@@ -113,7 +184,6 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
 
       const response = await uploadFile(formData)
 
-      console.log('res from file uploadd==',response)
       if (response.success) {
         const updateData = {
           customerId: customerId,
@@ -121,18 +191,17 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
         };
 
         const updateRes = await updateCustomerBasicDetail(updateData);
-        
+
         if (updateRes.success) {
           setCustomer(updateRes.customer);
         } else {
-          setError(updateRes.message || "Failed to update profile image");
+          message.error(updateRes.message || "Failed to update profile image");
         }
       } else {
-        setError(response.message || "Failed to upload image");
+        message.error(response.message || "Failed to upload image");
       }
-    } catch (error: any) {
-      setError(error.message || "An error occurred while uploading");
-      console.error("Error uploading image:", error);
+    } catch (error) {
+      message.error((error as Error).message || "An error occurred while uploading");
     } finally {
       setIsUploading(false);
       // Clear the file input
@@ -151,25 +220,25 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
         ) : (
           <Camera className="text-gray-500" size={50} />
         )}
-        
+
         {/* Upload button overlay */}
-        <div 
+        <div
           className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer rounded-md"
           onClick={handleUploadClick}
         >
           <Upload className="text-white" size={24} />
         </div>
-        
+
         {/* Hidden file input */}
-        <input 
-          type="file" 
+        <input
+          type="file"
           ref={fileInputRef}
           onChange={handleFileChange}
           accept="image/*"
           className="hidden"
         />
       </div>
-      
+
       {isUploading && (
         <p className="text-xs text-blue-500 mt-1">Uploading...</p>
       )}
@@ -194,11 +263,39 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
             </button>
           </div>
         ) : (
-          <h2 
+          <h2
             className="text-lg font-semibold cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
             onClick={() => customer && handleEdit("firstName", customer.firstName)}
           >
             {customer ? customer.firstName : "Loading..."}
+          </h2>
+        )}
+      </div>
+      <div className="mt-3 text-center w-full">
+        {editMode === "middelName" ? (
+          <div className="flex items-center justify-center">
+            <input
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="px-2 py-1 border rounded mr-1 w-32"
+              autoFocus
+              placeholder="Enter middle name" // ✅ Add this
+            />
+            <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
+              <Check size={16} />
+            </button>
+            <button onClick={handleCancel} className="text-red-500 ml-1">
+              <X size={16} />
+            </button>
+          </div>
+        ) : (
+          <h2
+            className="text-lg font-semibold cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+            onClick={() => customer && handleEdit("middelName", customer.middelName)}
+          >
+            {customer ? customer.middelName || "No middle name" : "Loading..."}
           </h2>
         )}
       </div>
@@ -223,7 +320,7 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
             </button>
           </div>
         ) : (
-          <h3 
+          <h3
             className="text-md cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
             onClick={() => customer && handleEdit("lastName", customer.lastName)}
           >
@@ -252,7 +349,7 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
             </button>
           </div>
         ) : (
-          <p 
+          <p
             className="text-gray-500 text-sm text-center cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
             onClick={() => customer && handleEdit("email", customer.email)}
           >
@@ -261,59 +358,166 @@ const Sidebar = ({ customerId }: { customerId: string }) => {
         )}
       </div>
 
-      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-      
-      <button className="bg-gray-200 text-gray-700 px-4 py-1 rounded mt-3">Actions ▼</button>
+
+      <Dropdown overlay={menu} trigger={['click']}>
+        <a onClick={(e) => e.preventDefault()}>Actions ▼</a>
+      </Dropdown>
+
+      <SendMessage
+        customerId={customer}
+        isOpen={modalVisible}
+        onClose={handleCloseModal}
+        func={() => { }}
+        val={null}
+      />
 
       {/* Contact Info */}
       <div className="mt-4 space-y-2 w-full text-gray-600">
         <div className="flex items-center space-x-2">
-          <Mail size={18} /> 
-          <span 
+          <Mail size={18} />
+          <span
             className="text-sm break-words cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
             onClick={() => customer && handleEdit("email", customer.email)}
           >
             {customer?.email || "N/A"}
           </span>
         </div>
-        
-        <div className="flex items-center space-x-2">
-          <Phone size={18} /> 
-          {editMode === "contact" ? (
-            <div className="flex items-center flex-1">
-              <input
-                type="text"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="px-2 py-1 border rounded mr-1 w-full"
-                autoFocus
-              />
-              <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
-                <Check size={16} />
-              </button>
-              <button onClick={handleCancel} className="text-red-500 ml-1">
-                <X size={16} />
-              </button>
+
+        <div className="flex items-start space-x-2">
+          {editMode === "Number" ? (
+            <div className="flex flex-col w-full">
+
+
+              {/* Stack flag above number visually */}
+              <div className="relative w-full">
+                <PhoneInput
+                  value={editValue}
+                  onChange={(value) => setEditValue(value || "")}
+                  international
+                  defaultCountry="US"
+                  placeholder="Enter your Contact Number"
+                  className="custom-stacked-phone-input w-full"
+                />
+
+              </div>
+
+              <div className="flex justify-end mt-2 space-x-2">
+                <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
+                  <Check size={16} />
+                </button>
+                <button onClick={handleCancel} className="text-red-500">
+                  <X size={16} />
+                </button>
+              </div>
             </div>
           ) : (
-            <span 
-              className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
-              onClick={() => customer && handleEdit("contact", customer.contact || "")}
+            <div
+              className="flex items-center space-x-2 flex-1 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+              onClick={() => customer && handleEdit("Number", customer?.Number?.toString() || "")}
             >
-              {customer?.contact || "N/A"}
+              <PhoneInput
+                value={customer?.Number ? customer.Number.toString() : ""}
+                onChange={() => { }}
+                disabled
+                international
+                defaultCountry="US"
+                className="custom-stacked-phone-input w-full pointer-events-none"
+              />
+
+            </div>
+          )}
+        </div>
+
+
+
+
+
+        <div className="flex items-center space-x-2">
+          <MapPin size={18} />
+          {editMode === "address" ? (
+            <div className="flex flex-col w-full">
+              <input
+                type="text"
+                value={address.street}
+                onChange={(e) => setAddress({ ...address, street: e.target.value })}
+                onKeyDown={handleKeyDown}
+                className="px-2 py-1 border rounded w-full mb-2"
+                autoFocus
+                placeholder="Street"
+              />
+              <input
+                type="text"
+                value={address.city}
+                onChange={(e) => setAddress({ ...address, city: e.target.value })}
+                onKeyDown={handleKeyDown}
+                className="px-2 py-1 border rounded w-full mb-2"
+                placeholder="City"
+              />
+              <input
+                type="text"
+                value={address.stateOrProvince}
+                onChange={(e) => setAddress({ ...address, stateOrProvince: e.target.value })}
+                onKeyDown={handleKeyDown}
+                className="px-2 py-1 border rounded w-full mb-2"
+                placeholder="State/Province"
+              />
+              <input
+                type="text"
+                value={address.postalCode}
+                onChange={(e) => setAddress({ ...address, postalCode: e.target.value })}
+                onKeyDown={handleKeyDown}
+                className="px-2 py-1 border rounded w-full mb-2"
+                placeholder="Postal Code"
+              />
+              <input
+                type="text"
+                value={address.country}
+                onChange={(e) => setAddress({ ...address, country: e.target.value })}
+                onKeyDown={handleKeyDown}
+                className="px-2 py-1 border rounded w-full mb-2"
+                placeholder="Country"
+              />
+              <div className="flex justify-end space-x-2">
+                <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
+                  <Check size={16} />
+                </button>
+                <button onClick={handleCancel} className="text-red-500">
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <span
+              className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
+              onClick={() => {
+                if (customer?.address) {
+                  setEditMode("address");
+                  setAddress({
+                    street: customer.address.street || "",
+                    city: customer.address.city || "",
+                    stateOrProvince: customer.address.stateOrProvince || "",
+                    postalCode: customer.address.postalCode || "",
+                    country: customer.address.country || "",
+                  });
+                }
+              }}
+            >
+              {customer?.address
+                ? `${customer.address.street || ""}, ${customer.address.city || ""}, ${customer.address.stateOrProvince || ""}, ${customer.address.postalCode || ""}, ${customer.address.country || ""}`
+                : "N/A"}
             </span>
           )}
         </div>
-        
-        <div className="flex items-center space-x-2">
-          <MapPin size={18} /> 
-          <span className="text-sm">
-            {customer?.address ? `${customer.address.city}, ${customer.address.country}` : "N/A"}
-          </span>
-        </div>
+
+
+
+
       </div>
-      <button className="bg-blue-500 text-white px-4 py-1 rounded mt-4">Set Location</button>
+
+      <ClientListManager
+        customerId={customerId}
+      />
+
     </div>
   );
 };

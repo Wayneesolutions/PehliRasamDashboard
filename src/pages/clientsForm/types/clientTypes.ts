@@ -200,3 +200,73 @@ export interface ICustomer {
     drinkAlcoholPreferrence?: 'Yes,occasionally' | 'yes,regularly' | 'No';
 
 }
+
+ export interface PreferencesField {
+    label: string;
+    profileField: string;
+    clientTypes: string[]; // Assuming it's an array
+    weight: number;
+    useInMatch: boolean;
+    choices: string[];
+    helpText?: string; // Optional
+    dealBreak: boolean;
+    preferencesGroupId: string; // Assuming it's an ID
+  }
+
+export  interface ClientList {
+    listName: string;
+    color: string;
+  }
+
+  export interface CustomerUpdate {
+    customerId: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    Number?: string;
+    middelName?: string; // Fixed typo from 'middelName' to 'middleName'
+    address?: {
+      street: string | null;
+      city: string | null;
+      stateOrProvince: string | null;
+      postalCode: string | null;
+      country?: string | null; // Make country optional, if it's not always provided
+    };
+  }
+
+ export interface MatchField {
+    fieldId: string;
+    fieldName: string;
+    profileField: string;
+    clientTypes: string;
+    weight: string;
+    choices?: string[]; // Optional as not all fields may have choices
+    dealBreak?: boolean;
+    helpText?: string;
+    useInMatch?: boolean;
+    value?: string;
+  }
+  
+ export interface MatchGroup {
+    groupId: string;
+    groupName: string;
+    fields: MatchField[];
+  }
+
+ export interface Field {
+    attributeId: string;
+    attributeName: string;
+    attributeType: string;
+    attributeEnum: any[]; // Can be replaced with a more specific type if needed
+    attributeOption: any[]; // Assuming it's an array of strings
+  }
+  
+ export interface Group {
+    _id: string;
+    groupId: string;
+    groupName: string;
+    fields: Field[];
+  }
+  
+  
+  

@@ -92,11 +92,18 @@ export interface ActiveClientDetails {
 export interface Customer {
   _id: string;
   firstName: string;
+  middelName:string;
   lastName: string;
   email: string;
-  contact?: string;
+  Number?: string;
+  address?: {
+    street: string | null;
+    city: string | null;
+    stateOrProvince: string | null;
+    postalCode: string | null;
+    country: string | null; 
+  };
   imagePath?: string;
-  address: Address;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,33 +1,50 @@
-import { Table, Button, Modal, Form, Input } from "antd";
+import { Table, Button, Dropdown, Modal, Menu, Form, Input, message } from "antd";
 import { PlusOutlined, MoreOutlined, MenuOutlined } from "@ant-design/icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createClientList, editClientList, getAllClientLists } from "../../../config/apiClient";
 
-interface ListItem {
-    key: string;
-    name: string;
+// Define types for List Item and API Response
+interface ClientList {
+    _id: string;
+    listName: string;
     color: string;
+    status?: string;
+}
+
+interface ApiResponse<T> {
+    success: boolean;
+    message?: string;
+    data?: T;
 }
 
 const List = () => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+    const [colorList, setColorList] = useState<ClientList[]>([]);
+    const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+    const [editingItem, setEditingItem] = useState<ClientList | null>(null);
+    const [val, setVal] = useState<boolean>(false);
     const [form] = Form.useForm();
 
-    const data: ListItem[] = [
-        { key: "1", name: "manish", color: "#464C51" },
-        { key: "2", name: "POTENTIAL MEMBER", color: "#EC34D6" },
-        { key: "3", name: "Paid Member", color: "#26E911" },
-        { key: "4", name: "Free Member", color: "#E6E60C" },
-        { key: "5", name: "New Lead", color: "#E69708" },
-        { key: "6", name: "Sale Profile", color: "#428BCA" },
-        { key: "7", name: "Australia", color: "#9C46DB" },
-        { key: "8", name: "Import Paid Client", color: "#0000FF" },
-    ];
+    useEffect(() => {
+        const getAllClientColor = async () => {
+            try {
+                const res: ApiResponse<ClientList[]> = await getAllClientLists();
+                if (res.success && res.data) {
+                    setColorList(res.data);
+                }
+            } catch (error) {
+                console.error("Error fetching client lists:", error);
+                message.error("Failed to fetch client lists.");
+            }
+        };
+        getAllClientColor();
+    }, [val]);
 
     const columns = [
         {
             title: "List name",
-            dataIndex: "name",
-            key: "name",
+            dataIndex: "listName",
+            key: "listName",
             render: (text: string) => (
                 <div className="flex items-center">
                     <MenuOutlined className="mr-2 text-gray-400 cursor-pointer" />
@@ -47,17 +64,74 @@ const List = () => {
             ),
         },
         {
-            render: () => <MoreOutlined className="cursor-pointer text-gray-500" />,
+            render: (_: any, record: ClientList) => (
+                <Dropdown
+                    overlay={
+                        <Menu>
+                            <Menu.Item key="edit" onClick={() => handleEditClick(record)}>
+                                Edit
+                            </Menu.Item>
+                        </Menu>
+                    }
+                    trigger={["click"]}
+                >
+                    <MoreOutlined className="cursor-pointer text-gray-500" />
+                </Dropdown>
+            ),
         },
     ];
 
+    const handleEditClick = (record: ClientList) => {
+        setEditingItem(record);
+        form.setFieldsValue(record);
+        setIsEditModalOpen(true);
+    };
+
+    const handleEditSubmit = async () => {
+        try {
+            const values = await form.validateFields();
+            if (editingItem) {
+                const payLoad = {
+                    id: editingItem._id,
+                    listName: values.listName,
+                    status: editingItem.status,
+                    color: values.color,
+                };
+                const res: ApiResponse<null> = await editClientList(payLoad);
+                if (res.success) {
+                    setIsEditModalOpen(false);
+                    setEditingItem(null);
+                    form.resetFields();
+                    setVal(!val);
+                }
+            }
+        } catch (error) {
+            console.error("Error editing client list:", error);
+            message.error("Failed to edit client list.");
+        }
+    };
+
     const showModal = () => setIsModalOpen(true);
     const handleCancel = () => setIsModalOpen(false);
-    const handleOk = () => {
-        form.validateFields().then(() => {
-            setIsModalOpen(false);
-            form.resetFields();
-        });
+
+    const handleOk = async () => {
+        try {
+            const values = await form.validateFields();
+            const data = {
+                listName: values.name,
+                color: values.color,
+            };
+            const res: ApiResponse<null> = await createClientList(data);
+            if (res.success) {
+                setIsModalOpen(false);
+                message.success(res.message || "Client list created successfully");
+                form.resetFields();
+                setVal(!val);
+            }
+        } catch (error) {
+            console.error("Error creating client list:", error);
+            message.error("Failed to create client list.");
+        }
     };
 
     return (
@@ -74,10 +148,11 @@ const List = () => {
                 </Button>
             </div>
 
-            <Table
+            <Table<ClientList>
                 columns={columns}
-                dataSource={data}
+                dataSource={colorList}
                 pagination={false}
+                rowKey={(record) => record._id}
                 className="shadow-sm rounded-md"
             />
 
@@ -88,6 +163,22 @@ const List = () => {
                     </Form.Item>
                     <Form.Item label="Color Code" name="color" rules={[{ required: true, message: "Please enter a color code" }]}>
                         <Input placeholder="Enter color code (e.g., #428BCA)" />
+                    </Form.Item>
+                </Form>
+            </Modal>
+
+            <Modal 
+                title="Edit List" 
+                open={isEditModalOpen} 
+                onCancel={() => setIsEditModalOpen(false)} 
+                onOk={handleEditSubmit}
+            >
+                <Form form={form} layout="vertical">
+                    <Form.Item label="List Name" name="listName" rules={[{ required: true, message: "List name is required" }]}>
+                        <Input placeholder="Enter list name" />
+                    </Form.Item>
+                    <Form.Item label="Color" name="color" rules={[{ required: true, message: "Color is required" }]}>
+                        <Input placeholder="Enter color code" />
                     </Form.Item>
                 </Form>
             </Modal>
