@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
-
+/* index.css */
+* {
+  font-family: 'Poppins', sans-serif;
+}
 
 body {
   margin: 0;
