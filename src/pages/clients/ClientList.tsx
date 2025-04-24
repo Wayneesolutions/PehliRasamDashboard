@@ -134,7 +134,10 @@ const ClientList: React.FC<ClientListManagerProps> = ({ customerId }) => {
 
 
   return (
-    <div className="p-6 bg-white rounded-2xl shadow-md w-full max-w-sm mx-auto">
+    <div className="mt-4 p-6 bg-white rounded-2xl w-full max-w-sm mx-auto" style={{
+      boxShadow: '0 8px 30px rgba(0, 0, 0, 0.2)'
+    }}
+    >
       <h3 className="text-lg font-bold mb-4 text-gray-700">Client Listing</h3>
 
       <Select

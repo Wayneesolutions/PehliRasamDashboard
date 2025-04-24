@@ -85,11 +85,12 @@ const PermissionsTab: React.FC = () => {
 
     return (
         <Spin spinning={loading}>
-            <div className="p-6 bg-white shadow-md rounded-lg">
-                <Card title="Permissions Management" className="mb-4">
-                    <Table columns={columns} dataSource={data} pagination={false} bordered />
-                </Card>
-                <Button type="primary" className="mt-4" onClick={handleUpdatePermissions}>
+            <Card title="Permissions Management" className="mb-4">
+                <Table columns={columns} dataSource={data} pagination={false} bordered />
+            </Card>
+
+            <div className="flex justify-end mt-4">
+                <Button type="primary" onClick={handleUpdatePermissions}>
                     Save Changes
                 </Button>
             </div>

@@ -96,7 +96,9 @@ const Fields = () => {
                 </Space>
             </Space>
 
-            <Collapse accordion>
+            <Collapse accordion style={{
+                background:"white"
+            }}>
                 {groups.map(group => (
                     <Panel
                         header={

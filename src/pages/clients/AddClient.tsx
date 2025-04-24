@@ -23,9 +23,9 @@ const AddClient = () => {
     return (
         <div className="flex h-screen bg-gray-100">
             <Sidebar customerId={customerId} />
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-y-auto overflow-hidden p-6 pt-0">
                 <Header />
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 pt-7">
                     {showMembershipForm ? (
                         <MembershipForm customerId={customerId} />
                     ) : (

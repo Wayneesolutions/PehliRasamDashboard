@@ -2,7 +2,7 @@
 
 /* index.css */
 * {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Exo 2', sans-serif;
 }
 
 body {
@@ -38,4 +38,17 @@ body {
   100% {
     transform: rotate(1turn);
   }
+}
+
+/* Custom styles for SubMenu */
+.custom-submenu .ant-menu-sub {
+  background-color: transparent !important; /* Set background to transparent */
+}
+
+.custom-submenu .ant-menu-item {
+  background-color: transparent !important; /* Set background to transparent for menu items */
+}
+
+.custom-submenu .ant-menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important; /* Optional: Add a hover effect */
 }

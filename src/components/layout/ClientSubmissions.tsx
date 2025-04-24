@@ -30,13 +30,20 @@ const ClientSubmissions = () => {
     clientSubmission();
   }, []);
 
+
+  const maxValue = Math.max(...chartData.map(data => data.value), 0); 
+  const ticks = maxValue > 0 ? Array.from({ length: maxValue + 1 }, (_, i) => i) : [0]; 
+
   return (
     <div className="p-6">
       <h2 className="text-lg font-semibold mb-4">Client Submissions</h2>
-      <ResponsiveContainer width="100%" height={250}>
+      <ResponsiveContainer width="100%" height={300}>
         <AreaChart data={chartData}>
           <XAxis dataKey="date" />
-          <YAxis />
+          <YAxis 
+            ticks={ticks} 
+            tickFormatter={(value) => `${value}`}
+          />
           <Tooltip />
           <defs>
             <linearGradient id="colorGreen" x1="0" y1="0" x2="0" y2="1">

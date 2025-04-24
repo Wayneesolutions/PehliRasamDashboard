@@ -1,60 +1,81 @@
+import React, { useEffect, useState ,ReactElement} from "react";
+import { getCustomerActivityLogs } from "../../../config/apiClient";
+import { useOutletContext } from "react-router-dom";
 import { FaRegEdit } from "react-icons/fa";
 import { IoInformationCircleOutline } from "react-icons/io5";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
+import moment from "moment";
 
-const data = [
-  { date: "4 Dec", value: 5 },
-  { date: "7 Dec", value: 8 },
-  { date: "10 Dec", value: 4 },
-  { date: "13 Dec", value: 6 },
-  { date: "16 Dec", value: 2 },
-  { date: "19 Dec", value: 9 },
-  { date: "22 Dec", value: 3 },
-  { date: "25 Dec", value: 5 },
-  { date: "28 Dec", value: 11 },
-  { date: "31 Dec", value: 18 },
-  { date: "3 Jan", value: 12 },
-  { date: "6 Jan", value: 5 },
-  { date: "9 Jan", value: 7 },
-  { date: "12 Jan", value: 4 },
-  { date: "15 Jan", value: 6 },
-  { date: "18 Jan", value: 3 },
-  { date: "21 Jan", value: 8 },
-];
+type TimelineEvent = {
+  time: string;
+  text: string;
+  link: string;
+  icon: ReactElement;
+  date: string;
+};
 
-const index = () => {
-  const timelineData = [
-    {
-      time: "9:52 PM",
-      text: "Pehl Rasam.com changed Profile Note to Amit +1 (438) 458-5288 warehouse 28-FEB-2025 : he sayig mea proceed krna meanu 15 days da time dedo he saying ea nri marriage beru ch invest kita c hun me toohde to karwana kamm HOT",
-      link: "Amit",
-      icon: <FaRegEdit className="text-pink-500 text-lg" />,
-    },
-    {
-      time: "8:18 PM",
-      text: "SmartMatchApp Client submitted",
-      link: "Amit",
-      icon: <IoInformationCircleOutline className="text-blue-500 text-lg" />,
-    },
-    {
-      time: "8:18 PM",
-      text: "Amit changed Marital Status to Separated on",
-      link: "Amit",
-      icon: <FaRegEdit className="text-pink-500 text-lg" />,
-    },
-    {
-      time: "8:18 PM",
-      text: "Amit changed Birthday (Age) to 01 Sep 2001 (23 years) on",
-      link: "Amit",
-      icon: <FaRegEdit className="text-pink-500 text-lg" />,
-    },
-    {
-      time: "8:18 PM",
-      text: "Amit changed Religion to Hindu on",
-      link: "Amit",
-      icon: <FaRegEdit className="text-pink-500 text-lg" />,
-    },
-  ];
+type ChartDataItem = {
+  date: string;
+  value: number;
+};
+
+const TimelineMain: React.FC = () => {
+  const { customerId } = useOutletContext<{ customerId: string }>();
+  const [timelineData, setTimelineData] = useState<TimelineEvent[]>([]);
+  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [latestDate, setLatestDate] = useState<string>("");
+
+  const fetchLogs = async () => {
+    setLoading(true);
+    try {
+      const result = await getCustomerActivityLogs({ customer: customerId });
+
+      // Prepare timeline data based on the response
+      const formatted: TimelineEvent[] = result.data.map((log: any) => ({
+        time: "", // You can set a default time or leave it empty
+        text: `Activity count: ${log.count}`, // Customize the text as needed
+        link: "", // You can set a default link or leave it empty
+        icon: log.count > 0 ? (
+          <FaRegEdit className="text-pink-500 text-lg" />
+        ) : (
+          <IoInformationCircleOutline className="text-blue-500 text-lg" />
+        ),
+        date: moment(log.date).format("YYYY-MM-DD"),
+      }));
+
+      setTimelineData(formatted);
+
+      // Prepare chart data
+      const chartReady: ChartDataItem[] = result.data.map((log: any) => ({
+        date: moment(log.date).format("D MMM"),
+        value: log.count,
+      }));
+
+      setChartData(chartReady);
+
+      if (formatted.length > 0) {
+        const latest = moment(formatted[formatted.length - 1].date).format("MMMM D, YYYY");
+        setLatestDate(latest);
+      }
+    } catch (err) {
+      console.error("Error loading activity logs:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, [customerId]); // Add customerId as a dependency to refetch logs when it changes
 
   return (
     <div className="p-6 bg-white shadow-md rounded-lg">
@@ -62,56 +83,76 @@ const index = () => {
       <div className="flex justify-between items-center border-b pb-4">
         <h2 className="text-xl font-semibold">Timeline</h2>
         <div className="flex gap-2">
-          <button className="px-3 py-1 bg-gray-200 rounded text-gray-600 hover:bg-gray-300">{"<"}</button>
-          <button className="px-3 py-1 bg-gray-200 rounded text-gray-600 hover:bg-gray-300">{">"}</button>
+          <button className="px-3 py-1 bg-gray-200 rounded text-gray-600 hover:bg-gray-300">
+            {"<"}
+          </button>
+          <button className="px-3 py-1 bg-gray-200 rounded text-gray-600 hover:bg-gray-300">
+            {">"}
+          </button>
         </div>
       </div>
 
       {/* Graph Section */}
       <div className="w-full h-48 mt-4 bg-gray-50 p-4 rounded-lg shadow-md">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
+          <BarChart
+            data={chartData}
+            margin={{ top: 10, right: 30, left: 0, bottom: 10 }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#ddd" />
             <XAxis dataKey="date" stroke="#666" tick={{ fontSize: 12 }} />
             <YAxis stroke="#666" tick={{ fontSize: 12 }} />
-            <Tooltip contentStyle={{ backgroundColor: "#fff", borderRadius: "8px", border: "1px solid #ddd" }} />
-            <Bar dataKey="value" fill="#007BFF" radius={[6, 6, 0, 0]} barSize={30} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "#fff",
+                borderRadius: "8px",
+                border: "1px solid #ddd",
+              }}
+            />
+            <Bar
+              dataKey="value"
+              fill="#007BFF"
+              radius={[6, 6, 0, 0]}
+              barSize={30}
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Search Bar */}
-      <div className="flex gap-2 mt-4">
-        <input
-          type="text"
-          placeholder="Type to Search"
-          className="w-full px-4 py-2 border rounded-md focus:ring focus:ring-blue-300"
-        />
-        <button className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Advanced Search</button>
-      </div>
 
-      {/* Client Name Badge */}
+      {/* Optional Client Badge */}
       <div className="mt-4">
-        <span className="bg-gray-200 px-3 py-1 rounded-md text-gray-700 text-sm">Client: Amit</span>
+        <span className="bg-gray-200 px-3 py-1 rounded-md text-gray-700 text-sm">
+          Client: Manish Prasad
+        </span>
       </div>
 
       {/* Timeline Date */}
-      <h3 className="text-lg font-semibold mt-6">February 28, 2025</h3>
+      <h3 className="text-lg font-semibold mt-6">
+        {latestDate || "No recent activity"}
+      </h3>
 
       {/* Timeline List */}
-      <div className="mt-4 space-y-4">
-        {timelineData.map((event, index) => (
-          <div key={index} className="flex items-start gap-4">
-            {event.icon}
-            <p className="text-gray-700 text-sm">
-              {event.text} <a href="#" className="text-blue-500 hover:underline">{event.link}</a>
-            </p>
-            <span className="text-gray-500 text-xs">{event.time}</span>
-          </div>
-        ))}
-      </div>
+      {loading ? (
+        <p className="text-sm text-gray-500 mt-4">Loading activity logs...</p>
+      ) : (
+        <div className="mt-4 space-y-4">
+          {timelineData.map((event, index) => (
+            <div key={index} className="flex items-start gap-4">
+              {event.icon}
+              <p className="text-gray-700 text-sm">
+                {event.text}{" "}
+                <span className="text-blue-500 font-medium">
+                  {event.link}
+                </span>
+              </p>
+              <span className="text-gray-500 text-xs">{event.time}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
-export default index;
+export default TimelineMain;

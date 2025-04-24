@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Table, Button, Tag, Modal, Form, Input, message, Popconfirm } from "antd";
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import apiClient from "../../../config/apiClient";
+import dayjs from 'dayjs';
+
 
 interface User {
     key: string;
@@ -137,7 +139,11 @@ const UserManagement: React.FC = () => {
             dataIndex: "status",
             render: (status: string) => <Tag color="blue">{status}</Tag>,
         },
-        { title: "Last Login", dataIndex: "lastLogin" },
+        {
+            title: "Last Login",
+            dataIndex: "lastLogin",
+            render: (lastLogin: string) => dayjs(lastLogin).format('MMMM D, YYYY h:mm A'), // Customize the format as needed
+          },
         {
             title: "Actions",
             render: (_: any, record: User) => (

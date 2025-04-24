@@ -28,14 +28,12 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
       width={250}
       style={{
         height: "100vh",
-        background: "#fff",
+        background: "rgb(238, 242, 250)",
         transition: "width 0.3s ease-in-out",
-        boxShadow: collapsed ? "none" : "2px 0 10px rgba(0,0,0,0.1)",
         position: "fixed",
         left: 0,
         top: 64,
         zIndex: 900,
-        borderRight: "1px solid #e0e0e0",
         display: "flex",
         flexDirection: "column",
       }}
@@ -47,6 +45,7 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
           maxHeight: "calc(100vh - 64px)", // 64px is your header height
         }}
       >
+
         <Menu
           mode="inline"
           defaultSelectedKeys={["/dashboard"]}
@@ -57,14 +56,22 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
             fontSize: "16px",
             fontWeight: 500,
             padding: "12px 0",
+            background: "rgb(238, 242, 250)",
+            borderInlineEnd: "none",
+            borderRight: "none",
           }}
         >
           {sidebarLinks.map((link) =>
             link.children ? (
-              <SubMenu key={link.key} icon={link.icon || <MdSettings />} title={link.label}>
+              <SubMenu
+                key={link.key}
+                icon={link.icon || <MdSettings />}
+                title={link.label}
+                className="custom-submenu"
+              >
                 {link.children.map((child) =>
                   child.children ? (
-                    <SubMenu key={child.key} title={child.label} icon={child.icon}>
+                    <SubMenu key={child.key} title={child.label} icon={child.icon} className="custom-submenu">
                       {child.children.map((subChild) => (
                         <Menu.Item key={subChild.key}>{subChild.label}</Menu.Item>
                       ))}

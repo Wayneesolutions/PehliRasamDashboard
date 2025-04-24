@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Input, Button, Card, Modal, Form } from "antd";
+import { Input, Button, Modal, Form } from "antd";
 import { SearchOutlined, UserAddOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { addCustomerByAdmin, allActiveCustomer } from "../../config/apiClient";
 import { ActiveClientDetails } from "../../schema/customernew";
@@ -86,35 +86,45 @@ const Clients: React.FC = () => {
 
 
 
-      {/* Client Grid Display */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 mt-8">
         {filteredClients.map((client) => (
-          <Card key={client._id} className="p-4 shadow-md flex flex-col items-center gap-3 text-center">
+          <div
+            key={client._id}
+            className="flex flex-col items-center text-center group relative"
+          >
+            {/* Profile image or initials */}
             {client.imagePath ? (
               <img
                 src={client.imagePath}
                 alt={`${client.firstName} ${client.lastName}`}
-                className="w-24 h-24 object-cover rounded-full shadow-md"
+                className="w-24 h-36 object-cover rounded-md shadow-md"
               />
             ) : (
-              <div className="w-24 h-24 flex items-center justify-center bg-gray-200 rounded-full text-xl font-semibold">
+              <div className="w-24 h-36 flex items-center justify-center bg-yellow-400 rounded-md text-3xl font-bold text-white shadow-md">
                 {`${client.firstName[0]}${client.lastName[0]}`}
               </div>
             )}
-            <h3 className="text-lg font-semibold">{`${client.firstName} ${client.lastName}`}</h3>
-            <p className="text-gray-500">
-              {`${client.address?.city || "City"}, ${client.address?.country || "Country"}`}
-            </p>
-            <Button
-              type="primary"
-              icon={<InfoCircleOutlined />}
-              onClick={() => openClientModal(client)}
-            >
-              View Details
-            </Button>
-          </Card>
+
+            {/* Name */}
+            <h3 className="!mt-3 text-sm font-semibold text-blue-600 truncate w-full">
+              {`${client.firstName} ${client.lastName}`}
+            </h3>
+
+
+
+            {/* Info Icon (hover) */}
+            <div className="absolute bottom-2 right-6  transition">
+              <button
+                onClick={() => openClientModal(client)}
+                className="!text-gray-500 hover:text-blue-500"
+              >
+                <InfoCircleOutlined />
+              </button>
+            </div>
+          </div>
         ))}
       </div>
+
 
 
       {/* Client Details Modal */}

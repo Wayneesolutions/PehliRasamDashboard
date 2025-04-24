@@ -32,6 +32,7 @@ const App: React.FC = () => {
             height: "calc(100vh - 64px)",
             overflowY: "auto",
             padding: "24px",
+            background:"rgb(238, 242, 250)"
           }}
         >
           <Content>

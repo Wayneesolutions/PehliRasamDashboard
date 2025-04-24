@@ -1,9 +1,7 @@
 import { useEffect, useState, KeyboardEvent, ChangeEvent, useRef } from "react";
-import { Mail, MapPin, Camera, Check, X, Upload } from "lucide-react";
+import { Mail, MapPin, Camera, Check, X, Upload, Pencil } from "lucide-react";
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
-import { Dropdown, Menu } from 'antd';
-import SendMessage from './SendMessage';
 import { getCustomerBasicDetail, updateCustomerBasicDetail, uploadFile } from "../../config/apiClient";
 import { Customer } from "../../schema/customernew";
 import { message } from "antd";
@@ -34,24 +32,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
 
-  const [modalVisible, setModalVisible] = useState(false);
 
-  const handleSendMessageClick = () => {
-    setModalVisible(true);
-  };
-
-  const handleCloseModal = () => {
-    setModalVisible(false);
-  };
-
-  const menu = (
-    <Menu>
-      <Menu.Item key="sendMessage" onClick={handleSendMessageClick}>
-        Send Message
-      </Menu.Item>
-      {/* Add more actions here */}
-    </Menu>
-  );
 
   const [address, setAddress] = useState<{
     street: string;
@@ -160,13 +141,6 @@ const Sidebar = ({ customerId }: SidebarProps) => {
   };
 
 
-
-
-
-
-
-
-
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       handleSave();
@@ -222,11 +196,15 @@ const Sidebar = ({ customerId }: SidebarProps) => {
   };
 
   return (
-    <div className="w-1/5 min-w-[250px] bg-white shadow-md p-4 flex flex-col items-center fixed md:relative md:h-screen h-screen overflow-y-auto z-50 transition-all">
+    <div className="w-1/5 min-w-[250px] bg-white shadow-md p-4 flex flex-col fixed md:relative md:h-screen h-screen overflow-y-auto z-50 transition-all">
       {/* Profile Image with upload button */}
-      <div className="relative w-32 h-32 bg-gray-300 rounded-md flex items-center justify-center">
+      <div className="relative w-full h-60 bg-gray-300 rounded-md flex items-center justify-center overflow-hidden mb-4">
         {customer?.imagePath ? (
-          <img src={customer.imagePath} alt={customer.firstName} className="w-full h-full object-cover rounded-md" />
+          <img
+            src={customer.imagePath}
+            alt={customer.firstName}
+            className="w-full h-full object-cover rounded-md"
+          />
         ) : (
           <Camera className="text-gray-500" size={50} />
         )}
@@ -253,284 +231,286 @@ const Sidebar = ({ customerId }: SidebarProps) => {
         <p className="text-xs text-blue-500 mt-1">Uploading...</p>
       )}
 
-      {/* First Name - separate field */}
-      {/* First Name */}
-      <div className="my-1 text-center w-full">
-        {editMode === "firstName" ? (
-          <div className="flex items-center justify-center">
-            <input
-              type="text"
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="px-2 py-1 border rounded mr-1 w-32 text-sm"
-              autoFocus
-            />
-            <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
-              <Check size={16} />
-            </button>
-            <button onClick={handleCancel} className="text-red-500 ml-1">
-              <X size={16} />
-            </button>
-          </div>
-        ) : (
-          <h3
-            className="text-sm font-medium cursor-pointer hover:bg-gray-100 px-2 py-1 rounded inline-block"
-            onClick={() => customer && handleEdit("firstName", customer.firstName)}
-          >
-            {customer ? customer.firstName : "Loading..."}
-          </h3>
-        )}
-      </div>
+      {/* Fields Section */}
+      <div className="flex-grow overflow-y-auto">
 
-      {/* Middle Name */}
-      <div className="my-1 text-center w-full">
-        {editMode === "middelName" ? (
-          <div className="flex items-center justify-center">
-            <input
-              type="text"
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="px-2 py-1 border rounded mr-1 w-32 text-sm"
-              autoFocus
-              placeholder="Enter middle name"
-            />
-            <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
-              <Check size={16} />
-            </button>
-            <button onClick={handleCancel} className="text-red-500 ml-1">
-              <X size={16} />
-            </button>
-          </div>
-        ) : (
-          <h4
-            className="text-sm font-medium cursor-pointer hover:bg-gray-100 px-2 py-1 rounded inline-block"
-            onClick={() => customer && handleEdit("middelName", customer.middelName)}
-          >
-            {customer ? customer.middelName || "No middle name" : "Loading..."}
-          </h4>
-        )}
-      </div>
-
-      {/* Last Name */}
-      <div className="my-1 text-center w-full">
-        {editMode === "lastName" ? (
-          <div className="flex items-center justify-center">
-            <input
-              type="text"
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="px-2 py-1 border rounded mr-1 w-32 text-sm"
-              autoFocus
-            />
-            <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
-              <Check size={16} />
-            </button>
-            <button onClick={handleCancel} className="text-red-500 ml-1">
-              <X size={16} />
-            </button>
-          </div>
-        ) : (
-          <h4
-            className="text-sm font-medium cursor-pointer hover:bg-gray-100 px-2 py-1 rounded inline-block"
-            onClick={() => customer && handleEdit("lastName", customer.lastName)}
-          >
-            {customer ? customer.lastName : ""}
-          </h4>
-        )}
-      </div>
-
-
-      {/* Email display/edit */}
-      <div className="w-full mt-2">
-        {editMode === "email" ? (
-          <div className="flex items-center justify-center">
-            <input
-              type="email"
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="px-2 py-1 border rounded mr-1 w-full"
-              autoFocus
-            />
-            <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
-              <Check size={16} />
-            </button>
-            <button onClick={handleCancel} className="text-red-500 ml-1">
-              <X size={16} />
-            </button>
-          </div>
-        ) : (
-          <p
-            className="text-gray-500 text-sm text-center cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
-            onClick={() => customer && handleEdit("email", customer.email)}
-          >
-            {customer?.email || "No email available"}
-          </p>
-        )}
-      </div>
-
-
-      <Dropdown overlay={menu} trigger={['click']}>
-        <a onClick={(e) => e.preventDefault()}>Actions ▼</a>
-      </Dropdown>
-
-      <SendMessage
-        customerId={customer}
-        isOpen={modalVisible}
-        onClose={handleCloseModal}
-        func={() => { }}
-        val={null}
-      />
-
-      {/* Contact Info */}
-      <div className="mt-4 space-y-2 w-full text-gray-600">
-        <div className="flex items-center space-x-2">
-          <Mail size={18} />
-          <span
-            className="text-sm break-words cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
-            onClick={() => customer && handleEdit("email", customer.email)}
-          >
-            {customer?.email || "N/A"}
-          </span>
+        {/* First Name */}
+        <div className="my-4 w-full">
+          <h2 className="text-sm font-semibold mb-2">First Name</h2>
+          {editMode === "firstName" ? (
+            <div className="flex items-center justify-center">
+              <input
+                type="text"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="px-2 py-1 border rounded mr-1 w-32 text-sm"
+                autoFocus
+              />
+              <button onClick={handleSave} disabled={isUpdating} className="text-green-500 text-sm">
+                <Check size={16} />
+              </button>
+              <button onClick={handleCancel} className="text-red-500 ml-1 text-sm">
+                <X size={16} />
+              </button>
+            </div>
+          ) : (
+            <span
+              className="inline-flex items-center gap-1 text-sm font-medium cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+              onClick={() => customer && handleEdit("firstName", customer.firstName)}
+            >
+              {customer ? customer.firstName : "Loading..."}
+              <Pencil size={14} className="text-gray-400 hover:text-gray-600" />
+            </span>
+          )}
+          <hr />
         </div>
 
-        <div className="flex items-start space-x-2">
-          {editMode === "Number" ? (
-            <div className="flex flex-col w-full">
+        {/* Middle Name */}
+        <div className="my-4 w-full">
+          <h2 className="text-sm font-semibold mb-2">Middle Name</h2>
+          {editMode === "middelName" ? (
+            <div className="flex items-center justify-center">
+              <input
+                type="text"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="px-2 py-1 border rounded mr-1 w-32 text-sm"
+                autoFocus
+                placeholder="Enter middle name"
+              />
+              <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
+                <Check size={16} />
+              </button>
+              <button onClick={handleCancel} className="text-red-500 ml-1">
+                <X size={16} />
+              </button>
+            </div>
+          ) : (
+            <span
+              className="inline-flex items-center gap-1 text-sm font-medium cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+              onClick={() => customer && handleEdit("middelName", customer.middelName)}
+            >
+              {customer ? customer.middelName || "No middle name" : "Loading..."}
+              <Pencil size={14} className="text-gray-400 hover:text-gray-600" />
+            </span>
+          )}
+          <hr />
+        </div>
+
+        {/* Last Name */}
+        <div className="my-4 w-full">
+          <h2 className="text-sm font-semibold mb-2">Last Name</h2>
+          {editMode === "lastName" ? (
+            <div className="flex items-center justify-center">
+              <input
+                type="text"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="px-2 py-1 border rounded mr-1 w-32 text-sm"
+                autoFocus
+              />
+              <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
+                <Check size={16} />
+              </button>
+              <button onClick={handleCancel} className="text-red-500 ml-1">
+                <X size={16} />
+              </button>
+            </div>
+          ) : (
+            <span
+              className="inline-flex items-center gap-1 text-sm font-medium cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+              onClick={() => customer && handleEdit("lastName", customer.lastName)}
+            >
+              {customer ? customer.lastName : ""}
+              <Pencil size={14} className="text-gray-400 hover:text-gray-600" />
+            </span>
+          )}
+          <hr />
+        </div>
 
 
-              {/* Stack flag above number visually */}
-              <div className="relative w-full">
+        {/* Email display/edit */}
+        <div className="my-4 w-full">
+          <h2 className="text-sm font-semibold mb-2">Email Address</h2>
+          {editMode === "email" ? (
+            <div className="flex items-center justify-center">
+              <input
+                type="email"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="px-2 py-1 border rounded mr-1 w-full"
+                autoFocus
+              />
+              <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
+                <Check size={16} />
+              </button>
+              <button onClick={handleCancel} className="text-red-500 ml-1">
+                <X size={16} />
+              </button>
+            </div>
+          ) : (
+            <span
+              className="inline-flex items-center gap-1 text-sm font-medium cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+              onClick={() => customer && handleEdit("email", customer.email)}
+            >
+              {customer?.email || "No email available"}
+              <Pencil size={14} className="text-gray-400 hover:text-gray-600" />
+            </span>
+          )}
+          <hr />
+        </div>
+
+
+        {/* Contact Info */}
+        <div className="mt-4 space-y-2 w-full text-gray-600">
+          <div className="flex items-center space-x-2">
+            <Mail size={18} />
+            <span
+              className="text-sm break-words cursor-pointer bg-gray-100 px-2 py-1 rounded flex-1"
+              onClick={() => customer && handleEdit("email", customer.email)}
+            >
+              {customer?.email || "N/A"}
+            </span>
+          </div>
+
+          <div className="flex items-start space-x-2">
+            {editMode === "Number" ? (
+              <div className="flex flex-col w-full">
+
+
+                {/* Stack flag above number visually */}
+                <div className="relative w-full">
+                  <PhoneInput
+                    value={editValue}
+                    onChange={(value) => setEditValue(value || "")}
+                    country={'us'}
+                    placeholder="Enter phone number"
+                    inputStyle={{ width: '100%' }}
+                  />
+
+                </div>
+
+                <div className="flex justify-end mt-2 space-x-2">
+                  <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
+                    <Check size={16} />
+                  </button>
+                  <button onClick={handleCancel} className="text-red-500">
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                className="flex items-center space-x-2 flex-1 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+                onClick={() => customer && handleEdit("Number", customer?.Number?.toString() || "")}
+              >
                 <PhoneInput
-                  value={editValue}
-                  onChange={(value) => setEditValue(value || "")}
-                  country={'us'}
+                  value={customer?.Number ? customer.Number.toString() : ""}
+                  onChange={() => { }}
                   placeholder="Enter phone number"
                   inputStyle={{ width: '100%' }}
                 />
 
               </div>
+            )}
+          </div>
 
-              <div className="flex justify-end mt-2 space-x-2">
-                <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
-                  <Check size={16} />
-                </button>
-                <button onClick={handleCancel} className="text-red-500">
-                  <X size={16} />
-                </button>
+
+
+
+
+          <div className="flex items-center space-x-2">
+            <MapPin size={18} />
+            {editMode === "address" ? (
+              <div className="flex flex-col w-full">
+                <input
+                  type="text"
+                  value={address.street}
+                  onChange={(e) => setAddress({ ...address, street: e.target.value })}
+                  onKeyDown={handleKeyDown}
+                  className="px-2 py-1 border rounded w-full mb-2"
+                  autoFocus
+                  placeholder="Street"
+                />
+
+                {/* ✅ Removed input for city, now only using select */}
+                <select
+                  value={address.city}
+                  onChange={(e) => setAddress({ ...address, city: e.target.value })}
+                  className="px-2 py-1 border rounded w-full mb-2"
+                >
+                  <option value="" disabled>Select City</option>
+                  {cityOptions.map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  type="text"
+                  value={address.postalCode}
+                  onChange={(e) => setAddress({ ...address, postalCode: e.target.value })}
+                  onKeyDown={handleKeyDown}
+                  className="px-2 py-1 border rounded w-full mb-2"
+                  placeholder="Postal Code"
+                />
+
+                <input
+                  type="text"
+                  value={address.country}
+                  onChange={(e) => setAddress({ ...address, country: e.target.value })}
+                  onKeyDown={handleKeyDown}
+                  className="px-2 py-1 border rounded w-full mb-2"
+                  placeholder="Country"
+                />
+
+                <div className="flex justify-end space-x-2">
+                  <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
+                    <Check size={16} />
+                  </button>
+                  <button onClick={handleCancel} className="text-red-500">
+                    <X size={16} />
+                  </button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div
-              className="flex items-center space-x-2 flex-1 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
-              onClick={() => customer && handleEdit("Number", customer?.Number?.toString() || "")}
-            >
-              <PhoneInput
-                value={customer?.Number ? customer.Number.toString() : ""}
-                onChange={() => { }}
-                placeholder="Enter phone number"
-                inputStyle={{ width: '100%' }}
-              />
-
-            </div>
-          )}
-        </div>
-
-
-
-
-
-        <div className="flex items-center space-x-2">
-          <MapPin size={18} />
-          {editMode === "address" ? (
-            <div className="flex flex-col w-full">
-              <input
-                type="text"
-                value={address.street}
-                onChange={(e) => setAddress({ ...address, street: e.target.value })}
-                onKeyDown={handleKeyDown}
-                className="px-2 py-1 border rounded w-full mb-2"
-                autoFocus
-                placeholder="Street"
-              />
-
-              {/* ✅ Removed input for city, now only using select */}
-              <select
-                value={address.city}
-                onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                className="px-2 py-1 border rounded w-full mb-2"
+            ) : (
+              <span
+                className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
+                onClick={() => {
+                  if (customer?.address) {
+                    setEditMode("address");
+                    setAddress({
+                      street: customer.address.street || "",
+                      city: customer.address.city || "",
+                      state: customer.address.state || "",
+                      postalCode: customer.address.postalCode || "",
+                      country: customer.address.country || "",
+                    });
+                  }
+                }}
               >
-                <option value="" disabled>Select City</option>
-                {cityOptions.map((city) => (
-                  <option key={city} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </select>
+                {customer?.address
+                  ? `${customer.address.street || ""}, ${customer.address.city || ""}, ${customer.address.state || ""}, ${customer.address.postalCode || ""}, ${customer.address.country || ""}`
+                  : "N/A"}
+              </span>
+            )}
+          </div>
 
-              <input
-                type="text"
-                value={address.postalCode}
-                onChange={(e) => setAddress({ ...address, postalCode: e.target.value })}
-                onKeyDown={handleKeyDown}
-                className="px-2 py-1 border rounded w-full mb-2"
-                placeholder="Postal Code"
-              />
 
-              <input
-                type="text"
-                value={address.country}
-                onChange={(e) => setAddress({ ...address, country: e.target.value })}
-                onKeyDown={handleKeyDown}
-                className="px-2 py-1 border rounded w-full mb-2"
-                placeholder="Country"
-              />
 
-              <div className="flex justify-end space-x-2">
-                <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
-                  <Check size={16} />
-                </button>
-                <button onClick={handleCancel} className="text-red-500">
-                  <X size={16} />
-                </button>
-              </div>
-            </div>
-          ) : (
-            <span
-              className="text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded flex-1"
-              onClick={() => {
-                if (customer?.address) {
-                  setEditMode("address");
-                  setAddress({
-                    street: customer.address.street || "",
-                    city: customer.address.city || "",
-                    state: customer.address.state || "",
-                    postalCode: customer.address.postalCode || "",
-                    country: customer.address.country || "",
-                  });
-                }
-              }}
-            >
-              {customer?.address
-                ? `${customer.address.street || ""}, ${customer.address.city || ""}, ${customer.address.state || ""}, ${customer.address.postalCode || ""}, ${customer.address.country || ""}`
-                : "N/A"}
-            </span>
-          )}
+
+
         </div>
 
-
-
-
-
+        <ClientListManager
+          customerId={customerId}
+        />
       </div>
-
-      <ClientListManager
-        customerId={customerId}
-      />
-
     </div>
   );
 };

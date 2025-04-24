@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { Dropdown, Menu } from "antd";
+import SendMessage from "./SendMessage";
 
 const Header: React.FC = () => {
     const navigate = useNavigate();
@@ -10,31 +12,66 @@ const Header: React.FC = () => {
         { name: "Profile", path: "/dashboard/add-client" },
         { name: "Matching", path: "/dashboard/add-client/matching" },
         { name: "Photos", path: "/dashboard/add-client/photos" },
-        { name: "Events", path: "/dashboard/add-client/events" },
-        { name: "Communication", path: "/dashboard/add-client/communication" }
     ];
 
+    const [modalVisible, setModalVisible] = useState(false);
+
+    const handleSendMessageClick = () => setModalVisible(true);
+    const handleCloseModal = () => setModalVisible(false);
+
+    const menu = (
+        <Menu>
+            <Menu.Item key="sendMessage" onClick={handleSendMessageClick}>
+                Send Message
+            </Menu.Item>
+            <Menu.Item key="2">Other Action</Menu.Item>
+        </Menu>
+    );
+
     return (
-        <div className="sticky top-0 bg-white shadow-md py-6 px-6 flex flex-col justify-between items-center z-10 border-b border-gray-200">
-            {/* Top Row */}
-            <div className="flex gap-6 text-gray-700 font-semibold">
-                {topTabs.map((tab) => (
-                    <div
-                        key={tab.name}
-                        className={`cursor-pointer transition ${location.pathname === tab.path
+        <div className="sticky top-0 bg-white shadow-md py-6 px-6 z-10 border-b border-gray-200">
+            <div className="relative flex items-center justify-center">
+                {/* Centered Tabs */}
+                <div className="absolute left-1/2 transform -translate-x-1/2 flex gap-6 text-gray-700 font-semibold">
+                    {topTabs.map((tab) => (
+                        <div
+                            key={tab.name}
+                            className={`cursor-pointer transition ${location.pathname === tab.path
                                 ? "text-blue-600 underline font-bold"
                                 : "hover:text-blue-600"
-                            }`}
-                        onClick={() =>
-                            navigate(tab.path, {
-                                state: { clientId: location.state?.clientId },
-                            })
-                        }
-                    >
-                        {tab.name}
-                    </div>
-                ))}
+                                }`}
+                            onClick={() =>
+                                navigate(tab.path, {
+                                    state: { clientId: location.state?.clientId },
+                                })
+                            }
+                        >
+                            {tab.name}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Right Corner Dropdown */}
+                <div className="ml-auto">
+                    <Dropdown overlay={menu} trigger={['click']}>
+                        <a
+                            onClick={(e) => e.preventDefault()}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-md font-semibold cursor-pointer hover:bg-blue-700 border border-blue-700 shadow-sm"
+                        >
+                            Actions ▼
+                        </a>
+                    </Dropdown>
+                </div>
             </div>
+
+            {/* Modal */}
+            <SendMessage
+                customerId={location.state?.clientId}
+                isOpen={modalVisible}
+                onClose={handleCloseModal}
+                func={() => { }}
+                val={null}
+            />
         </div>
     );
 };

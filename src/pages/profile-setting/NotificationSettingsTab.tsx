@@ -114,11 +114,11 @@ const NotificationSettingsTab: React.FC = () => {
 
   return (
     <Spin spinning={loading}>
-      <div className="p-6 bg-white shadow-md rounded-lg">
-        <Card title="Notification Settings" className="mb-4">
-          <Table columns={columns} dataSource={data} pagination={false} rowKey="key" bordered />
-        </Card>
-        <Button type="primary" className="mt-4" onClick={handleSaveChanges}>
+      <Card title="Notification Settings" className="mb-4">
+        <Table columns={columns} dataSource={data} pagination={false} rowKey="key" bordered />
+      </Card>
+      <div className="flex justify-end mt-4">
+        <Button type="primary" onClick={handleSaveChanges}>
           Save Changes
         </Button>
       </div>
