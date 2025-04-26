@@ -91,34 +91,36 @@ const Sidebar = ({ customerId }: SidebarProps) => {
 
   const handleSave = async () => {
     if (!editMode || !customer) return;
-
+  
     setIsUpdating(true);
-
+  
     try {
-      // Construct address object dynamically, excluding empty fields
       const addressData: any = {};
       Object.entries(address).forEach(([key, value]) => {
         if (value && value.trim() !== "") {
           addressData[key] = value;
         }
       });
-
+  
       const updateData: CustomerUpdate = {
         customerId: customerId,
         firstName: customer.firstName,
         middelName: customer.middelName,
         lastName: customer.lastName,
         email: customer.email,
-        Number: customer.Number?.toString() || "",
-        address: addressData, // Only filled fields
+        address: addressData,
       };
-
+  
+      if (customer.Number && customer.Number.toString().trim() !== "") {
+        updateData.Number = customer.Number.toString();
+      }
+  
       if (editMode && editMode !== "address") {
         (updateData as any)[editMode] = editValue;
       }
-
+  
       const res = await updateCustomerBasicDetail(updateData);
-
+  
       if (res.success) {
         if (res.customer) {
           setCustomer(res.customer);
@@ -139,6 +141,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
       setIsUpdating(false);
     }
   };
+  
 
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -149,7 +152,6 @@ const Sidebar = ({ customerId }: SidebarProps) => {
     }
   };
 
-  // New functions for image upload
   const handleUploadClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
@@ -186,12 +188,6 @@ const Sidebar = ({ customerId }: SidebarProps) => {
       }
     } catch (error) {
       message.error((error as Error).message || "An error occurred while uploading");
-    } finally {
-      setIsUploading(false);
-      // Clear the file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
     }
   };
 
@@ -387,7 +383,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
                   <PhoneInput
                     value={editValue}
                     onChange={(value) => setEditValue(value || "")}
-                    country={'us'}
+                   
                     placeholder="Enter phone number"
                     inputStyle={{ width: '100%' }}
                   />

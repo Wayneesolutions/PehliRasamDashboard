@@ -22,6 +22,8 @@ const Communication = lazy(() => import("../pages/clients/communication"));
 
 const Inbox = lazy(() => import("../pages/communication/Inbox"));
 const Sent = lazy(() => import("../pages/communication/Sent"));
+const ClientIntro = lazy(() => import("../pages/clients/client-intro/index"));
+const ClientIntroduction = lazy(() =>import("../pages/clients/client-intro/ClientIntro"))
 
 const Fields = lazy(() => import("../pages/settings/client-settings/Fields/Fields"));
 const Lists = lazy(() => import('../pages/settings/client-settings/List'));
@@ -37,6 +39,7 @@ const AppRoutes = () => {
                 <Route path="/submission" element={<Submission />} />
                 <Route path="/suggestions" element={<Suggestions />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/client-introduction" element={<ClientIntroduction />} />
                 <Route path="/" element={<Navigate to="/dashboard/overview" />} />
 
                 {/* Protected Routes */}
@@ -46,7 +49,7 @@ const AppRoutes = () => {
                         <Route path="overview" element={<Overview />} />
                         <Route path="timelinemain" element={<TimelineMain />} />
                         <Route path="clients" element={<Clients />} />
-
+                        <Route path="client-intro" element={<ClientIntro />} />
                         <Route path="add-client" element={<AddClient />}>
                             <Route index element={<Form />} />
                             <Route path="form" element={<Form />} />

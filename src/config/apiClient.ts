@@ -471,3 +471,31 @@ export const getCustomerActivityLogs = async (payload: CustomerActivityLogPayloa
     throw error;
   }
 };
+
+interface ActivityLogPayloadCustomer {
+  customer: string; 
+}
+
+export const getActivityLogsCustomer = async (payload: ActivityLogPayloadCustomer) => {
+  try {
+    const response = await apiClient.post("/admin/getActivityLogs", payload);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch activity logs", error);
+    throw error;
+  }
+};
+
+interface CustomerActivityLogPayloadId {
+  customer: string; 
+}
+
+export const getCustomerActivityLogsID = async (payload: CustomerActivityLogPayloadId) => {
+  try {
+    const response = await apiClient.post("/admin/getMonthlyActivitySummary", payload);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch activity logs", error);
+    throw error;
+  }
+};
