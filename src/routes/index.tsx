@@ -28,7 +28,7 @@ const ClientIntroduction = lazy(() =>import("../pages/clients/client-intro/Clien
 const Fields = lazy(() => import("../pages/settings/client-settings/Fields/Fields"));
 const Lists = lazy(() => import('../pages/settings/client-settings/List'));
 const Matching = lazy(() => import('../pages/settings/client-settings/matching/Fields'));
-const Presets = lazy(()=> import("../pages/settings/client-settings/Presets/index"))
+const Presets = lazy(()=> import("../pages/settings/client-settings/Presets/Presets"))
 const Users = lazy(() => import('../pages/settings/users'));
 const EmailSettings = lazy(() => import('../pages/settings/email-settings'));
 
