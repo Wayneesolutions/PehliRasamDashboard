@@ -1,185 +1,176 @@
 import { useState, useEffect, ChangeEvent } from 'react';
 import { Card, Input, Button, message, Spin, Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
-import type { UploadChangeParam, UploadFile } from 'antd/es/upload/interface';
-import apiClient from '../../config/apiClient';
-import { uploadFile } from '../../config/apiClient';
+import apiClient, { uploadFile } from '../../config/apiClient';
 
 interface FormDataState {
-    firstName: string;
-    lastName: string;
-    number: string;
-    email: string;
-    profilePicUrl: string | null;
+  firstName: string;
+  lastName: string;
+  number: string;
+  password: string;
+  profilePic: string | null;
 }
 
 const BasicInfoTab = () => {
-    const [formData, setFormData] = useState<FormDataState>({
-        firstName: '',
-        lastName: '',
-        number: '',
-        email: '',
-        profilePicUrl: null,
-    });
+  const [formData, setFormData] = useState<FormDataState>({
+    firstName: '',
+    lastName: '',
+    number: '',
+    password: '',
+    profilePic: null,
+  });
 
-    const [loading, setLoading] = useState(false);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = async (file: File) => {
+    if (!file) {
+      message.error("No file selected or invalid file.");
+      return false;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        setImagePreview(e.target.result as string);
+      }
     };
+    reader.readAsDataURL(file);
 
-    const handleFileChange = async (info: UploadChangeParam<UploadFile<any>>) => {
-        const file = info.file.originFileObj as File;
+    const imageForm = new FormData();
+    imageForm.append('file', file);
 
-        if (!file) {
-            message.error("No file selected or invalid file.");
-            return;
-        }
+    try {
+      const uploadRes = await uploadFile(imageForm);
+      if (uploadRes?.fileUrl) {
+        setFormData((prev) => ({ ...prev, profilePic: uploadRes.fileUrl }));
+        message.success("Profile image uploaded successfully");
+      } else {
+        message.error("Image upload failed");
+      }
+    } catch (error) {
+      message.error("Upload failed. Please try again.");
+      console.error(error);
+    }
 
-        // Show preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            if (e.target?.result) {
-                setImagePreview(e.target.result as string);
-            }
-        };
-        reader.readAsDataURL(file);
+    return false; // Prevent default upload
+  };
 
-        // Upload file
-        const imageForm = new FormData();
-        imageForm.append('file', file);
+  const fetchAdminDetails = async () => {
+    setLoading(true);
+    try {
+      const storedData = JSON.parse(localStorage.getItem('admin') || '{}');
+      const userId = storedData.id || storedData._id;
 
-        try {
-            const uploadRes = await uploadFile(imageForm);
-            if (uploadRes?.url) {
-                setFormData((prev) => ({ ...prev, profilePicUrl: uploadRes.url }));
-                message.success("Profile image uploaded successfully");
-            } else {
-                message.error("Image upload failed");
-            }
-        } catch (error) {
-            message.error("Upload failed. Please try again.");
-            console.error(error);
-        }
-    };
+      if (!userId) {
+        message.error('User ID is missing. Please log in again.');
+        return;
+      }
 
+      const { data } = await apiClient.post('/admin/adminDetail', { userId });
 
-    const fetchAdminDetails = async () => {
-        setLoading(true);
-        try {
-            const storedData = JSON.parse(localStorage.getItem('admin') || '{}');
-            const userId = storedData.id || storedData._id;
+      setFormData({
+        firstName: data.admin.firstName || '',
+        lastName: data.admin.lastName || '',
+        number: data.admin.number || '',
+        password: '',
+        profilePic: data.admin.profilePic || null,
+      });
 
-            if (!userId) {
-                message.error('User ID is missing. Please log in again.');
-                return;
-            }
+      setImagePreview(data.admin.profilePic || null);
+      localStorage.setItem('admin', JSON.stringify({ ...storedData, ...data.admin }));
+    } catch (error: unknown) {
+      const errorMessage = (error as any)?.response?.data?.message || 'Failed to load admin details.';
+      message.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            const { data } = await apiClient.post('/admin/adminDetail', { userId });
+  useEffect(() => {
+    fetchAdminDetails();
+  }, []);
 
-            setFormData({
-                firstName: data.admin.firstName || '',
-                lastName: data.admin.lastName || '',
-                number: data.admin.number || '',
-                email: data.admin.email || '',
-                profilePicUrl: data.admin.profilePic || null,
-            });
+  const handleUpdate = async () => {
+    setLoading(true);
+    try {
+      const storedData = JSON.parse(localStorage.getItem('admin') || '{}');
+      const userId = storedData.id || storedData._id;
 
-            setImagePreview(data.admin.profilePic || null);
-            localStorage.setItem('admin', JSON.stringify({ ...storedData, ...data.admin }));
-        } catch (error: unknown) {
-            const errorMessage = (error as any)?.response?.data?.message || 'Failed to load admin details.';
-            message.error(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    };
+      if (!userId) {
+        message.error('User ID is missing. Please log in again.');
+        return;
+      }
 
-    useEffect(() => {
-        fetchAdminDetails();
-    }, []);
+      const payload: Record<string, any> = {
+        userId,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        number: String(formData.number),
+      };
+      
+      if (formData.password) {
+        payload.password = formData.password;
+      }
+      
+      if (formData.profilePic) {
+        payload.profilePic = formData.profilePic;
+      }
+      
 
-    const handleUpdate = async () => {
-        setLoading(true);
-        try {
-            const storedData = JSON.parse(localStorage.getItem('admin') || '{}');
-            const userId = storedData.id || storedData._id;
+      const response = await apiClient.post('/admin/updateAdminBasicDetails', payload);
+      message.success(response.data.message || 'Details updated successfully');
 
-            if (!userId) {
-                message.error('User ID is missing. Please log in again.');
-                return;
-            }
+      localStorage.setItem('admin', JSON.stringify({ ...storedData, ...formData }));
+    } catch (error: unknown) {
+      const errorMessage = (error as any)?.response?.data?.error || 'Failed to update details';
+      message.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            // Prepare payload, filtering out empty values
-            const rawPayload = {
-                userId,
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                number: String(formData.number),
-                email: formData.email,
-                profilePic: formData.profilePicUrl,
-            };
+  return (
+    <Spin spinning={loading}>
+      <Card className="mb-4 p-6">
+        <div className="flex flex-col items-center gap-4">
+          <Upload
+            accept="image/*"
+            showUploadList={false}
+            beforeUpload={handleFileChange}
+            maxCount={1}
+          >
+            <Button icon={<UploadOutlined />}>Upload Profile Picture</Button>
+          </Upload>
 
-            // Remove keys with null/empty string values (except userId)
-            const payload: Record<string, any> = {};
-            for (const [key, value] of Object.entries(rawPayload)) {
-                if (key === 'userId' || (value !== '' && value !== null)) {
-                    payload[key] = value;
-                }
-            }
+          {imagePreview && (
+            <img
+              src={imagePreview}
+              alt="Profile"
+              className="h-24 w-24 rounded-full mt-2 border p-1"
+            />
+          )}
+        </div>
+      </Card>
 
-            const response = await apiClient.post('/admin/updateAdminBasicDetails', payload);
-            message.success(response.data.message || 'Details updated successfully');
-
-            localStorage.setItem('admin', JSON.stringify({ ...storedData, ...formData }));
-        } catch (error: unknown) {
-            const errorMessage = (error as any)?.response?.data?.error || 'Failed to update details';
-            message.error(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-
-    return (
-        <Spin spinning={loading}>
-            <Card className="mb-4 p-6">
-                <div className="flex flex-col items-center gap-4">
-                    <Upload
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        showUploadList={false}
-                        maxCount={1}
-                    >
-                        <Button icon={<UploadOutlined />}>Upload Profile Picture</Button>
-                    </Upload>
-
-
-                    {imagePreview && (
-                        <img
-                            src={imagePreview}
-                            alt="Profile"
-                            className="h-24 w-24 rounded-full mt-2 border p-1"
-                        />
-                    )}
-                </div>
-            </Card>
-
-            <Card className="mb-4 p-6">
-                <div className="grid gap-4">
-                    <Input placeholder="First Name" name="firstName" value={formData.firstName} onChange={handleChange} />
-                    <Input placeholder="Last Name" name="lastName" value={formData.lastName} onChange={handleChange} />
-                    <Input placeholder="Phone" name="number" value={formData.number} onChange={handleChange} />
-                    <Input placeholder="Email" name="email" value={formData.email} onChange={handleChange} />
-                </div>
-                <Button type="primary" className="!mt-4 w-full" onClick={handleUpdate} loading={loading}>
-                    Update Profile
-                </Button>
-            </Card>
-        </Spin>
-    );
+      <Card className="mb-4 p-6">
+        <div className="grid gap-4">
+          <Input placeholder="First Name" name="firstName" value={formData.firstName} onChange={handleChange} />
+          <Input placeholder="Last Name" name="lastName" value={formData.lastName} onChange={handleChange} />
+          <Input placeholder="Phone" name="number" value={formData.number} onChange={handleChange} />
+          <Input.Password placeholder="Password" name="password" value={formData.password} onChange={handleChange} />
+        </div>
+        <Button type="primary" className="!mt-4 w-full" onClick={handleUpdate} loading={loading}>
+          Update Profile
+        </Button>
+      </Card>
+    </Spin>
+  );
 };
 
 export default BasicInfoTab;
