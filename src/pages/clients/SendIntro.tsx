@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Select, message, Spin, Avatar } from 'antd';
 import apiClient from '../../config/apiClient';
-import SendMailForIntro from './SendMailForIntro'; // Import SendMailForIntro component
+import SendMailForIntro from './SendMailForIntro';
 
 const { Option } = Select;
 
@@ -14,38 +14,38 @@ interface Props {
 interface Group {
   _id: string;
   name: string;
-  formFields: any[];
+}
+
+interface Field {
+  id: string;
+  Kind: string;
 }
 
 const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedPreset, setSelectedPreset] = useState<string | undefined>();
+  const [presetFields, setPresetFields] = useState<Field[]>([]);
   const [basicInfo, setBasicInfo] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [introData, setIntroData] = useState<{ introId: string; link: string } | null>(null); // To store introId and link
+  const [introData, setIntroData] = useState<{ introId: string; link: string } | null>(null);
 
-  // Fetch presets
-  const fetchGroupsWithFields = async () => {
+  const fetchGroups = async () => {
     try {
       const response = await apiClient.get("/admin/getAllPresetsWithFields");
       const formatted = response.data.data.map((group: any) => ({
         _id: group._id,
         name: group.name,
-        formFields: group.fields || [],
       }));
       setGroups(formatted);
     } catch (error) {
-      message.error("Failed to load group fields.");
+      message.error("Failed to load preset groups.");
     }
   };
 
-  // Fetch basic info for customer
   const fetchCustomerBasicDetail = async (id: string) => {
     try {
       setLoading(true);
-      const response = await apiClient.post('/admin/getCustomerBasicDetail', {
-        customerId: id,
-      });
+      const response = await apiClient.post('/admin/getCustomerBasicDetail', { customerId: id });
       setBasicInfo(response.data.data || {});
     } catch (error) {
       message.error('Failed to load customer details.');
@@ -54,50 +54,32 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
     }
   };
 
-  const handlePresetChange = async (value: string) => {
-    setSelectedPreset(value);
-
-    if (customerId) {
-      await fetchCustomerBasicDetail(customerId);
+  const fetchPresetById = async (presetId: string) => {
+    try {
+      const response = await apiClient.post('/admin/getPresetById', { presetId });
+      const fields = response.data.data.fields || [];
+      setPresetFields(fields);
+    } catch (error) {
+      message.error('Failed to load preset details.');
     }
   };
 
+  const handlePresetChange = async (value: string) => {
+    setSelectedPreset(value);
+    await fetchPresetById(value);
+    if (customerId) await fetchCustomerBasicDetail(customerId);
+  };
+
   const handleOk = async () => {
-    if (!selectedPreset) {
-      message.error("Please select a preset.");
-      return;
-    }
-
-    if (!customerId) {
-      message.error("Customer ID is missing");
-      return;
-    }
-
-    const selectedGroup = groups.find(group => group._id === selectedPreset);
-
-    if (!selectedGroup) {
-      message.error("Selected preset group not found.");
-      return;
-    }
-
-    const presetFields = selectedGroup.formFields || [];
-
-    if (presetFields.length === 0) {
-      message.error("Selected preset has no fields.");
-      return;
-    }
-
-    // Use group.name to determine fieldsFor
-    let fieldsFor = "";
-    const groupName = selectedGroup.name?.toLowerCase() || "";
-
-    if (groupName.includes("profile")) fieldsFor = "Profile";
-    else if (groupName.includes("preference")) fieldsFor = "Preferences";
+    if (!selectedPreset) return message.error("Please select a preset.");
+    if (!customerId) return message.error("Customer ID is missing.");
+    if (presetFields.length === 0) return message.error("Selected preset has no fields.");
 
     const fields = presetFields.map(field => ({
-      fieldId: field._id,
-      fieldsFor,
+      fieldId: field.id,
+      fieldsFor: field.Kind?.toLowerCase() === 'preference' ? 'Preferences' : 'Profile',
     }));
+
 
     const payload = {
       expiration: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
@@ -109,12 +91,10 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
     try {
       const response = await apiClient.post("/admin/createIntro", payload);
       if (response.data.success) {
-
         setIntroData({
           introId: response.data.data.intro.introId,
           link: response.data.data.intro.link,
         });
-
         onClose();
       } else {
         message.error(response.data.message || "Failed to create intro.");
@@ -125,18 +105,15 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
   };
 
   useEffect(() => {
-    fetchGroupsWithFields();
-    if (customerId) fetchCustomerBasicDetail(customerId);
+    if (isOpen) {
+      fetchGroups();
+      if (customerId) fetchCustomerBasicDetail(customerId);
+    }
   }, [isOpen]);
 
   return (
     <div>
-      <Modal
-        open={isOpen}
-        onCancel={onClose}
-        onOk={handleOk}
-        title="Send Intro"
-      >
+      <Modal open={isOpen} onCancel={onClose} onOk={handleOk} title="Send Intro">
         <div>
           <label>Select Preset:</label>
           <Select
@@ -145,17 +122,15 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
             value={selectedPreset}
             onChange={handlePresetChange}
           >
-            {groups.map((group) => (
+            {groups.map(group => (
               <Option key={group._id} value={group._id}>
                 {group.name}
               </Option>
             ))}
           </Select>
 
-          {/* Show loading spinner */}
           {loading && <Spin />}
 
-          {/* Show basic info if available */}
           {!loading && basicInfo && (
             <div style={{ border: '1px solid #eee', padding: '1rem', borderRadius: '8px' }}>
               <h4>Customer Basic Info</h4>
@@ -186,4 +161,3 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
 };
 
 export default SendIntro;
-
