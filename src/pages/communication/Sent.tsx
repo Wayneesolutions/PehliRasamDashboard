@@ -10,6 +10,12 @@ interface Email {
   time: string;
   status: string;
 }
+function decodeHTMLEntities(html: string) {
+  const txt = document.createElement("textarea");
+  txt.innerHTML = html;
+  return txt.value;
+}
+
 
 const Sent = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -72,7 +78,13 @@ const Sent = () => {
                       </span>
                     </td>
                     <td className="p-3 text-gray-600">{email.subject}</td>
-                    <td className="p-3 text-gray-500 truncate">{email.body}</td>
+                    <td className="p-3 text-gray-500 max-w-xs overflow-hidden">
+                      <div
+                        className="line-clamp-3"
+                        dangerouslySetInnerHTML={{ __html: decodeHTMLEntities(email.body) }}
+                      />
+                    </td>
+
                     <td className="p-3 text-gray-500 text-right">
                       {new Date(email.time).toLocaleString()}
                     </td>

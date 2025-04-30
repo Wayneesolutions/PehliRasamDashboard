@@ -1,15 +1,16 @@
 import { useState, useEffect, ChangeEvent } from 'react';
 import { Card, Input, Button, message, Spin, Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
-import apiClient from '../../config/apiClient';
 import type { UploadChangeParam, UploadFile } from 'antd/es/upload/interface';
+import apiClient from '../../config/apiClient';
+import { uploadFile } from '../../config/apiClient';
 
 interface FormDataState {
     firstName: string;
     lastName: string;
     number: string;
     email: string;
-    profilePic: File | null;
+    profilePicUrl: string | null;
 }
 
 const BasicInfoTab = () => {
@@ -18,7 +19,7 @@ const BasicInfoTab = () => {
         lastName: '',
         number: '',
         email: '',
-        profilePic: null,
+        profilePicUrl: null,
     });
 
     const [loading, setLoading] = useState(false);
@@ -29,25 +30,40 @@ const BasicInfoTab = () => {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleFileChange = (info: UploadChangeParam<UploadFile<any>>) => {
+    const handleFileChange = async (info: UploadChangeParam<UploadFile<any>>) => {
         const file = info.file.originFileObj as File;
-        if (!file) return;
 
+        if (!file) {
+            message.error("No file selected or invalid file.");
+            return;
+        }
+
+        // Show preview
         const reader = new FileReader();
         reader.onload = (e) => {
             if (e.target?.result) {
-                // Debugging log to verify the result is correctly read
-                console.log('File loaded:', e.target.result);
                 setImagePreview(e.target.result as string);
             }
         };
         reader.readAsDataURL(file);
 
-        // Debugging log to ensure the file is being added to state
-        console.log('File selected:', file);
-        setFormData((prev) => ({ ...prev, profilePic: file }));
-    };
+        // Upload file
+        const imageForm = new FormData();
+        imageForm.append('file', file);
 
+        try {
+            const uploadRes = await uploadFile(imageForm);
+            if (uploadRes?.url) {
+                setFormData((prev) => ({ ...prev, profilePicUrl: uploadRes.url }));
+                message.success("Profile image uploaded successfully");
+            } else {
+                message.error("Image upload failed");
+            }
+        } catch (error) {
+            message.error("Upload failed. Please try again.");
+            console.error(error);
+        }
+    };
 
 
     const fetchAdminDetails = async () => {
@@ -68,7 +84,7 @@ const BasicInfoTab = () => {
                 lastName: data.admin.lastName || '',
                 number: data.admin.number || '',
                 email: data.admin.email || '',
-                profilePic: null,
+                profilePicUrl: data.admin.profilePic || null,
             });
 
             setImagePreview(data.admin.profilePic || null);
@@ -96,28 +112,27 @@ const BasicInfoTab = () => {
                 return;
             }
 
-            const payload = new FormData();
-            payload.append('userId', String(userId));
+            // Prepare payload, filtering out empty values
+            const rawPayload = {
+                userId,
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                number: String(formData.number),
+                email: formData.email,
+                profilePic: formData.profilePicUrl,
+            };
 
-            // Append all other form fields except profilePic
-            Object.entries(formData).forEach(([key, value]) => {
-                if (key !== 'profilePic' && value !== null) {
-                    payload.append(key, value as string | Blob);
+            // Remove keys with null/empty string values (except userId)
+            const payload: Record<string, any> = {};
+            for (const [key, value] of Object.entries(rawPayload)) {
+                if (key === 'userId' || (value !== '' && value !== null)) {
+                    payload[key] = value;
                 }
-            });
-
-            // Ensure profilePic is added if it's present in formData
-            if (formData.profilePic) {
-                console.log('Appending profilePic:', formData.profilePic); // Debug log
-                payload.append('profilePic', formData.profilePic);
             }
 
-            // Send the request
-            const response = await apiClient.post('/admin/updateAdminBasicDetails', payload, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-
+            const response = await apiClient.post('/admin/updateAdminBasicDetails', payload);
             message.success(response.data.message || 'Details updated successfully');
+
             localStorage.setItem('admin', JSON.stringify({ ...storedData, ...formData }));
         } catch (error: unknown) {
             const errorMessage = (error as any)?.response?.data?.error || 'Failed to update details';
@@ -132,9 +147,15 @@ const BasicInfoTab = () => {
         <Spin spinning={loading}>
             <Card className="mb-4 p-6">
                 <div className="flex flex-col items-center gap-4">
-                    <Upload beforeUpload={() => false} onChange={handleFileChange} showUploadList={false}>
+                    <Upload
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        showUploadList={false}
+                        maxCount={1}
+                    >
                         <Button icon={<UploadOutlined />}>Upload Profile Picture</Button>
                     </Upload>
+
 
                     {imagePreview && (
                         <img
@@ -143,7 +164,6 @@ const BasicInfoTab = () => {
                             className="h-24 w-24 rounded-full mt-2 border p-1"
                         />
                     )}
-
                 </div>
             </Card>
 

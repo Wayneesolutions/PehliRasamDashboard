@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Select, message, Spin, Avatar } from 'antd';
 import apiClient from '../../config/apiClient';
+import SendMailForIntro from './SendMailForIntro'; // Import SendMailForIntro component
 
 const { Option } = Select;
 
@@ -8,8 +9,6 @@ interface Props {
   customerId: string | null;
   isOpen: boolean;
   onClose: () => void;
-  func: () => void;
-  val: any;
 }
 
 interface Group {
@@ -23,6 +22,7 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
   const [selectedPreset, setSelectedPreset] = useState<string | undefined>();
   const [basicInfo, setBasicInfo] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [introData, setIntroData] = useState<{ introId: string; link: string } | null>(null); // To store introId and link
 
   // Fetch presets
   const fetchGroupsWithFields = async () => {
@@ -54,51 +54,11 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
     }
   };
 
-  
   const handlePresetChange = async (value: string) => {
-
     setSelectedPreset(value);
 
-    if (typeof customerId === "string") {
+    if (customerId) {
       await fetchCustomerBasicDetail(customerId);
-      if (basicInfo && basicInfo._id) {
-        const fields = groups.find(group => group._id === value)?.formFields || [];
-
-        const fieldsForMapping = (name: string) => {
-          if (name && typeof name === 'string') {
-            if (name.toLowerCase().includes('profile')) {
-              return "Profile";
-            } else if (name.toLowerCase().includes('preferences')) {
-              return "Preferences";
-            }
-          }
-          return "";
-        };
-
-        const payload = {
-          profileImage: basicInfo.imagePath || "https://default-image-url.com", 
-          customerId: customerId,  
-          fields: fields.map(field => ({
-            fieldId: field._id, 
-            fieldsFor: fieldsForMapping(field.name || ''),
-          })).filter(field => field.fieldsFor),
-        };
-
-
-        try {
-          const response = await apiClient.post("/admin/createIntro", payload);
-        
-          if (response.data.success) {
-            message.success("Intro created successfully!");
-          } else {
-            message.error(response.data.message || "Failed to create intro.");
-          }
-        } catch (error) {
-          message.error("Failed to create intro.");
-        }
-      }
-    } else {
-      message.error("Customer ID is missing");
     }
   };
 
@@ -108,62 +68,122 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
       return;
     }
 
-    if (typeof customerId === "string") {
-
-      await handlePresetChange(selectedPreset);
-      onClose();
-    } else {
+    if (!customerId) {
       message.error("Customer ID is missing");
+      return;
+    }
+
+    const selectedGroup = groups.find(group => group._id === selectedPreset);
+
+    if (!selectedGroup) {
+      message.error("Selected preset group not found.");
+      return;
+    }
+
+    const presetFields = selectedGroup.formFields || [];
+
+    if (presetFields.length === 0) {
+      message.error("Selected preset has no fields.");
+      return;
+    }
+
+    // Use group.name to determine fieldsFor
+    let fieldsFor = "";
+    const groupName = selectedGroup.name?.toLowerCase() || "";
+
+    if (groupName.includes("profile")) fieldsFor = "Profile";
+    else if (groupName.includes("preference")) fieldsFor = "Preferences";
+
+    const fields = presetFields.map(field => ({
+      fieldId: field._id,
+      fieldsFor,
+    }));
+
+    const payload = {
+      expiration: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+      profileImage: basicInfo?.imagePath || "https://default-image-url.com",
+      customerId,
+      fields,
+    };
+
+    try {
+      const response = await apiClient.post("/admin/createIntro", payload);
+      if (response.data.success) {
+
+        setIntroData({
+          introId: response.data.data.intro.introId,
+          link: response.data.data.intro.link,
+        });
+
+        onClose();
+      } else {
+        message.error(response.data.message || "Failed to create intro.");
+      }
+    } catch (error) {
+      message.error("Failed to create intro.");
     }
   };
 
   useEffect(() => {
     fetchGroupsWithFields();
-  }, []);
+    if (customerId) fetchCustomerBasicDetail(customerId);
+  }, [isOpen]);
 
   return (
-    <Modal
-      open={isOpen}
-      onCancel={onClose}
-      onOk={handleOk}
-      title="Send Intro"
-    >
-      <div>
-        <label>Select Preset:</label>
-        <Select
-          style={{ width: '100%', marginBottom: '1rem' }}
-          placeholder="Choose a preset"
-          value={selectedPreset}
-          onChange={handlePresetChange}
-        >
-          {groups.map((group) => (
-            <Option key={group._id} value={group._id}>
-              {group.name}
-            </Option>
-          ))}
-        </Select>
+    <div>
+      <Modal
+        open={isOpen}
+        onCancel={onClose}
+        onOk={handleOk}
+        title="Send Intro"
+      >
+        <div>
+          <label>Select Preset:</label>
+          <Select
+            style={{ width: '100%', marginBottom: '1rem' }}
+            placeholder="Choose a preset"
+            value={selectedPreset}
+            onChange={handlePresetChange}
+          >
+            {groups.map((group) => (
+              <Option key={group._id} value={group._id}>
+                {group.name}
+              </Option>
+            ))}
+          </Select>
 
-        {/* Show loading spinner */}
-        {loading && <Spin />}
+          {/* Show loading spinner */}
+          {loading && <Spin />}
 
-        {/* Show basic info if available */}
-        {!loading && basicInfo && (
-          <div style={{ border: '1px solid #eee', padding: '1rem', borderRadius: '8px' }}>
-            <h4>Customer Basic Info</h4>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <Avatar size={64} src={basicInfo.imagePath || undefined}>
-                {basicInfo.firstName?.[0] || 'C'}
-              </Avatar>
-              <div>
-                <p><strong>Name:</strong> {`${basicInfo.firstName || ''} ${basicInfo.middelName || ''} ${basicInfo.lastName || ''}`}</p>
-                <p><strong>Created At:</strong> {basicInfo.createdAt ? new Date(basicInfo.createdAt).toLocaleDateString() : 'N/A'}</p>
+          {/* Show basic info if available */}
+          {!loading && basicInfo && (
+            <div style={{ border: '1px solid #eee', padding: '1rem', borderRadius: '8px' }}>
+              <h4>Customer Basic Info</h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <Avatar size={64} src={basicInfo.imagePath || undefined}>
+                  {basicInfo.firstName?.[0] || 'C'}
+                </Avatar>
+                <div>
+                  <p><strong>Name:</strong> {`${basicInfo.firstName || ''} ${basicInfo.middelName || ''} ${basicInfo.lastName || ''}`}</p>
+                  <p><strong>Created At:</strong> {basicInfo.createdAt ? new Date(basicInfo.createdAt).toLocaleDateString() : 'N/A'}</p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
-    </Modal>
+          )}
+        </div>
+      </Modal>
+
+      {introData && (
+        <SendMailForIntro
+          link={introData.link}
+          customerId={customerId!}
+          isOpen={!!introData}
+          onClose={() => setIntroData(null)}
+        />
+      )}
+    </div>
   );
 };
 
 export default SendIntro;
+

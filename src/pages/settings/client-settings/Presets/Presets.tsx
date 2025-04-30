@@ -106,10 +106,9 @@ const Presets = () => {
                 <Space>
                     <EditOutlined
                         onClick={() => {
-                            setEditingField(record);           // This is the field or preset being edited
+                            setEditingField(record);
                             setSelectedGroup(groups.find(group => group.formFields.some(field => field._id === record._id)) || null);
-                            // This sets the selected group ID (needed for update)
-                            setFieldModalVisible(true);  
+                            setFieldModalVisible(true);
                         }}
                     />
                     <DeleteOutlined
@@ -171,8 +170,8 @@ const Presets = () => {
                                         icon={<PlusOutlined />}
                                         size="small"
                                         onClick={(e) => {
-                                            e.stopPropagation(); // Prevent collapse toggle
-                                            setSelectedGroup(group); // Send group ID
+                                            e.stopPropagation();
+                                            setSelectedGroup(group);
                                             setEditingField(null);
                                             setFieldModalVisible(true);
                                         }}

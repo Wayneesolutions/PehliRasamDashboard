@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Form, Input, Button, message, Select } from 'antd';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { sendCustomerMail, getAllEmailTemplates } from '../../config/apiClient';
-import { Customer } from '../../schema/customernew';
 
 const { Option } = Select;
 
 interface Props {
-  customerId: Customer | null;
+  customerId: string | null;
   isOpen: boolean;
   onClose: () => void;
   func: () => void;
@@ -21,14 +20,11 @@ interface EmailTemplate {
   body: string;
 }
 
-
 const SendMessage: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
   const [form] = Form.useForm();
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
-  const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
-  const [, setMessageText] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -46,19 +42,8 @@ const SendMessage: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
 
   const resetForm = () => {
     setSelectedTemplateId(null);
-    setSubject('');
     setContent('');
-    setMessageText('');
     form.resetFields();
-  };
-
-  const handleTemplateSelect = (templateId: string) => {
-    const selected = templates.find((t) => t._id === templateId);
-    if (selected) {
-      setSelectedTemplateId(templateId);
-      setSubject(selected.subject);
-      setContent(decodeHtml(selected.body));
-    }
   };
 
   const decodeHtml = (html: string) => {
@@ -67,33 +52,36 @@ const SendMessage: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
     return txt.value;
   };
 
+  const handleTemplateSelect = (templateId: string) => {
+    const selected = templates.find((t) => t._id === templateId);
+    if (selected) {
+      setSelectedTemplateId(templateId);
+      form.setFieldsValue({
+        subject: selected.subject,
+      });
+      setContent(decodeHtml(selected.body));
+    }
+  };
+
   const handleSend = async () => {
-    if (!subject.trim() || !content.trim()) {
-      message.error('Please fill in both subject and content before sending.');
-      return;
+    try {
+      const values = await form.validateFields();
+      const payload = {
+        customerId: customerId || '',
+        subject: values.subject,
+        body: content,
+      };
+      const res = await sendCustomerMail(payload);
+      if (!res.success) {
+        message.error(res.message);
+        return;
+      }
+      message.success(res.message);
+      onClose();
+      resetForm();
+    } catch (error) {
+      // silently fail validation error
     }
-
-    const obj = {
-      customerId: customerId?._id || '',
-      subject: subject,
-      body: content,
-    };
-
-    if (!obj.customerId) {
-      message.error('Customer ID is required.');
-      return;
-    }
-
-    const res = await sendCustomerMail(obj);
-
-    if (!res.success) {
-      message.error(res.message);
-      return;
-    }
-
-    message.success(res.message);
-    onClose();
-    resetForm();
   };
 
   return (
@@ -129,28 +117,23 @@ const SendMessage: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
 
         <Form.Item
           label="Subject"
+          name="subject"
           rules={[{ required: true, message: 'Please enter subject' }]}
         >
-          <Input
-            placeholder="Subject"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-          />
+          <Input placeholder="Subject" />
         </Form.Item>
-
 
         <Form.Item
           label="Content"
+          name="content"
           required
           validateStatus={!content ? 'error' : ''}
           help={!content ? 'Please enter email content' : ''}
         >
-          <ReactQuill
-            theme="snow"
-            value={content}
-            onChange={setContent}
-            placeholder="Write your email content..."
-            style={{ height: 200 }}
+          <CKEditor
+            editor={ClassicEditor}
+            data={content}
+            onChange={(_, editor) => setContent(editor.getData())}
           />
         </Form.Item>
       </Form>

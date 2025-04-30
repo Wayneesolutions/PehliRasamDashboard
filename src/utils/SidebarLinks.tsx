@@ -59,6 +59,7 @@ export const sidebarLinks: SidebarLink[] = [
           { key: "/dashboard/emailsettings", icon: <BiUser />, label: "Email Settings" },
         ],
       },
+      { key: "/dashboard/allclient-intro", icon: <MdSettings />, label: "Clients Intro" },
     ],
   },
 ];

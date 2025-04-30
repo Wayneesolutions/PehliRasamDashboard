@@ -92,8 +92,6 @@ const Header: React.FC = () => {
         customerId={customerId}
         isOpen={modalVisibleIntro}
         onClose={handleCloseModalIntro}
-        func={() => { }}
-        val={null}
       />
     </div>
   );

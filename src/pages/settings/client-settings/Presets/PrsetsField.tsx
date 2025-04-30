@@ -2,7 +2,7 @@ import { Modal, Form, Select, Button, message, Switch } from "antd";
 import { useEffect, useState } from "react";
 import apiClient from "../../../../config/apiClient";
 const { Option, OptGroup } = Select;
-import {  Group } from "../Fields/types";
+import { Group } from "../Fields/types";
 import { Field as PreferenceField, Group as PreferenceGroup } from "../matching/types";
 import { Field as PresetField, Group as PresetGroup } from './types';
 
@@ -27,7 +27,7 @@ const PrsetsField: React.FC<FieldModalProps> = ({ visible,
     const [, setGroups] = useState<Group[]>([]);
     const [fields, setFields] = useState<Group[]>([]);
     const [, setSelectedField] = useState<{ fieldsId: string; fieldsFor: string } | null>(null);
-    const [preferenceGroups, setPreferenceGroups] = useState <PreferenceGroup[]>([]);
+    const [preferenceGroups, setPreferenceGroups] = useState<PreferenceGroup[]>([]);
 
 
 
@@ -99,23 +99,26 @@ const PrsetsField: React.FC<FieldModalProps> = ({ visible,
             if (visible) {
                 await fetchGroupList();
 
-                if (editingGroup  && selectedGroup) {
-                    setEditingGroup(selectedGroup)
-                    const profileFieldIds = editingGroup.formFields
-                        .filter((f: PresetField) => f.fieldsFor === "profile")
-                        .map((f: PresetField) => f._id);
+                if (editingField && selectedGroup) {
+                    setEditingGroup(selectedGroup);
 
+                    // Check if editingGroup is not null
+                    if (editingGroup) {
+                        const profileFieldIds = editingGroup.formFields
+                            .filter((f: PresetField) => f.fieldsFor === "profile")
+                            .map((f: PresetField) => f._id);
 
-                    const preferenceFieldIds = editingGroup.formFields
-                        ?.filter((f: PresetField) => f.fieldsFor === "preferences")
-                        .map((f: PresetField) => f._id) || [];
+                        const preferenceFieldIds = editingGroup.formFields
+                            ?.filter((f: PresetField) => f.fieldsFor === "preferences")
+                            .map((f: PresetField) => f._id) || [];
 
-                    form.setFieldsValue({
-                        profileField: profileFieldIds,
-                        preferenceField: preferenceFieldIds,
-                        AllowEdit: editingGroup.formFields?.[0]?.AllowEdit ?? true,
-                        isRequired: editingGroup.formFields?.[0]?.isRequired ?? false,
-                    });
+                        form.setFieldsValue({
+                            profileField: profileFieldIds,
+                            preferenceField: preferenceFieldIds,
+                            AllowEdit: editingGroup.formFields?.[0]?.AllowEdit ?? true,
+                            isRequired: editingGroup.formFields?.[0]?.isRequired ?? false,
+                        });
+                    }
                 } else {
                     form.resetFields();
                     form.setFieldsValue({
@@ -130,7 +133,9 @@ const PrsetsField: React.FC<FieldModalProps> = ({ visible,
         };
 
         fetchAndSetData();
-    }, [visible, editingField]);
+    }, [visible, editingField, selectedGroup]); // Add selectedGroup as a dependency to update the group on change
+
+
 
 
 
@@ -148,41 +153,63 @@ const PrsetsField: React.FC<FieldModalProps> = ({ visible,
         try {
             setLoading(true);
 
-            const presetId = selectedGroup?._id; // Use selected group ID as presetId
-            if (!presetId) {
-                message.error("No group selected. Please try again.");
-                return;
+            if (editingField && editingField._id) {
+                // Update payload
+                const updatePayload = {
+                    presetFieldId: editingField._id,
+                    AllowEdit: values.AllowEdit ?? true,
+                    isRequired: values.isRequired ?? false,
+                };
+
+                const response = await apiClient.post("/admin/updatePresetField", updatePayload);
+
+                if (response.status === 200) {
+                    message.success("Field updated successfully!");
+                } else {
+                    message.error("Failed to update the field.");
+                }
+            } else {
+                // Create payload
+                const { profileField = [], preferenceField = [], AllowEdit, isRequired } = values;
+
+                // Validate selectedGroup
+                if (!selectedGroup || !selectedGroup._id) {
+                    message.error("No group selected. Please select a group.");
+                    return;
+                }
+
+                // Combine selected fields from both types
+                const createPayload = [
+                    ...profileField.map((id: string) => ({
+                        fieldsId: id,
+                        fieldsFor: "profile",
+                        AllowEdit: AllowEdit ?? true,
+                        isRequired: isRequired ?? false,
+                        presetId: selectedGroup._id,
+                    })),
+                    ...preferenceField.map((id: string) => ({
+                        fieldsId: id,
+                        fieldsFor: "Preferences",
+                        AllowEdit: AllowEdit ?? true,
+                        isRequired: isRequired ?? false,
+                        presetId: selectedGroup._id,
+                    })),
+                ];
+
+                if (createPayload.length === 0) {
+                    message.error("Please select at least one field to create.");
+                    return;
+                }
+
+                const response = await apiClient.post("/admin/createPresetField", createPayload);
+
+                if (response.data?.success) {
+                    message.success("Field(s) created successfully!");
+                } else {
+                    message.error("Failed to create the field(s).");
+                }
+
             }
-
-            const profilePayload = (values.profileField || []).map((fieldId: string) => ({
-                fieldsId: fieldId,
-                fieldsFor: "profile",
-                AllowEdit: values.AllowEdit ?? true,
-                isRequired: values.isRequired ?? false,
-                presetId,
-            }));
-
-            const preferencePayload = (values.preferenceField || []).map((fieldId: string) => ({
-                fieldsId: fieldId,
-                fieldsFor: "Preferences",
-                AllowEdit: values.AllowEdit ?? true,
-                isRequired: values.isRequired ?? false,
-                presetId,
-            }));
-
-            const payload = [...profilePayload, ...preferencePayload];
-
-            if (editingGroup) {
-                await apiClient.post("/admin/updatePresetField", {
-                  presetId: editingGroup._id,
-                  fields: payload,
-                });
-                message.success("Field updated successfully!");
-              } else {
-                await apiClient.post("/admin/createPresetField", payload);
-                message.success("Field created successfully!");
-              }
-              
 
             await fetchPresetsGroups();
             onClose();
@@ -194,8 +221,6 @@ const PrsetsField: React.FC<FieldModalProps> = ({ visible,
         }
     };
 
-
-
     return (
         <Modal
             title={editingField ? "Edit Field" : "Create Field"}
@@ -204,69 +229,66 @@ const PrsetsField: React.FC<FieldModalProps> = ({ visible,
             footer={null}
         >
             <Form form={form} onFinish={handleFinish} layout="vertical">
-                <Form.Item
-                    name="profileField"
-                    label="Profile"
-                    rules={[{ required: true, message: "Please select at least one profile field" }]}
-                >
-                    <Select
-                        mode="multiple"
-                        placeholder="Select profile field(s)"
-                        optionFilterProp="children"
-                        showSearch
-                        onChange={(values) => {
-                            setSelectedField({
-                                fieldsId: values,
-                                fieldsFor: "profile",
-                            });
-                        }}
-                    >
-                        {fields.map((group) => (
-                            <OptGroup
-                                key={group._id}
-                                label={<span style={{ fontWeight: "bold", color: "#999" }}>{group.name}</span>}
+                {!editingField && (
+                    <>
+                        <Form.Item name="profileField" label="Profile">
+                            <Select
+                                mode="multiple"
+                                placeholder="Select profile field(s)"
+                                optionFilterProp="children"
+                                showSearch
+                                onChange={(values) => {
+                                    setSelectedField({
+                                        fieldsId: values,
+                                        fieldsFor: "profile",
+                                    });
+                                }}
                             >
-                                {group.formFields.map((field) => (
-                                    <Option key={field._id} value={field._id}>
-                                        {field.attributeName}
-                                    </Option>
+                                {fields.map((group) => (
+                                    <OptGroup
+                                        key={group._id}
+                                        label={<span style={{ fontWeight: "bold", color: "#999" }}>{group.name}</span>}
+                                    >
+                                        {group.formFields.map((field) => (
+                                            <Option key={field._id} value={field._id}>
+                                                {field.attributeName}
+                                            </Option>
+                                        ))}
+                                    </OptGroup>
                                 ))}
-                            </OptGroup>
-                        ))}
-                    </Select>
-                </Form.Item>
+                            </Select>
+                        </Form.Item>
 
-                <Form.Item
-                    name="preferenceField"
-                    label="Preference"
-                    rules={[{ required: true, message: "Please select at least one preference field" }]}
-                >
-                    <Select
-                        mode="multiple"
-                        placeholder="Select preference field(s)"
-                        optionFilterProp="children"
-                        showSearch
-                        onChange={(values) => {
-                            setSelectedField({
-                                fieldsId: values,
-                                fieldsFor: "preference",
-                            });
-                        }}
-                    >
-                        {preferenceGroups.map((group: PreferenceGroup) => (
-                            <OptGroup
-                                key={group._id}
-                                label={<span style={{ fontWeight: "bold", color: "#999" }}>{group.name}</span>}
+                        <Form.Item name="preferenceField" label="Preference">
+                            <Select
+                                mode="multiple"
+                                placeholder="Select preference field(s)"
+                                optionFilterProp="children"
+                                showSearch
+                                onChange={(values) => {
+                                    setSelectedField({
+                                        fieldsId: values,
+                                        fieldsFor: "preference",
+                                    });
+                                }}
                             >
-                                {group.formFields.map((field: PreferenceField) => (
-                                    <Option key={field._id} value={field._id}>
-                                        {field.label}
-                                    </Option>
+                                {preferenceGroups.map((group: PreferenceGroup) => (
+                                    <OptGroup
+                                        key={group._id}
+                                        label={<span style={{ fontWeight: "bold", color: "#999" }}>{group.name}</span>}
+                                    >
+                                        {group.formFields.map((field: PreferenceField) => (
+                                            <Option key={field._id} value={field._id}>
+                                                {field.label}
+                                            </Option>
+                                        ))}
+                                    </OptGroup>
                                 ))}
-                            </OptGroup>
-                        ))}
-                    </Select>
-                </Form.Item>
+                            </Select>
+                        </Form.Item>
+                    </>
+                )}
+
 
                 <Form.Item label="Allow Edit" name="AllowEdit" valuePropName="checked">
                     <Switch />
