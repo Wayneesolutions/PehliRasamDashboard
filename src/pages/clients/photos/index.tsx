@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import {
-  uploadImage,
+  uploadMultipleFiles ,
   addCustomerPhoto,
   getCustomerBasicDetail,
+  updateCustomerBasicDetail, // Import the update function
 } from "../../../config/apiClient";
 import { useOutletContext } from "react-router-dom";
-import { message } from "antd";
+import { message, Dropdown, Menu } from "antd";
 import { Customer } from "../../../schema/customernew";
+import { MoreOutlined } from "@ant-design/icons";
 
 interface CustomerWithPhotos extends Customer {
   photos?: {
@@ -14,7 +16,6 @@ interface CustomerWithPhotos extends Customer {
     url: string;
   }[];
 }
-
 
 type ApiResponse<T> = {
   success: boolean;
@@ -27,7 +28,6 @@ type CustomerBasicDetailResponse = ApiResponse<Customer>;
 const Index = () => {
   const { customerId } = useOutletContext<{ customerId: string }>();
   const [customer, setCustomer] = useState<CustomerWithPhotos | null>(null);
-
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
 
@@ -54,39 +54,64 @@ const Index = () => {
     const selected = Array.from(e.target.files || []);
     setFiles(selected);
     setPreviews(selected.map((file) => URL.createObjectURL(file)));
-    e.target.value = ""; // Reset input
+    e.target.value = "";
   };
 
   const handleUpload = async () => {
-    if (!files.length) return message.warning("Please select a file first");
-
-    for (const file of files) {
-      const uploadRes = await uploadImage(file);
-      if (uploadRes?.fileUrl) {
-        const saveRes = await addCustomerPhoto({
-          customerId,
-          url: uploadRes.fileUrl,
-        });
-
-        if (saveRes?.success) {
-          message.success("Uploaded successfully");
-          fetchCustomerDetails(); // Refresh the customer data after upload
-        } else {
-          message.error(saveRes?.message || "Failed to save image");
-        }
-      } else {
-        message.error("Upload failed");
+    if (!files.length) return message.warning("Please select at least one file");
+  
+    const uploadRes = await uploadMultipleFiles(files); // Assumes this uploads multiple and returns URLs
+  
+    if (uploadRes?.success && Array.isArray(uploadRes.files)) {
+      const urls = uploadRes.files.map((fileObj: { fileUrl: string }) => fileObj.fileUrl).filter(Boolean);
+  
+      if (!urls.length) {
+        return message.error("No images were successfully uploaded.");
       }
+  
+      const saveRes = await addCustomerPhoto({
+        customerId,
+        url: urls,
+      });
+  
+      if (saveRes?.success) {
+        message.success("All images uploaded and saved successfully");
+        fetchCustomerDetails();
+      } else {
+        message.error(saveRes?.message || "Failed to save images");
+      }
+    } else {
+      message.error("Upload failed");
     }
-
-    // Reset preview and file state after upload
+  
     setFiles([]);
     setPreviews([]);
+  };
+  
+  
+
+  const handleSetCoverPhoto = async (imagePath: string) => {
+    try {
+      const res = await updateCustomerBasicDetail({
+        customerId,
+        imagePath,
+      });
+
+      if (res?.success) {
+        message.success("Cover photo updated");
+        
+        fetchCustomerDetails();
+      } else {
+        message.error(res?.message || "Failed to update cover photo");
+      }
+    } catch (error) {
+      console.error("Error updating cover photo:", error);
+      message.error("An error occurred");
+    }
   };
 
   return (
     <div className="p-4 bg-white rounded shadow">
-      {/* Upload Section */}
       <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded inline-block">
         Select Images
         <input
@@ -128,20 +153,37 @@ const Index = () => {
             {customer.photos.map((photo: { _id: string; url: string }) => (
               <div
                 key={photo._id}
-                className="rounded overflow-hidden shadow hover:shadow-lg transition-shadow"
+                className="relative rounded overflow-hidden shadow hover:shadow-lg transition-shadow"
               >
                 <img
                   src={photo.url}
                   alt="Customer Uploaded"
                   className="w-full h-48 object-cover"
                 />
+
+                <Dropdown
+                  overlay={
+                    <Menu>
+                      <Menu.Item
+                        key="setCover"
+                        onClick={() => handleSetCoverPhoto(photo.url)}
+                      >
+                        Set as Cover Photo
+                      </Menu.Item>
+                    </Menu>
+                  }
+                  trigger={['click']}
+                  placement="bottomRight"
+                >
+                  <div className="absolute top-2 right-2 bg-white p-1 rounded shadow cursor-pointer">
+                    <MoreOutlined style={{ fontSize: '16px', color: 'black' }} />
+                  </div>
+                </Dropdown>
               </div>
             ))}
           </div>
         </div>
       )}
-
-
     </div>
   );
 };

@@ -131,7 +131,7 @@ const SendMessage: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
           help={!content ? 'Please enter email content' : ''}
         >
           <CKEditor
-            editor={ClassicEditor}
+            editor={ClassicEditor as any}
             data={content}
             onChange={(_, editor) => setContent(editor.getData())}
           />

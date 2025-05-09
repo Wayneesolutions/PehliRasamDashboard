@@ -7,6 +7,14 @@ import { Customer } from "../../schema/customernew";
 import { message } from "antd";
 import { CustomerUpdate } from "../clientsForm/types/clientTypes";
 import ClientListManager from "./ClientList";
+import Select from "react-select";
+import axios from "axios";
+
+type CountryOption = {
+  label: string;
+  value: string;
+  flag: string;
+};
 
 type SidebarProps = {
   customerId: string;
@@ -23,6 +31,41 @@ const cityOptions = [
   "Uttar Pradesh", "Zirakpur"
 ];
 
+const fetchCountries = async (): Promise<CountryOption[]> => {
+  const { data } = await axios.get("https://restcountries.com/v3.1/all");
+  return data
+    .map((country: any) => ({
+      label: country.name.common,
+      value: country.name.common,
+      flag: country.flags.svg,
+    }))
+    .sort((a: CountryOption, b: CountryOption) => a.label.localeCompare(b.label));
+};
+
+// Custom SingleValue
+const customSingleValue = ({ data }: { data: CountryOption }) => (
+  <div className="flex items-center">
+    <img src={data.flag} alt="flag" className="w-5 h-4 mr-2" />
+    {data.label}
+  </div>
+);
+
+// Custom Option
+const customOption = (props: {
+  data: CountryOption;
+  innerRef: (element: HTMLDivElement) => void;
+  innerProps: React.HTMLAttributes<HTMLDivElement>;
+}) => {
+  const { data, innerRef, innerProps } = props;
+  return (
+    <div ref={innerRef} {...innerProps} className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center">
+      <img src={data.flag} alt="flag" className="w-5 h-4 mr-2" />
+      {data.label}
+    </div>
+  );
+};
+
+
 const Sidebar = ({ customerId }: SidebarProps) => {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [editMode, setEditMode] = useState<string | null>(null);
@@ -30,8 +73,9 @@ const Sidebar = ({ customerId }: SidebarProps) => {
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [countryOptions, setCountryOptions] = useState<CountryOption[]>([]);
 
-
+  const [imagePath, setImagePath] = useState<string | undefined>();
 
 
   const [address, setAddress] = useState<{
@@ -91,9 +135,9 @@ const Sidebar = ({ customerId }: SidebarProps) => {
 
   const handleSave = async () => {
     if (!editMode || !customer) return;
-  
+
     setIsUpdating(true);
-  
+
     try {
       const addressData: any = {};
       Object.entries(address).forEach(([key, value]) => {
@@ -101,7 +145,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
           addressData[key] = value;
         }
       });
-  
+
       const updateData: CustomerUpdate = {
         customerId: customerId,
         firstName: customer.firstName,
@@ -110,17 +154,17 @@ const Sidebar = ({ customerId }: SidebarProps) => {
         email: customer.email,
         address: addressData,
       };
-  
+
       if (customer.Number && customer.Number.toString().trim() !== "") {
         updateData.Number = customer.Number.toString();
       }
-  
+
       if (editMode && editMode !== "address") {
         (updateData as any)[editMode] = editValue;
       }
-  
+
       const res = await updateCustomerBasicDetail(updateData);
-  
+
       if (res.success) {
         if (res.customer) {
           setCustomer(res.customer);
@@ -141,7 +185,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
       setIsUpdating(false);
     }
   };
-  
+
 
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -191,19 +235,44 @@ const Sidebar = ({ customerId }: SidebarProps) => {
     }
   };
 
+  useEffect(() => {
+    const loadCountries = async () => {
+      const countries = await fetchCountries();
+      setCountryOptions(countries);
+    };
+    loadCountries();
+  }, []);
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await getCustomerBasicDetail(customerId);
+        if (res.success && res.data.imagePath) {
+          setImagePath(res.data.imagePath);
+        }
+      } catch (error) {
+        console.error("Error fetching imagePath:", error);
+      }
+    }, 2000); // Every 2 seconds
+
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, [customerId]);
+
+
+
   return (
-    <div className="w-1/5 min-w-[250px] bg-white shadow-md p-4 flex flex-col fixed md:relative md:h-screen h-screen overflow-y-auto z-50 transition-all">
+    <div className="w-1/5 min-w-[280px] bg-white shadow-md p-4 flex flex-col fixed md:relative md:h-screen h-screen overflow-y-auto z-50 transition-all">
       {/* Profile Image with upload button */}
-      <div className="relative w-full h-60 bg-gray-300 rounded-md flex items-center justify-center overflow-hidden mb-4">
-        {customer?.imagePath ? (
+      <div className="relative w-full h-80 bg-gray-300 rounded-md flex items-center justify-center overflow-hidden mb-4">
+        {imagePath ? (
           <img
-            src={customer.imagePath}
-            alt={customer.firstName}
+            src={imagePath}
+            alt={customer?.firstName}
             className="w-full h-full object-cover rounded-md"
           />
         ) : (
           <Camera className="text-gray-500" size={50} />
         )}
+
 
         {/* Upload button overlay */}
         <div
@@ -383,7 +452,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
                   <PhoneInput
                     value={editValue}
                     onChange={(value) => setEditValue(value || "")}
-                   
+
                     placeholder="Enter phone number"
                     inputStyle={{ width: '100%' }}
                   />
@@ -433,7 +502,6 @@ const Sidebar = ({ customerId }: SidebarProps) => {
                   placeholder="Street"
                 />
 
-                {/* ✅ Removed input for city, now only using select */}
                 <select
                   value={address.city}
                   onChange={(e) => setAddress({ ...address, city: e.target.value })}
@@ -456,14 +524,18 @@ const Sidebar = ({ customerId }: SidebarProps) => {
                   placeholder="Postal Code"
                 />
 
-                <input
-                  type="text"
-                  value={address.country}
-                  onChange={(e) => setAddress({ ...address, country: e.target.value })}
-                  onKeyDown={handleKeyDown}
-                  className="px-2 py-1 border rounded w-full mb-2"
-                  placeholder="Country"
+                <Select
+                  options={countryOptions}
+                  value={countryOptions.find((c) => c.label === address.country) || null}
+                  onChange={(val) => {
+                    if (val) setAddress({ ...address, country: val.label });
+                  }}
+                  components={{ SingleValue: customSingleValue, Option: customOption }}
+                  placeholder="Select Country"
+                  className="w-full mb-2"
                 />
+
+
 
                 <div className="flex justify-end space-x-2">
                   <button onClick={handleSave} disabled={isUpdating} className="text-green-500">
@@ -491,14 +563,11 @@ const Sidebar = ({ customerId }: SidebarProps) => {
                 }}
               >
                 {customer?.address
-                  ? `${customer.address.street || ""}, ${customer.address.city || ""}, ${customer.address.state || ""}, ${customer.address.postalCode || ""}, ${customer.address.country || ""}`
+                  ? `${customer.address.street || ""}, ${customer.address.city || ""}, ${customer.address.postalCode || ""}, ${customer.address.country || ""}`
                   : "N/A"}
               </span>
             )}
           </div>
-
-
-
 
 
         </div>

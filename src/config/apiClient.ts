@@ -223,6 +223,22 @@ export const uploadFile = async (file: FormData) => {
     return (error as Error).response?.data;
   }
 }
+export const uploadMultipleFiles = async (files: File[]) => {
+  const formData = new FormData();
+  files.forEach(file => formData.append("file", file)); 
+
+  try {
+    const response = await apiClient.post('admin/upload', formData, {
+      headers: {
+        "Content-Type": "multipart/form-data"
+      }
+    });
+    return response?.data;
+  } catch (error) {
+    return (error as any).response?.data;
+  }
+}
+
 
 export const updateCustomerProfile = async (data: any) => {
   try {

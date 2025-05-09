@@ -225,6 +225,7 @@ export interface CustomerUpdate {
   email?: string;
   Number?: string;
   middelName?: string; // Fixed typo from 'middelName' to 'middleName'
+  imagePath?: string;
   address?: {
     street: string | null;
     city: string | null;

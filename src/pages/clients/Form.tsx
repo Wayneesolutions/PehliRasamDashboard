@@ -34,6 +34,7 @@ interface FormProps {
 const Form: React.FC<FormProps> = ({ customerId }) => {
     const context = useOutletContext<ContextType>();
     const resolvedCustomerId = customerId || context?.customerId;
+    const [recentlyUpdatedFieldId, setRecentlyUpdatedFieldId] = useState<string | null>(null);
 
     const [formData, setFormData] = useState<IGroup[]>([]);
     const [matchdata, setMatchData] = useState<MatchGroup[]>([]);
@@ -140,6 +141,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                 valueToSend = field.value?.trim?.() || "";
                             }
 
+                            // Ensure Image field is included if it has a URL
                             if (!valueToSend) return null;
 
                             return {
@@ -160,6 +162,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
         };
     };
 
+
     const saveFieldValue = async () => {
         const payload = generateFullPayload();
 
@@ -170,7 +173,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
 
         try {
             const res = await updateCustomerProfile(payload);
-
             if (res.success) {
                 message.success("Profile updated successfully");
             } else {
@@ -183,9 +185,14 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
 
 
 
-    const handleFieldChange = (groupId: string, fieldId: string, value: string) => {
-        setFormData((prev) =>
-            prev.map((group) =>
+
+    const handleFieldChange = (
+        groupId: string,
+        fieldId: string,
+        value: string
+    ) => {
+        setFormData((prev) => {
+            const updated = prev.map((group) =>
                 group.groupId === groupId
                     ? {
                         ...group,
@@ -194,21 +201,40 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                         ),
                     }
                     : group
-            )
-        );
+            );
+            return updated;
+        });
+
+        setRecentlyUpdatedFieldId(fieldId); // trigger effect
     };
+    useEffect(() => {
+        if (!recentlyUpdatedFieldId) return;
+
+        const group = formData.find((g) =>
+            g.fields.some((f) => f.fieldId === recentlyUpdatedFieldId)
+        );
+        const field = group?.fields.find((f) => f.fieldId === recentlyUpdatedFieldId);
+
+        if (field?.value?.startsWith('https://')) {
+            saveFieldValue();
+            setRecentlyUpdatedFieldId(null);
+        }
+    }, [recentlyUpdatedFieldId, formData]);
+
+
+
 
 
     const handleFieldSaveOnEnter = async (
-        e: React.KeyboardEvent<HTMLInputElement>,
+        e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
         groupId: string,
         fieldId: string
     ) => {
         if (e.key === "Enter") {
             const value = (e.target as HTMLInputElement).value;
 
-            handleFieldChange(groupId, fieldId, value); // Update local first
-            await saveFieldValue(); // Save full payload
+            handleFieldChange(groupId, fieldId, value);
+            await saveFieldValue();
         }
     };
 
@@ -239,6 +265,20 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
 
                                                 {/* Handle field types */}
                                                 {(() => {
+                                                    // Special case for "Profile Note" field
+                                                    if (field.fieldName?.trim().toLowerCase() === "profile note") {
+                                                        return (
+                                                            <textarea
+                                                                className="w-2/3 border p-2 rounded"
+                                                                rows={4}
+                                                                value={field.value || ""}
+                                                                placeholder="Enter profile note"
+                                                                onChange={(e) => handleFieldChange(group.groupId, field.fieldId, e.target.value)}
+                                                                onKeyDown={(e) => handleFieldSaveOnEnter(e, group.groupId, field.fieldId)}
+                                                            />
+                                                        );
+                                                    }
+
                                                     switch (field.attributeType) {
                                                         case "select":
                                                             return (
@@ -249,8 +289,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                     onChange={async (e) => {
                                                                         const selectedValue = e.target.value;
                                                                         handleFieldChange(group.groupId, field.fieldId, selectedValue);
-                                                                        await saveFieldValue(); // Save full form state
-
+                                                                        await saveFieldValue();
                                                                     }}
                                                                 >
                                                                     <option value="">Select an option</option>
@@ -260,7 +299,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                         </option>
                                                                     ))}
                                                                 </select>
-
                                                             );
 
                                                         case "date":
@@ -277,7 +315,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                         await saveFieldValue();
                                                                     }}
                                                                 />
-
                                                             );
 
                                                         case "number":
@@ -342,46 +379,61 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                                     onChange={async () => {
                                                                                         handleFieldChange(group.groupId, field.fieldId, newValue);
                                                                                         await saveFieldValue();
-
                                                                                     }}
                                                                                 />
                                                                                 {option}
                                                                             </label>
                                                                         );
                                                                     })}
-
                                                                 </div>
                                                             );
 
                                                         case "Image":
                                                             return (
-                                                                <input
-                                                                    type="file"
-                                                                    accept="image/*"
-                                                                    placeholder="Upload an image"
-                                                                    onChange={async (e) => {
-                                                                        const file = e.target.files?.[0];
-                                                                        if (!file) return;
+                                                                <div>
+                                                                    {/* Show selected image if available */}
+                                                                    {field.value && (
+                                                                        <div style={{ marginBottom: 8 }}>
+                                                                            <img
+                                                                                src={field.value}
+                                                                                alt="Uploaded"
+                                                                                style={{ maxWidth: "150px", borderRadius: "8px" }}
+                                                                            />
+                                                                        </div>
+                                                                    )}
 
-                                                                        const uploadResult = await uploadImage(file);
+                                                                    <input
+                                                                        type="file"
+                                                                        accept="image/*"
+                                                                        placeholder="Upload an image"
+                                                                        onChange={async (e) => {
+                                                                            const file = e.target.files?.[0];
+                                                                            if (!file) return;
 
-                                                                        if (uploadResult?.success) {
-                                                                            const uploadedUrl = uploadResult.fileUrl;
-                                                                            handleFieldChange(group.groupId, field.fieldId, uploadedUrl);
-                                                                            await saveFieldValue();
-                                                                        } else {
-                                                                            console.error("Image upload failed:", uploadResult?.message || "Unknown error");
-                                                                            message.error("Image upload failed");
-                                                                        }
-                                                                    }}
-                                                                />
+                                                                            const tempUrl = URL.createObjectURL(file);
+                                                                            handleFieldChange(group.groupId, field.fieldId, tempUrl);
+
+                                                                            const uploadResult = await uploadImage(file);
+
+                                                                            if (uploadResult?.success && uploadResult.fileUrl) {
+                                                                                handleFieldChange(group.groupId, field.fieldId, uploadResult.fileUrl);
+
+                                                                                saveFieldValue();
+                                                                            } else {
+                                                                                console.error("Image upload failed:", uploadResult?.message || "Unknown error");
+                                                                                message.error("Image upload failed");
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </div>
                                                             );
+
+
 
                                                         default:
                                                             return <span className="text-red-500">Unsupported field type</span>;
                                                     }
                                                 })()}
-
                                             </div>
                                         ))}
                                     </Panel>
@@ -389,6 +441,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                             </Collapse>
                         </div>
                     </TabPane>
+
 
 
                     <TabPane tab="Matching Preferences" key="2">

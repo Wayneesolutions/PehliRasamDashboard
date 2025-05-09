@@ -82,18 +82,41 @@ const AddEmailTemplateModal: React.FC<Props> = ({ isOpen, func, val, onClose, ed
           <Input placeholder="Subject" />
         </Form.Item>
 
-        <Form.Item
-          label="Content"
-          required
-          validateStatus={!content ? 'error' : ''}
-          help={!content ? 'Please enter email content' : ''}
-        >
-          <CKEditor
-            editor={ClassicEditor}
-            data={content}
-            onChange={(_, editor) => setContent(editor.getData())}
-          />
-        </Form.Item>
+        <CKEditor
+          editor={ClassicEditor as any}
+          data={content}
+          config={{
+            toolbar: {
+              items: [
+                'heading',
+                '|',
+                'bold',
+                'italic',
+                'underline',
+                'fontColor',
+                '|',
+                'link',
+                'bulletedList',
+                'numberedList',
+                'blockQuote',
+              ],
+              shouldNotGroupWhenFull: true,
+            },
+            fontColor: {
+              colors: [
+                { color: 'hsl(0, 75%, 60%)', label: 'Red' },
+                { color: 'hsl(30, 75%, 60%)', label: 'Orange' },
+                { color: 'hsl(60, 75%, 60%)', label: 'Yellow' },
+                { color: 'hsl(120, 75%, 40%)', label: 'Green' },
+                { color: 'hsl(240, 75%, 60%)', label: 'Blue' },
+                { color: '#000000', label: 'Black' },
+                { color: '#FFFFFF', label: 'White' },
+              ],
+            },
+          } as any}
+          onChange={(_, editor) => setContent(editor.getData())}
+        />
+
 
         <div className="flex justify-end gap-3 mt-4">
           <button
