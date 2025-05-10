@@ -41,7 +41,7 @@ const AppRoutes = () => {
                 <Route path="/submission" element={<Submission />} />
                 <Route path="/suggestions" element={<Suggestions />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/:introId" element={<ClientIntroduction />} />
+                <Route path="/client/:introId" element={<ClientIntroduction />} />
                 <Route path="/" element={<Navigate to="/dashboard/overview" />} />
 
                 {/* Protected Routes */}

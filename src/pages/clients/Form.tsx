@@ -415,8 +415,8 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
 
                                                                             const uploadResult = await uploadImage(file);
 
-                                                                            if (uploadResult?.success && uploadResult.fileUrl) {
-                                                                                handleFieldChange(group.groupId, field.fieldId, uploadResult.fileUrl);
+                                                                            if (uploadResult?.success && uploadResult.fileUrls?.[0]) {
+                                                                                handleFieldChange(group.groupId, field.fieldId, uploadResult.fileUrls[0]);
 
                                                                                 saveFieldValue();
                                                                             } else {
@@ -427,7 +427,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                     />
                                                                 </div>
                                                             );
-
 
 
                                                         default:

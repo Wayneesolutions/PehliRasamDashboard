@@ -271,7 +271,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
           <img
             src={imagePath}
             alt={customer?.firstName}
-            className="w-full h-full object-cover rounded-md"
+            className="w-full h-full object-contain rounded-md"
           />
         ) : (
           <Camera className="text-gray-500" size={50} />

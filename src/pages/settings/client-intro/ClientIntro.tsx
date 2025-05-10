@@ -16,11 +16,55 @@ const ClientIntro = () => {
 
     const [copied, setCopied] = useState(false);
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(intro.link);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000); // Reset after 2s
-    };
+const handleCopy = () => {
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(intro.link)
+            .then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            })
+            .catch((err) => {
+                console.error("Clipboard API failed, using fallback", err);
+                fallbackCopyTextToClipboard(intro.link);
+            });
+    } else {
+        fallbackCopyTextToClipboard(intro.link);
+    }
+};
+
+const fallbackCopyTextToClipboard = (text: string) => {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+
+    // Avoid scrolling to bottom
+    textArea.style.position = "fixed";
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.width = "2em";
+    textArea.style.height = "2em";
+    textArea.style.padding = "0";
+    textArea.style.border = "none";
+    textArea.style.outline = "none";
+    textArea.style.boxShadow = "none";
+    textArea.style.background = "transparent";
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+        const successful = document.execCommand("copy");
+        if (successful) {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }
+    } catch (err) {
+        console.error("Fallback copy failed", err);
+    }
+
+    document.body.removeChild(textArea);
+};
+
 
     useEffect(() => {
         if (!introId) return;
