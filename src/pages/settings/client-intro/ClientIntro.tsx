@@ -1,9 +1,11 @@
 import { useEffect, useState, Fragment } from 'react';
-import { Card, Avatar, Divider, DatePicker, message } from 'antd';
+import { Card, Divider, DatePicker, message } from 'antd';
 import { LinkOutlined } from '@ant-design/icons';
 import { useLocation } from 'react-router-dom';
 import apiClient from '../../../config/apiClient';
 import dayjs from 'dayjs';
+import { HiBadgeCheck } from 'react-icons/hi';
+
 
 const ClientIntro = () => {
     const location = useLocation();
@@ -16,54 +18,54 @@ const ClientIntro = () => {
 
     const [copied, setCopied] = useState(false);
 
-const handleCopy = () => {
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(intro.link)
-            .then(() => {
+    const handleCopy = () => {
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(intro.link)
+                .then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                })
+                .catch((err) => {
+                    console.error("Clipboard API failed, using fallback", err);
+                    fallbackCopyTextToClipboard(intro.link);
+                });
+        } else {
+            fallbackCopyTextToClipboard(intro.link);
+        }
+    };
+
+    const fallbackCopyTextToClipboard = (text: string) => {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+
+        // Avoid scrolling to bottom
+        textArea.style.position = "fixed";
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.width = "2em";
+        textArea.style.height = "2em";
+        textArea.style.padding = "0";
+        textArea.style.border = "none";
+        textArea.style.outline = "none";
+        textArea.style.boxShadow = "none";
+        textArea.style.background = "transparent";
+
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+            const successful = document.execCommand("copy");
+            if (successful) {
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
-            })
-            .catch((err) => {
-                console.error("Clipboard API failed, using fallback", err);
-                fallbackCopyTextToClipboard(intro.link);
-            });
-    } else {
-        fallbackCopyTextToClipboard(intro.link);
-    }
-};
-
-const fallbackCopyTextToClipboard = (text: string) => {
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-
-    // Avoid scrolling to bottom
-    textArea.style.position = "fixed";
-    textArea.style.top = "0";
-    textArea.style.left = "0";
-    textArea.style.width = "2em";
-    textArea.style.height = "2em";
-    textArea.style.padding = "0";
-    textArea.style.border = "none";
-    textArea.style.outline = "none";
-    textArea.style.boxShadow = "none";
-    textArea.style.background = "transparent";
-
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-
-    try {
-        const successful = document.execCommand("copy");
-        if (successful) {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            }
+        } catch (err) {
+            console.error("Fallback copy failed", err);
         }
-    } catch (err) {
-        console.error("Fallback copy failed", err);
-    }
 
-    document.body.removeChild(textArea);
-};
+        document.body.removeChild(textArea);
+    };
 
 
     useEffect(() => {
@@ -173,12 +175,10 @@ const fallbackCopyTextToClipboard = (text: string) => {
                     <div className="md:w-1/2 p-6 relative">
                         <Card bordered={false} className="shadow-none">
                             <div className="flex items-center space-x-3 mb-4">
-                                <Avatar
-                                    shape="square"
-                                    size={64}
-                                    src={intro.profileImage}
-                                    alt="Profile"
-                                />
+
+                                <div className="text-gray-600 font-medium">Verified Profile</div>
+                                <HiBadgeCheck className="text-blue-500 text-4xl" />
+
 
                             </div>
 

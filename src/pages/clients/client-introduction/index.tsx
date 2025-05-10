@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Card } from "antd";
-import { CheckCircleOutlined } from "@ant-design/icons";
 import logo from "../../../components/images/logo.png";
 import apiClient from "../../../config/apiClient";
+import { HiBadgeCheck } from 'react-icons/hi';
+
 
 const ClientIntroduction = () => {
     const { introId } = useParams();
@@ -39,7 +40,7 @@ const ClientIntroduction = () => {
             <div className="relative z-10 flex flex-col md:flex-row gap-2 w-[90%] mx-auto items-start">
                 {/* Left - Image */}
                 <div className="flex justify-center items-start w-full md:w-1/2">
-                    <div className="w-full md:w-[300px] h-[500px] md:h-[200px] bg-white rounded-lg shadow-lg overflow-hidden flex justify-center items-center p-2">
+                    <div className="w-full md:w-[300px] !h-[450px] md:h-[200px]  overflow-hidden flex justify-center items-center p-2">
                         <img
                             src={
                                 intro?.profileImage && intro.profileImage !== ""
@@ -50,7 +51,7 @@ const ClientIntroduction = () => {
                             onError={(e) => {
                                 e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
                             }}
-                            className="w-full h-full object-cover rounded-lg border-[5px] border-white"
+                            className="w-full h-full object-contain rounded-lg border-[5px] border-white"
                         />
 
 
@@ -71,24 +72,7 @@ const ClientIntroduction = () => {
                         {/* Verified Section */}
                         <div className="flex justify-between items-center mb-4">
                             <div className="text-gray-600 font-medium">Verified Profile</div>
-                            <CheckCircleOutlined className="text-blue-500 text-2xl" />
-                        </div>
-
-                        {/* Small Image */}
-                        <div className="flex justify-center mb-6">
-                            <img
-                                src={
-                                    intro?.profileImage && intro.profileImage !== ""
-                                        ? intro.profileImage
-                                        : "https://cdn-icons-png.flaticon.com/128/847/847969.png"
-                                }
-                                alt="Small Profile"
-                                onError={(e) => {
-                                    e.currentTarget.src = "https://cdn-icons-png.flaticon.com/128/847/847969.png";
-                                }}
-                                className="rounded-md object-cover shadow-md"
-                            />
-
+                            <HiBadgeCheck className="text-blue-500 text-4xl" />
                         </div>
 
                         {/* Profile Details Grouped */}
