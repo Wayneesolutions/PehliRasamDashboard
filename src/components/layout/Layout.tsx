@@ -27,7 +27,7 @@ const App: React.FC = () => {
         {/* Scrollable Content */}
         <Layout
           style={{
-            marginLeft: collapsed ? 70 : 250, // Decreased Sidebar Width
+            marginLeft: collapsed ? 70 : 230, // Decreased Sidebar Width
             transition: "margin-left 0.3s ease-in-out",
             height: "calc(100vh - 64px)",
             overflowY: "auto",

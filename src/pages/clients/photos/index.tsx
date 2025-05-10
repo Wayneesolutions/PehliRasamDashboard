@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import {
-  uploadMultipleFiles ,
+  uploadMultipleFiles,
   addCustomerPhoto,
   getCustomerBasicDetail,
-  updateCustomerBasicDetail, // Import the update function
+  updateCustomerBasicDetail,
 } from "../../../config/apiClient";
 import { useOutletContext } from "react-router-dom";
 import { message, Dropdown, Menu } from "antd";
 import { Customer } from "../../../schema/customernew";
-import { MoreOutlined } from "@ant-design/icons";
+import { MoreOutlined, DeleteOutlined } from "@ant-design/icons";
+
 
 interface CustomerWithPhotos extends Customer {
   photos?: {
@@ -59,21 +60,21 @@ const Index = () => {
 
   const handleUpload = async () => {
     if (!files.length) return message.warning("Please select at least one file");
-  
-    const uploadRes = await uploadMultipleFiles(files); // Assumes this uploads multiple and returns URLs
-  
-    if (uploadRes?.success && Array.isArray(uploadRes.files)) {
-      const urls = uploadRes.files.map((fileObj: { fileUrl: string }) => fileObj.fileUrl).filter(Boolean);
-  
+
+    const uploadRes = await uploadMultipleFiles(files);
+
+    if (uploadRes?.success && Array.isArray(uploadRes.fileUrls)) {
+      const urls = uploadRes.fileUrls.filter(Boolean);
+
       if (!urls.length) {
         return message.error("No images were successfully uploaded.");
       }
-  
+
       const saveRes = await addCustomerPhoto({
         customerId,
         url: urls,
       });
-  
+
       if (saveRes?.success) {
         message.success("All images uploaded and saved successfully");
         fetchCustomerDetails();
@@ -83,12 +84,13 @@ const Index = () => {
     } else {
       message.error("Upload failed");
     }
-  
+
     setFiles([]);
     setPreviews([]);
   };
-  
-  
+
+
+
 
   const handleSetCoverPhoto = async (imagePath: string) => {
     try {
@@ -99,7 +101,7 @@ const Index = () => {
 
       if (res?.success) {
         message.success("Cover photo updated");
-        
+
         fetchCustomerDetails();
       } else {
         message.error(res?.message || "Failed to update cover photo");
@@ -109,10 +111,14 @@ const Index = () => {
       message.error("An error occurred");
     }
   };
+  const handleRemovePreview = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
 
   return (
     <div className="p-4 bg-white rounded shadow">
-      <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded inline-block">
+      <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 transition text-white px-5 py-2 rounded font-medium inline-block">
         Select Images
         <input
           type="file"
@@ -124,25 +130,42 @@ const Index = () => {
       </label>
 
       {previews.length > 0 && (
-        <div className="mt-4">
-          <h3 className="font-semibold text-lg mb-2">Selected Images Preview</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">
+            Selected Image Previews
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {previews.map((src, idx) => (
-              <img
+              <div
                 key={idx}
-                src={src}
-                alt={`preview-${idx}`}
-                className="w-full h-auto rounded shadow object-cover"
-              />
+                className="relative rounded-md overflow-hidden shadow border bg-white group"
+              >
+                <img
+                  src={src}
+                  alt={`preview-${idx}`}
+                  className="w-full h-48 object-cover"
+                />
+                <button
+                  onClick={() => handleRemovePreview(idx)}
+                  className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                  title="Remove image"
+                >
+                  <DeleteOutlined style={{ fontSize: "16px" }} />
+                </button>
+
+              </div>
             ))}
           </div>
 
-          <button
-            onClick={handleUpload}
-            className="mt-4 px-4 py-2 bg-green-600 text-white rounded"
-          >
-            Upload
-          </button>
+
+          <div className="flex justify-end mt-6">
+            <button
+              onClick={handleUpload}
+              className="bg-green-600 hover:bg-green-700 transition text-white px-6 py-2 rounded-md font-medium"
+            >
+              Upload Images
+            </button>
+          </div>
         </div>
       )}
 

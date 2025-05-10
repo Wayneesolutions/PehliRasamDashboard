@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Modal, Form, Input, Button, message, Select } from 'antd';
-import { CKEditor } from '@ckeditor/ckeditor5-react';
-import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import { Editor as TinyMCEEditor } from '@tinymce/tinymce-react';
 import { sendCustomerMail, getAllEmailTemplates } from '../../config/apiClient';
 
 const { Option } = Select;
@@ -25,7 +24,7 @@ const SendMessage: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [content, setContent] = useState('');
-
+  const editorRef = useRef<any>(null);
   useEffect(() => {
     if (isOpen) {
       fetchTemplates();
@@ -56,12 +55,15 @@ const SendMessage: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
     const selected = templates.find((t) => t._id === templateId);
     if (selected) {
       setSelectedTemplateId(templateId);
-      form.setFieldsValue({
-        subject: selected.subject,
-      });
-      setContent(decodeHtml(selected.body));
+      form.setFieldsValue({ subject: selected.subject });
+      const decoded = decodeHtml(selected.body);
+      setContent(decoded);
+      if (editorRef.current) {
+        editorRef.current.setContent(decoded);
+      }
     }
   };
+
 
   const handleSend = async () => {
     try {
@@ -130,11 +132,28 @@ const SendMessage: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
           validateStatus={!content ? 'error' : ''}
           help={!content ? 'Please enter email content' : ''}
         >
-          <CKEditor
-            editor={ClassicEditor as any}
-            data={content}
-            onChange={(_, editor) => setContent(editor.getData())}
+          <TinyMCEEditor
+            onInit={(_, editor) => (editorRef.current = editor)}
+            value={content}
+            onEditorChange={(newContent) => setContent(newContent)}
+            apiKey="1ya1d1zav4tgpip8exgsyyatkcy07funukfyfrnn93t7wslj"
+            init={{
+              height: 500,
+              menubar: true,
+              plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
+                'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'media', 'table', 'help', 'wordcount',
+              ],
+              toolbar:
+                'undo redo | formatselect | ' +
+                'bold italic forecolor backcolor | alignleft aligncenter ' +
+                'alignright alignjustify | bullist numlist outdent indent | ' +
+                'removeformat | help',
+              content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+            }}
           />
+
         </Form.Item>
       </Form>
     </Modal>

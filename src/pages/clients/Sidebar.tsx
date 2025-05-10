@@ -212,18 +212,19 @@ const Sidebar = ({ customerId }: SidebarProps) => {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await uploadFile(formData)
+      const response = await uploadFile(formData);
 
-      if (response.success) {
+      if (response.success && Array.isArray(response.fileUrls) && response.fileUrls[0]) {
         const updateData = {
           customerId: customerId,
-          imagePath: response.fileUrl
+          imagePath: response.fileUrls[0],
         };
 
         const updateRes = await updateCustomerBasicDetail(updateData);
 
         if (updateRes.success) {
           setCustomer(updateRes.customer);
+          message.success("Profile image updated successfully");
         } else {
           message.error(updateRes.message || "Failed to update profile image");
         }
@@ -232,8 +233,11 @@ const Sidebar = ({ customerId }: SidebarProps) => {
       }
     } catch (error) {
       message.error((error as Error).message || "An error occurred while uploading");
+    } finally {
+      setIsUploading(false);
     }
   };
+
 
   useEffect(() => {
     const loadCountries = async () => {
@@ -252,9 +256,9 @@ const Sidebar = ({ customerId }: SidebarProps) => {
       } catch (error) {
         console.error("Error fetching imagePath:", error);
       }
-    }, 2000); // Every 2 seconds
+    }, 2000);
 
-    return () => clearInterval(interval); // Cleanup on unmount
+    return () => clearInterval(interval);
   }, [customerId]);
 
 

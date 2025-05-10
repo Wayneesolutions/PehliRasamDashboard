@@ -28,38 +28,41 @@ const BasicInfoTab = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = async (file: File) => {
-    if (!file) {
-      message.error("No file selected or invalid file.");
-      return false;
+const handleFileChange = async (file: File) => {
+  if (!file) {
+    message.error("No file selected or invalid file.");
+    return false;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    if (e.target?.result) {
+      setImagePreview(e.target.result as string);
     }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        setImagePreview(e.target.result as string);
-      }
-    };
-    reader.readAsDataURL(file);
-
-    const imageForm = new FormData();
-    imageForm.append('file', file);
-
-    try {
-      const uploadRes = await uploadFile(imageForm);
-      if (uploadRes?.fileUrl) {
-        setFormData((prev) => ({ ...prev, profilePic: uploadRes.fileUrl }));
-        message.success("Profile image uploaded successfully");
-      } else {
-        message.error("Image upload failed");
-      }
-    } catch (error) {
-      message.error("Upload failed. Please try again.");
-      console.error(error);
-    }
-
-    return false; // Prevent default upload
   };
+  reader.readAsDataURL(file);
+
+  const imageForm = new FormData();
+  imageForm.append('file', file);
+
+  try {
+    const uploadRes = await uploadFile(imageForm);
+    const uploadedUrl = uploadRes?.fileUrls?.[0]; // ✅ use array access
+
+    if (uploadedUrl) {
+      setFormData((prev) => ({ ...prev, profilePic: uploadedUrl }));
+      message.success("Profile image uploaded successfully");
+    } else {
+      message.error("Image upload failed");
+    }
+  } catch (error) {
+    message.error("Upload failed. Please try again.");
+    console.error(error);
+  }
+
+  return false;
+};
+
 
   const fetchAdminDetails = async () => {
     setLoading(true);

@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Button, Form, Input, Select, message } from 'antd';
 import apiClient, { getAllEmailTemplates } from '../../config/apiClient';
-import { CKEditor } from '@ckeditor/ckeditor5-react';
-import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import { Editor as TinyMCEEditor } from '@tinymce/tinymce-react';
 
 interface Props {
     link: string;
@@ -21,7 +20,7 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
     const [templates, setTemplates] = useState<any[]>([]);
     const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
     const [form] = Form.useForm();
-
+    const editorRef = useRef<any>(null);
 
     const fetchTemplates = async () => {
         try {
@@ -45,8 +44,13 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
             const decodedBody = decodeHtml(selected.body);
             const fullContentWithLink = `${decodedBody}<p><a href="${link}">Click here to view the introduction</a></p>`;
             setContent(fullContentWithLink);
+
+            if (editorRef.current) {
+                editorRef.current.setContent(fullContentWithLink);
+            }
         }
     };
+
 
 
 
@@ -108,7 +112,7 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
                 </Button>,
                 <Button key="send" type="primary" loading={loading} onClick={handleSendEmail}>
                     Send Email
-                </Button>,
+                </Button>
             ]}
         >
             <Form layout="vertical" form={form}>
@@ -160,11 +164,28 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
                     validateStatus={!content ? 'error' : ''}
                     help={!content ? 'Please enter email content' : ''}
                 >
-                    <CKEditor
-                        editor={ClassicEditor as any}
-                        data={content}
-                        onChange={(_, editor) => setContent(editor.getData())}
+                    <TinyMCEEditor
+                        onInit={(_, editor) => (editorRef.current = editor)}
+                        value={content}
+                        onEditorChange={(newContent) => setContent(newContent)}
+                        apiKey="1ya1d1zav4tgpip8exgsyyatkcy07funukfyfrnn93t7wslj"
+                        init={{
+                            height: 500,
+                            menubar: true,
+                            plugins: [
+                                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
+                                'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                                'insertdatetime', 'media', 'table', 'help', 'wordcount',
+                            ],
+                            toolbar:
+                                'undo redo | formatselect | ' +
+                                'bold italic forecolor backcolor | alignleft aligncenter ' +
+                                'alignright alignjustify | bullist numlist outdent indent | ' +
+                                'removeformat | help',
+                            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                        }}
                     />
+
                 </Form.Item>
             </Form>
         </Modal>

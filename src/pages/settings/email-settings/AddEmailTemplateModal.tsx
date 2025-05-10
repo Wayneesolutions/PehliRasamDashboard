@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Form, Input, message } from 'antd';
-import { CKEditor } from '@ckeditor/ckeditor5-react';
-import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import { Editor } from '@tinymce/tinymce-react';
 import { createEmailTemplate, getEmailTemplateById, updateEmailTemplate } from '../../../config/apiClient';
 
 interface Props {
@@ -17,6 +16,13 @@ const AddEmailTemplateModal: React.FC<Props> = ({ isOpen, func, val, onClose, ed
   const [content, setContent] = useState('');
   const [, setLoading] = useState(false);
 
+  function decodeHtmlEntities(str: string) {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = str;
+    return txt.value;
+  }
+
+
   useEffect(() => {
     if (editId) {
       const fetchTemplate = async () => {
@@ -24,7 +30,7 @@ const AddEmailTemplateModal: React.FC<Props> = ({ isOpen, func, val, onClose, ed
         const res = await getEmailTemplateById(editId);
         if (res?.success && res?.data) {
           form.setFieldsValue({ subject: res.data.subject });
-          setContent(res.data.body);
+          setContent(decodeHtmlEntities(res.data.body)); // decode if it's escaped
         }
         setLoading(false);
       };
@@ -34,6 +40,7 @@ const AddEmailTemplateModal: React.FC<Props> = ({ isOpen, func, val, onClose, ed
       setContent('');
     }
   }, [editId, isOpen]);
+
 
   const handleOk = () => {
     form.validateFields().then(async (values) => {
@@ -81,41 +88,27 @@ const AddEmailTemplateModal: React.FC<Props> = ({ isOpen, func, val, onClose, ed
         >
           <Input placeholder="Subject" />
         </Form.Item>
-
-        <CKEditor
-          editor={ClassicEditor as any}
-          data={content}
-          config={{
-            toolbar: {
-              items: [
-                'heading',
-                '|',
-                'bold',
-                'italic',
-                'underline',
-                'fontColor',
-                '|',
-                'link',
-                'bulletedList',
-                'numberedList',
-                'blockQuote',
-              ],
-              shouldNotGroupWhenFull: true,
-            },
-            fontColor: {
-              colors: [
-                { color: 'hsl(0, 75%, 60%)', label: 'Red' },
-                { color: 'hsl(30, 75%, 60%)', label: 'Orange' },
-                { color: 'hsl(60, 75%, 60%)', label: 'Yellow' },
-                { color: 'hsl(120, 75%, 40%)', label: 'Green' },
-                { color: 'hsl(240, 75%, 60%)', label: 'Blue' },
-                { color: '#000000', label: 'Black' },
-                { color: '#FFFFFF', label: 'White' },
-              ],
-            },
-          } as any}
-          onChange={(_, editor) => setContent(editor.getData())}
+        <Editor
+          value={content}
+          onEditorChange={(newValue) => setContent(newValue)}
+          apiKey="1ya1d1zav4tgpip8exgsyyatkcy07funukfyfrnn93t7wslj"
+          init={{
+            height: 500,
+            menubar: true,
+            plugins: [
+              'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
+              'searchreplace', 'visualblocks', 'code', 'fullscreen',
+              'insertdatetime', 'media', 'table', 'help', 'wordcount'
+            ],
+            toolbar:
+              'undo redo | formatselect | ' +
+              'bold italic forecolor backcolor | alignleft aligncenter ' +
+              'alignright alignjustify | bullist numlist outdent indent | ' +
+              'removeformat | help',
+            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+          }}
         />
+
 
 
         <div className="flex justify-end gap-3 mt-4">
@@ -127,7 +120,7 @@ const AddEmailTemplateModal: React.FC<Props> = ({ isOpen, func, val, onClose, ed
           </button>
           <button
             type="submit"
-            className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition"
+            className="px-4 py-2 rounded-md bg-blue-600 !text-white hover:bg-blue-700 transition"
           >
             Save
           </button>
