@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
+import { X } from "lucide-react";
 
 
 
@@ -82,7 +83,7 @@ const Index = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState<any>(null);
     const [uploadedImages, setUploadedImages] = useState<Record<string, string>>({});
-
+    const [previewImages, setPreviewImages] = useState<Record<string, string>>({});
     const [fileNames, setFileNames] = useState<Record<string, string>>({});
 
 
@@ -207,10 +208,10 @@ const Index = () => {
     const handleImageUpload = async (fieldId: string, file: File) => {
         try {
             const response = await uploadImage(file);
-            if (response?.url) {
+            if (response?.fileUrls?.[0]) {
                 setUploadedImages((prev) => ({
                     ...prev,
-                    [fieldId]: response.url,
+                    [fieldId]: response.fileUrls?.[0],
                 }));
             }
         } catch (error) {
@@ -370,7 +371,6 @@ const Index = () => {
             );
         }
 
-        // Image upload field
         if (field.attributeType === "Image") {
             return (
                 <div>
@@ -393,11 +393,42 @@ const Index = () => {
                                         ...prev,
                                         [field._id]: file.name,
                                     }));
+                                    setPreviewImages((prev) => ({
+                                        ...prev,
+                                        [field._id]: URL.createObjectURL(file),
+                                    }));
                                 }
                             }}
                             style={{ display: "none" }}
                         />
                     </div>
+
+                    {previewImages?.[field._id] && (
+                        <div className="relative w-32 h-32 mb-2">
+                            <img
+                                src={previewImages[field._id]}
+                                alt="Preview"
+                                className="w-full h-full object-cover rounded border"
+                            />
+                            <button
+                                className="absolute top-0 right-0 bg-white rounded-full p-1 shadow hover:bg-gray-200"
+                                onClick={() => {
+                                    setFileNames((prev) => {
+                                        const updated = { ...prev };
+                                        delete updated[field._id];
+                                        return updated;
+                                    });
+                                    setPreviewImages((prev) => {
+                                        const updated = { ...prev };
+                                        delete updated[field._id];
+                                        return updated;
+                                    });
+                                }}
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+                    )}
 
                     {fileNames?.[field._id] && (
                         <div className="text-sm text-gray-700 font-medium">
@@ -579,33 +610,41 @@ const Index = () => {
                                                     if (field.label === "Preferred Age Range") {
                                                         const [minAge, maxAge] = controllerField.value?.split(" to ") || ["", ""];
                                                         return (
-                                                            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                                                                <Input
-                                                                    style={{ flex: 1 }}
-                                                                    type="number"
-                                                                    placeholder="Min Age"
-                                                                    value={minAge}
-                                                                    onChange={(e) => {
-                                                                        const newVal = `${e.target.value} to ${maxAge}`;
-                                                                        controllerField.onChange(newVal);
-                                                                    }}
-                                                                />
-                                                                <div style={{ fontWeight: 500 }}>to</div>
-                                                                <Input
-                                                                    style={{ flex: 1 }}
-                                                                    type="number"
-                                                                    placeholder="Max Age"
-                                                                    value={maxAge}
-                                                                    onChange={(e) => {
-                                                                        const newVal = `${minAge} to ${e.target.value}`;
-                                                                        controllerField.onChange(newVal);
-                                                                    }}
-                                                                />
+                                                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                                                <div className="flex-1 border rounded-m p-1 shadow-sm bg-white">
+                                                                    <input
+                                                                        type="number"
+                                                                        placeholder="Min Age"
+                                                                        value={minAge}
+                                                                        onChange={(e) => {
+                                                                            const newVal = `${e.target.value} to ${maxAge}`;
+                                                                            controllerField.onChange(newVal);
+                                                                        }}
+                                                                        className="w-full outline-none"
+                                                                    />
+                                                                </div>
+
+                                                                <div className="font-medium text-center sm:text-left">to</div>
+
+                                                                <div className="flex-1 border rounded-s p-1 shadow-sm bg-white">
+                                                                    <input
+                                                                        type="number"
+                                                                        placeholder="Max Age"
+                                                                        value={maxAge}
+                                                                        onChange={(e) => {
+                                                                            const newVal = `${minAge} to ${e.target.value}`;
+                                                                            controllerField.onChange(newVal);
+                                                                        }}
+                                                                        className="w-full outline-none"
+                                                                    />
+                                                                </div>
                                                             </div>
+
 
 
                                                         );
                                                     }
+
 
                                                     if (field.label === "Preferred Height (ft & in)") {
                                                         const heightOptions = [];
@@ -618,32 +657,31 @@ const Index = () => {
                                                         const [minHeight, maxHeight] = controllerField.value?.split(" to ") || ["", ""];
 
                                                         return (
-
-                                                            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                                                                 <Select
-                                                                    style={{ flex: 1 }}
                                                                     value={minHeight || undefined}
                                                                     onChange={(val) => {
                                                                         controllerField.onChange(`${val} to ${maxHeight}`);
                                                                     }}
                                                                     options={heightOptions.map((val) => ({ label: val, value: val }))}
                                                                     placeholder="Min Height"
+                                                                    className="flex-1"
                                                                 />
-                                                                <div style={{ fontWeight: 500 }}>to</div>
+                                                                <div className="font-medium text-center sm:text-left">to</div>
                                                                 <Select
-                                                                    style={{ flex: 1 }}
                                                                     value={maxHeight || undefined}
                                                                     onChange={(val) => {
                                                                         controllerField.onChange(`${minHeight} to ${val}`);
                                                                     }}
                                                                     options={heightOptions.map((val) => ({ label: val, value: val }))}
                                                                     placeholder="Max Height"
+                                                                    className="flex-1"
                                                                 />
                                                             </div>
 
-
                                                         );
                                                     }
+
 
                                                     // Other field types
                                                     switch (field.profileField) {

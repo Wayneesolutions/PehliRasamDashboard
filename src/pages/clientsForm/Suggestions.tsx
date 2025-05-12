@@ -450,27 +450,44 @@ const Suggestions = () => {
     const loadMore = () => {
         setVisibleCount((prevCount) => Math.min(prevCount + 12, filteredSuggestions.length));
     };
+    const handlePageChange = (page: number) => {
+        if (page === 1) {
+            // Handle page 1 logic
+            console.log("Page 1 clicked");
+        } else {
+            // Redirect to payment link
+            window.location.href = "https://pehlirasam.exlyapp.com/checkout/34a4a2b0-e647-4037-bc18-59d2a6923531";
+        }
+    };
+
     return (
         <div className="flex flex-col items-center bg-gray-50 min-h-screen p-6 w-full">
             {/* Header Section */}
-            <div className="fixed top-0 left-0 right-0 bg-white z-50 shadow-md">
-                <div className="flex justify-between items-center w-full max-w-6xl mx-auto p-4">
+            <div className="fixed top-0 left-0 right-0 bg-white z-50 shadow-md !mb-35">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full max-w-6xl mx-auto p-4 gap-4 sm:gap-0">
+
                     {/* Logo and Heading */}
                     <div className="flex items-center">
                         <img src={logo} alt="Logo" className="w-24 h-12 mr-3" />
-                        <h2 className="text-3xl font-bold text-gray-800">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">
                             Profile Suggestions
                         </h2>
                     </div>
 
-                    {/* Payment Call-to-Action Button */}
+                    {/* Payment Button */}
                     <Link to="https://pehlirasam.exlyapp.com/checkout/34a4a2b0-e647-4037-bc18-59d2a6923531">
-                        <Button type="primary" size="large" className="px-5 py-2 rounded-md shadow-md">
+                        <Button
+                            type="primary"
+                            size="large"
+                            className="px-5 py-2 rounded-md shadow-md w-full sm:w-auto text-center"
+                        >
                             Interested? Complete Payment 💍
                         </Button>
                     </Link>
+
                 </div>
             </div>
+
 
 
             {/* Profile Cards Grid */}
@@ -521,7 +538,13 @@ const Suggestions = () => {
 
             {/* Static Pagination (Always Shows Page 1 Active) */}
             <div className="mt-6">
-                <Pagination current={1} total={50} pageSize={10} showSizeChanger={false} />
+                <Pagination
+                    current={1}
+                    total={50}
+                    pageSize={10}
+                    showSizeChanger={false}
+                    onChange={handlePageChange}
+                />
             </div>
 
             {/* Image Full-Screen Modal */}
