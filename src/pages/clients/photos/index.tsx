@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import {
+import apiClient, {
   uploadMultipleFiles,
   addCustomerPhoto,
   getCustomerBasicDetail,
   updateCustomerBasicDetail,
 } from "../../../config/apiClient";
 import { useOutletContext } from "react-router-dom";
-import { message, Dropdown, Menu } from "antd";
+import { message, Dropdown, Menu, Modal } from "antd";
 import { Customer } from "../../../schema/customernew";
 import { MoreOutlined, DeleteOutlined } from "@ant-design/icons";
 
@@ -115,7 +115,32 @@ const Index = () => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
     setPreviews((prev) => prev.filter((_, i) => i !== index));
   };
+  const handleDeletePhoto = (photoId: string, customerId: string) => {
+    Modal.confirm({
+      title: 'Are you sure you want to delete this photo?',
+      okText: 'Yes, Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          const response = await apiClient.post('/admin/deleteCustomerPhoto', {
+            customerId,
+            photoId,
+          });
 
+
+          if (response.data.success) {
+            message.success('Photo deleted successfully');
+            await fetchCustomerDetails(); 
+          } else {
+            message.error(response.data.message || 'Failed to delete photo');
+          }
+        } catch (error) {
+          message.error('An error occurred while deleting the photo');
+        }
+      },
+    });
+  };
   return (
     <div className="p-4 bg-white rounded shadow">
       <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 transition text-white px-5 py-2 rounded font-medium inline-block">
@@ -187,11 +212,15 @@ const Index = () => {
                 <Dropdown
                   overlay={
                     <Menu>
-                      <Menu.Item
-                        key="setCover"
-                        onClick={() => handleSetCoverPhoto(photo.url)}
-                      >
+                      <Menu.Item key="setCover" onClick={() => handleSetCoverPhoto(photo.url)}>
                         Set as Cover Photo
+                      </Menu.Item>
+                      <Menu.Item
+                        key="deletePhoto"
+                        onClick={() => handleDeletePhoto(photo._id, customerId)}
+                        danger
+                      >
+                        Delete Photo
                       </Menu.Item>
                     </Menu>
                   }
