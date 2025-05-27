@@ -12,6 +12,13 @@ import { X } from "lucide-react";
 
 import logo from "../../components/images/logo.png";
 
+const punjabCities = [
+    "Amritsar", "Barnala", "Bathinda", "Dera Bassi", "Faridkot", "Fatehgarh Sahib",
+    "Firozpur", "Gurdaspur", "Hoshiarpur", "Jalandhar", "Kapurthala", "Khanna", "Ludhiana", "Mansa",
+    "Moga", "Muktsar(Sri Muktsar Sahib)", "Nakodar", "Patiala", "Phagwara", "Rupnagar",
+    "(Mohali)Sahibzada Ajit Singh Nagar", "Sangrur", "(Nawanshahr)Shahid Bhagat Singh Nagar",
+    "Tarn Taran", "Zirakpur"
+];
 
 interface Field {
     _id: string;
@@ -88,7 +95,7 @@ const Index = () => {
 
 
     const [loading, setLoading] = useState(true);
-    const { control, handleSubmit } = useForm<FormValues>({
+    const { control, watch, setValue, handleSubmit } = useForm<FormValues>({
         defaultValues: {
             BasicDetail: {
                 firstName: "",
@@ -186,7 +193,7 @@ const Index = () => {
             }
 
             const response = await submitSubmissionForm(payload);
-            console.log("Submission successful:", response);
+
 
             if (response.success) {
                 localStorage.setItem("isRegistered", "true");
@@ -508,6 +515,7 @@ const Index = () => {
                             </Col>
                         ))}
 
+
                         {addressKeys.map((key) => (
                             <Col span={12} key={key} className="mb-4">
                                 <Form.Item label={key.charAt(0).toUpperCase() + key.slice(1)}>
@@ -516,6 +524,7 @@ const Index = () => {
                                         control={control}
                                         defaultValue={formData?.BasicDetail?.address?.[key] ?? ""}
                                         render={({ field }) => {
+                                            // Handle city
                                             if (key === "city") {
                                                 return (
                                                     <Select
@@ -527,18 +536,67 @@ const Index = () => {
                                                         }))}
                                                         showSearch
                                                         optionFilterProp="label"
+                                                        onChange={(value) => {
+                                                            // Update form value for city
+                                                            field.onChange(value);
+
+                                                            // Determine the derived state
+                                                            const derivedState = punjabCities.includes(value)
+                                                                ? "Punjab"
+                                                                : value.includes("Haryana")
+                                                                    ? "Haryana"
+                                                                    : value.includes("Himachal Pradesh")
+                                                                        ? "Himachal Pradesh"
+                                                                        : value.includes("Chandigarh")
+                                                                            ? "Chandigarh"
+                                                                            : value.includes("Delhi")
+                                                                                ? "Delhi"
+                                                                                : value.includes("Rajasthan")
+                                                                                    ? "Rajasthan"
+                                                                                    : value.includes("Uttarakhand")
+                                                                                        ? "Uttarakhand"
+                                                                                        : value.includes("Uttar Pradesh")
+                                                                                            ? "Uttar Pradesh"
+                                                                                            : value.includes("Gujarat")
+                                                                                                ? "Gujarat"
+                                                                                                : value.includes("Jammu and Kashmir")
+                                                                                                    ? "Jammu and Kashmir"
+                                                                                                    : "";
+
+                                                            setValue("BasicDetail.address.state", derivedState);
+                                                        }}
                                                     />
                                                 );
                                             }
 
-                                            return (
-                                                <Input {...field} placeholder={`Enter ${key}`} />
-                                            );
+                                            // Handle state (read-only, derived)
+                                            if (key === "state") {
+                                                const stateValue = watch("BasicDetail.address.state");
+
+                                                return (
+                                                    <Input
+                                                        {...field}
+                                                        value={stateValue}
+                                                        disabled
+                                                        style={{
+                                                            fontWeight: "bold",
+                                                            color: "#1677ff",
+                                                            backgroundColor: "#f0f5ff",
+                                                            cursor: "default",
+                                                        }}
+                                                        placeholder="State"
+                                                    />
+                                                );
+                                            }
+
+                                            // Other address fields
+                                            return <Input {...field} placeholder={`Enter ${key}`} />;
                                         }}
                                     />
                                 </Form.Item>
                             </Col>
                         ))}
+
 
 
                     </Row>
@@ -694,9 +752,56 @@ const Index = () => {
                                                                 />
                                                             );
                                                         case "select":
+                                                            const selectedGender = watch("profile.Gender");
+
+                                                            useEffect(() => {
+                                                                if (
+                                                                    field.label === "Preferred Appearance" &&
+                                                                    selectedGender?.toLowerCase() === "male"
+                                                                ) {
+                                                                    controllerField.onChange("Female Profile");
+                                                                }
+                                                            }, [selectedGender]);
+
+                                                            if (field.label === "Preferred Appearance") {
+                                                                let options =
+                                                                    field.choices?.map((choice: string) => ({
+                                                                        label: choice,
+                                                                        value: choice,
+                                                                        disabled: false,
+                                                                    })) || [];
+
+                                                                if (selectedGender?.toLowerCase() === "male") {
+                                                                    return (
+                                                                        <Select
+                                                                            value="Female Profile"
+                                                                            disabled
+                                                                            options={[{ label: "Female Profile", value: "Female Profile" }]}
+                                                                        />
+                                                                    );
+                                                                }
+
+                                                                if (selectedGender?.toLowerCase() === "female") {
+                                                                    options = options.map((opt: { label: string; value: string }) =>
+                                                                        opt.value === "Female Profile" ? { ...opt, disabled: true } : opt
+                                                                    );
+                                                                }
+
+                                                                return (
+                                                                    <Select
+                                                                        value={controllerField.value}
+                                                                        onChange={controllerField.onChange}
+                                                                        placeholder={`Select ${field.label}`}
+                                                                        options={options}
+                                                                    />
+                                                                );
+                                                            }
+
+                                                            // Default Select
                                                             return (
                                                                 <Select
-                                                                    {...controllerField}
+                                                                    value={controllerField.value}
+                                                                    onChange={controllerField.onChange}
                                                                     placeholder={`Select ${field.label}`}
                                                                     options={
                                                                         field.choices?.map((choice: string) => ({
@@ -706,6 +811,10 @@ const Index = () => {
                                                                     }
                                                                 />
                                                             );
+
+
+
+
                                                         case "number":
                                                             return (
                                                                 <Input

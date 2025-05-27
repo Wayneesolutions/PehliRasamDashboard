@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Card, Button, Avatar, Modal, Pagination } from "antd";
 import logo from "../../components/images/logo.png";
+import { RightOutlined } from "@ant-design/icons";
 
 const suggestionsData = [
     {
@@ -12,7 +13,7 @@ const suggestionsData = [
         country: "L******, Punjab , India",
         education: "Doctorate - PhD",
         job: "Government Job",
-        image: "src/assets/images/IMG_9831.jpeg",
+        image: "/images/IMG_9831.jpeg",
     },
     {
         id: 12,
@@ -22,7 +23,7 @@ const suggestionsData = [
         country: "J******, Rajasthan , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9830.jpeg",
+        image: "/images/IMG_9830.jpeg",
     },
     {
         id: 13,
@@ -32,7 +33,7 @@ const suggestionsData = [
         country: "A******, Punjab , India",
         education: "Graduation",
         job: "Self-Employed",
-        image: "src/assets/images/IMG_9829.jpeg",
+        image: "/images/IMG_9829.jpeg",
     },
     {
         id: 14,
@@ -42,7 +43,7 @@ const suggestionsData = [
         country: "P****, Maharasthra , India",
         education: "Ph.D",
         job: "Government Job",
-        image: "src/assets/images/IMG_9828.jpeg",
+        image: "/images/IMG_9828.jpeg",
     },
     {
         id: 15,
@@ -52,7 +53,7 @@ const suggestionsData = [
         country: "J******, Punjab , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9832.jpeg",
+        image: "/images/IMG_9832.jpeg",
     }, {
         id: 16,
         name: "Taranjit",
@@ -61,7 +62,7 @@ const suggestionsData = [
         country: "L******, Punjab , India",
         education: "Doctorate - PhD",
         job: "Government Job",
-        image: "src/assets/images/IMG_9825.jpeg",
+        image: "/images/IMG_9825.jpeg",
     },
     {
         id: 17,
@@ -71,7 +72,7 @@ const suggestionsData = [
         country: "J******, Rajasthan , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9824.jpeg",
+        image: "/images/IMG_9824.jpeg",
     },
     {
         id: 18,
@@ -81,7 +82,7 @@ const suggestionsData = [
         country: "A******, Punjab , India",
         education: "Graduation",
         job: "Self-Employed",
-        image: "src/assets/images/IMG_9827.jpeg",
+        image: "/images/IMG_9827.jpeg",
     },
     {
         id: 19,
@@ -91,7 +92,7 @@ const suggestionsData = [
         country: "P****, Maharasthra , India",
         education: "Ph.D",
         job: "Government Job",
-        image: "src/assets/images/IMG_9823.jpeg",
+        image: "/images/IMG_9823.jpeg",
     },
     {
         id: 20,
@@ -101,7 +102,7 @@ const suggestionsData = [
         country: "J******, Punjab , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9826.jpeg",
+        image: "/images/IMG_9826.jpeg",
     }, {
         id: 21,
         name: "Rajandeep",
@@ -110,7 +111,7 @@ const suggestionsData = [
         country: "L******, Haryana , India",
         education: "Doctorate - PhD",
         job: "Private Sector",
-        image: "src/assets/images/IMG_9822.jpeg",
+        image: "/images/IMG_9822.jpeg",
     },
     {
         id: 22,
@@ -120,7 +121,7 @@ const suggestionsData = [
         country: "J******, Rajasthan , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9817.jpeg",
+        image: "/images/IMG_9817.jpeg",
     },
     {
         id: 23,
@@ -130,7 +131,7 @@ const suggestionsData = [
         country: "A******, Uttrakhand , India",
         education: "Graduation",
         job: "Self-Employed",
-        image: "src/assets/images/IMG_9819.jpeg",
+        image: "/images/IMG_9819.jpeg",
     },
     {
         id: 24,
@@ -140,7 +141,7 @@ const suggestionsData = [
         country: "P****, Maharasthra , India",
         education: "Ph.D",
         job: "Government Job",
-        image: "src/assets/images/IMG_9821.jpeg",
+        image: "/images/IMG_9821.jpeg",
     },
     {
         id: 25,
@@ -150,7 +151,7 @@ const suggestionsData = [
         country: "J******, Punjab , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9818.jpeg",
+        image: "/images/IMG_9818.jpeg",
     }, {
         id: 26,
         name: "Sukhman",
@@ -159,7 +160,7 @@ const suggestionsData = [
         country: "L******, Jammu , India",
         education: "Doctorate - PhD",
         job: "Government Job",
-        image: "src/assets/images/IMG_9812.jpeg",
+        image: "/images/IMG_9812.jpeg",
     },
     {
         id: 27,
@@ -169,7 +170,7 @@ const suggestionsData = [
         country: "J******, Rajasthan , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9810.jpeg",
+        image: "/images/IMG_9810.jpeg",
     },
     {
         id: 28,
@@ -179,7 +180,7 @@ const suggestionsData = [
         country: "A******, Punjab , India",
         education: "Graduation",
         job: "Self-Employed",
-        image: "src/assets/images/IMG_9809.jpeg",
+        image: "/images/IMG_9809.jpeg",
     },
     {
         id: 29,
@@ -189,7 +190,7 @@ const suggestionsData = [
         country: "P****, Maharasthra , India",
         education: "Ph.D",
         job: "Government Job",
-        image: "src/assets/images/IMG_9815.jpeg",
+        image: "/images/IMG_9815.jpeg",
     },
     {
         id: 30,
@@ -199,7 +200,7 @@ const suggestionsData = [
         country: "J******, haryana , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9808.jpeg",
+        image: "/images/IMG_9808.jpeg",
     },
     {
         id: 31,
@@ -209,7 +210,7 @@ const suggestionsData = [
         country: "J******, Punjab , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9832.jpeg",
+        image: "/images/IMG_9832.jpeg",
     }, {
         id: 32,
         name: "Rohanveer",
@@ -218,7 +219,7 @@ const suggestionsData = [
         country: "L******, Jammu , India",
         education: "Doctorate - PhD",
         job: "Businessman",
-        image: "src/assets/images/IMG_9862.jpeg",
+        image: "/images/IMG_9862.jpeg",
     },
     {
         id: 33,
@@ -228,7 +229,7 @@ const suggestionsData = [
         country: "J******, Rajasthan , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9834.jpeg",
+        image: "/images/IMG_9834.jpeg",
     },
     {
         id: 34,
@@ -238,7 +239,7 @@ const suggestionsData = [
         country: "A******, Punjab , India",
         education: "Graduation",
         job: "Self-Employed",
-        image: "src/assets/images/IMG_9837.jpeg",
+        image: "/images/IMG_9837.jpeg",
     },
     {
         id: 35,
@@ -248,7 +249,7 @@ const suggestionsData = [
         country: "P****, Maharasthra , India",
         education: "Ph.D",
         job: "Government Job",
-        image: "src/assets/images/IMG_9853.jpeg",
+        image: "/images/IMG_9853.jpeg",
     },
     {
         id: 36,
@@ -258,7 +259,7 @@ const suggestionsData = [
         country: "J******, haryana , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9856.jpeg",
+        image: "/images/IMG_9856.jpeg",
     }, {
         id: 37,
         name: "Taranjit",
@@ -267,7 +268,7 @@ const suggestionsData = [
         country: "L******, Jammu , India",
         education: "Doctorate - PhD",
         job: "Businessman",
-        image: "src/assets/images/IMG_9851.jpeg",
+        image: "/images/IMG_9851.jpeg",
     },
     {
         id: 38,
@@ -277,7 +278,7 @@ const suggestionsData = [
         country: "J******, Rajasthan , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9850.jpeg",
+        image: "/images/IMG_9850.jpeg",
     },
     {
         id: 39,
@@ -287,7 +288,7 @@ const suggestionsData = [
         country: "A******, Punjab , India",
         education: "Graduation",
         job: "Self-Employed",
-        image: "src/assets/images/IMG_9852.jpeg",
+        image: "/images/IMG_9852.jpeg",
     },
     {
         id: 40,
@@ -297,7 +298,7 @@ const suggestionsData = [
         country: "P****, Maharasthra , India",
         education: "Ph.D",
         job: "Government Job",
-        image: "src/assets/images/IMG_9840.jpeg",
+        image: "/images/IMG_9840.jpeg",
     },
     {
         id: 41,
@@ -307,7 +308,7 @@ const suggestionsData = [
         country: "J******, haryana , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9841.jpeg",
+        image: "/images/IMG_9841.jpeg",
     }, {
         id: 42,
         name: "Vijender",
@@ -316,7 +317,7 @@ const suggestionsData = [
         country: "L******, Jammu , India",
         education: "Doctorate - PhD",
         job: "Businessman",
-        image: "src/assets/images/IMG_9849.jpeg",
+        image: "/images/IMG_9849.jpeg",
     },
     {
         id: 43,
@@ -326,7 +327,7 @@ const suggestionsData = [
         country: "J******, Rajasthan , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9844.jpeg",
+        image: "/images/IMG_9844.jpeg",
     },
     {
         id: 44,
@@ -336,7 +337,7 @@ const suggestionsData = [
         country: "A******, Punjab , India",
         education: "Graduation",
         job: "Self-Employed",
-        image: "src/assets/images/IMG_9845.jpeg",
+        image: "/images/IMG_9845.jpeg",
     },
     {
         id: 45,
@@ -346,7 +347,7 @@ const suggestionsData = [
         country: "P****, Maharasthra , India",
         education: "Ph.D",
         job: "Government Job",
-        image: "src/assets/images/IMG_9848.jpeg",
+        image: "/images/IMG_9848.jpeg",
     },
     {
         id: 46,
@@ -356,7 +357,7 @@ const suggestionsData = [
         country: "J******, haryana , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9843.jpeg",
+        image: "/images/IMG_9843.jpeg",
     }, {
         id: 47,
         name: "Amandeep",
@@ -365,7 +366,7 @@ const suggestionsData = [
         country: "L******, Jammu , India",
         education: "Doctorate - PhD",
         job: "Businessman",
-        image: "src/assets/images/IMG_9838.jpeg",
+        image: "/images/IMG_9838.jpeg",
     },
     {
         id: 48,
@@ -375,7 +376,7 @@ const suggestionsData = [
         country: "J******, Rajasthan , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9833.jpeg",
+        image: "/images/IMG_9833.jpeg",
     },
     {
         id: 49,
@@ -385,7 +386,7 @@ const suggestionsData = [
         country: "A******, Punjab , India",
         education: "Graduation",
         job: "Self-Employed",
-        image: "src/assets/images/IMG_9861.jpeg",
+        image: "/images/IMG_9861.jpeg",
     },
     {
         id: 50,
@@ -395,7 +396,7 @@ const suggestionsData = [
         country: "P****, Maharasthra , India",
         education: "Ph.D",
         job: "Businessman",
-        image: "src/assets/images/IMG_9860.jpeg",
+        image: "/images/IMG_9860.jpeg",
     },
     {
         id: 51,
@@ -405,7 +406,7 @@ const suggestionsData = [
         country: "J******, haryana , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9859.jpeg",
+        image: "/images/IMG_9859.jpeg",
     }, {
         id: 52,
         name: "Surjit",
@@ -414,7 +415,7 @@ const suggestionsData = [
         country: "J******, Rajasthan , India",
         education: "Post Graduation",
         job: "Freelancer",
-        image: "src/assets/images/IMG_9850.jpeg",
+        image: "/images/IMG_9850.jpeg",
     }
 ];
 
@@ -451,14 +452,11 @@ const Suggestions = () => {
         setVisibleCount((prevCount) => Math.min(prevCount + 12, filteredSuggestions.length));
     };
     const handlePageChange = (page: number) => {
-        if (page === 1) {
-            // Handle page 1 logic
-            console.log("Page 1 clicked");
-        } else {
-            // Redirect to payment link
+        if (page !== 1) {
             window.location.href = "https://pehlirasam.exlyapp.com/checkout/34a4a2b0-e647-4037-bc18-59d2a6923531";
         }
     };
+
 
     return (
         <div className="flex flex-col items-center bg-gray-50 min-h-screen p-6 w-full">
@@ -536,14 +534,33 @@ const Suggestions = () => {
                 </div>
             )}
 
-            {/* Static Pagination (Always Shows Page 1 Active) */}
+
             <div className="mt-6">
                 <Pagination
                     current={1}
-                    total={50}
+                    total={10}
                     pageSize={10}
                     showSizeChanger={false}
                     onChange={handlePageChange}
+                    itemRender={(page, type, originalElement) => {
+                        if (type === "page") {
+                            return page === 1 ? originalElement : null;
+                        }
+                        if (type === "prev") return null;
+                        if (type === "next") {
+                            return (
+                                <a
+                                    href="https://pehlirasam.exlyapp.com/checkout/34a4a2b0-e647-4037-bc18-59d2a6923531"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ display: "flex", alignItems: "center", gap: 4 }}
+                                >
+                                    Next <RightOutlined />
+                                </a>
+                            );
+                        }
+                        return originalElement;
+                    }}
                 />
             </div>
 
