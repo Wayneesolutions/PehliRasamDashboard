@@ -456,15 +456,52 @@ const Suggestions = () => {
             window.location.href = "https://pehlirasam.exlyapp.com/checkout/34a4a2b0-e647-4037-bc18-59d2a6923531";
         }
     };
+    const [showOverlay, setShowOverlay] = useState(true);
+
+    const handleOk = () => {
+        setShowOverlay(false);
+        window.location.href = "https://pehlirasam.exlyapp.com/checkout/34a4a2b0-e647-4037-bc18-59d2a6923531"; // or use useNavigate from react-router-dom
+    };
+
+    const handleSkip = () => {
+        setShowOverlay(false);
+    };
+
 
 
     return (
-        <div className="flex flex-col items-center bg-gray-50 min-h-screen p-6 w-full">
-            {/* Header Section */}
-            <div className="fixed top-0 left-0 right-0 bg-white z-50 shadow-md !mb-35">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full max-w-6xl mx-auto p-4 gap-4 sm:gap-0">
+        <div className="flex flex-col items-center bg-gray-50 min-h-screen p-6 w-full relative">
+{showOverlay && (
+  <div className="fixed inset-0 backdrop-blur-sm bg-black/30 z-40 flex items-center justify-center transition-opacity duration-300">
+    {/* Focused box near the payment button */}
+    <div className="absolute top-50 sm:top-70 right-4 sm:right-10 z-50">
+      <div className="flex flex-col items-center gap-4">
+        <div className="flex gap-4">
+      
+          <Button
+            onClick={handleSkip}
+            className="px-6 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 shadow"
+          >
+            Skip
+          </Button>
+              <Button
+            onClick={handleOk}
+            type="primary"
+            className="px-6 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white shadow"
+          >
+            Ok,Proceed
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
-                    {/* Logo and Heading */}
+
+
+            {/* Header */}
+            <div className="fixed top-0 left-0 right-0 bg-white z-50 shadow-md">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full max-w-6xl mx-auto p-4 gap-4 sm:gap-0 relative">
                     <div className="flex items-center">
                         <img src={logo} alt="Logo" className="w-24 h-12 mr-3" />
                         <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">
@@ -472,24 +509,25 @@ const Suggestions = () => {
                         </h2>
                     </div>
 
-                    {/* Payment Button */}
-                    <Link to="https://pehlirasam.exlyapp.com/checkout/34a4a2b0-e647-4037-bc18-59d2a6923531">
-                        <Button
-                            type="primary"
-                            size="large"
-                            className="px-5 py-2 rounded-md shadow-md w-full sm:w-auto text-center"
-                        >
-                            Interested? Complete Payment 💍
-                        </Button>
-                    </Link>
+                    {/* Payment button - keep this clickable above overlay */}
+                    <div className="flex flex-col items-center sm:items-end gap-2 mt-2 sm:mt-0 relative z-50">
+                        <Link to="https://pehlirasam.exlyapp.com/checkout/34a4a2b0-e647-4037-bc18-59d2a6923531" className="z-50">
+                            <Button
+                                type="primary"
+                                size="large"
+                                className="px-5 py-2 rounded-md shadow-md w-full sm:w-auto text-center"
+                            >
+                                Interested? Complete Payment 💍
+                            </Button>
+                        </Link>
+                    </div>
 
                 </div>
             </div>
 
 
-
-            {/* Profile Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl pt-25" >
+            {/* Profile Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl pt-32">
                 {filteredSuggestions.slice(0, visibleCount).map((person) => (
                     <Card
                         key={person.id}
@@ -497,23 +535,20 @@ const Suggestions = () => {
                         bodyStyle={{ padding: 0 }}
                     >
                         <div className="flex items-center p-4 pr-10">
-                            {/* Profile Image - Click to Enlarge */}
                             <Avatar
                                 size={100}
                                 src={person.image}
                                 className="border border-gray-300 shadow-sm rounded-full cursor-pointer transition-transform duration-300 ease-in-out hover:scale-110"
                                 onClick={() => setSelectedImage(person.image)}
                             />
-
-                            {/* Profile Details */}
                             <div className="flex flex-col space-y-1 pl-5 pr-8 w-full">
                                 <h3 className="text-lg font-bold text-gray-900">{person.name}</h3>
-                                <p className="text-gray-600 text-xs">👤 {person.gender} | {person.height}</p>
+                                <p className="text-gray-600 text-xs">
+                                    👤 {person.gender} | {person.height}
+                                </p>
                                 <p className="text-gray-500 text-xs">🎓 {person.education}</p>
                                 <p className="text-gray-700 text-sm font-medium">💼 {person.job}</p>
                                 <p className="text-gray-500 text-xs">📍 {person.country}</p>
-
-                                {/* Unlock Button - Styled */}
                                 <Link to="https://pehlirasam.exlyapp.com/checkout/34a4a2b0-e647-4037-bc18-59d2a6923531">
                                     <Button className="mt-3 px-5 py-2 rounded-md shadow-md text-xs font-medium">
                                         Unlock
@@ -525,16 +560,21 @@ const Suggestions = () => {
                 ))}
             </div>
 
-            {/* Load More Button (Only Show if Not All Profiles Are Visible) */}
+            {/* Load More */}
             {visibleCount < filteredSuggestions.length && (
                 <div className="mt-6">
-                    <Button type="primary" size="large" onClick={loadMore} className="px-5 py-2 rounded-md shadow-md hover:shadow-lg transition-all">
+                    <Button
+                        type="primary"
+                        size="large"
+                        onClick={loadMore}
+                        className="px-5 py-2 rounded-md shadow-md hover:shadow-lg transition-all"
+                    >
                         Load More
                     </Button>
                 </div>
             )}
 
-
+            {/* Pagination */}
             <div className="mt-6">
                 <Pagination
                     current={1}
@@ -564,7 +604,7 @@ const Suggestions = () => {
                 />
             </div>
 
-            {/* Image Full-Screen Modal */}
+            {/* Full Image Modal */}
             <Modal
                 open={!!selectedImage}
                 footer={null}
@@ -576,6 +616,9 @@ const Suggestions = () => {
                     <img src={selectedImage} alt="Profile" className="w-full h-auto rounded-lg" />
                 )}
             </Modal>
+
+
+
         </div>
     );
 };
