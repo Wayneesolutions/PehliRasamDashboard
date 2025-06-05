@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Card, Button, Avatar, Modal, Pagination } from "antd";
 import logo from "../../components/images/logo.png";
@@ -467,35 +467,63 @@ const Suggestions = () => {
         setShowOverlay(false);
     };
 
+    const paymentBtnRef = useRef<HTMLButtonElement | null>(null);
+    const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+
+    useEffect(() => {
+        if (showOverlay && paymentBtnRef.current) {
+            const rect = paymentBtnRef.current.getBoundingClientRect();
+            setTooltipPosition({
+                top: rect.bottom + window.scrollY + 8,
+                left: rect.left + rect.width / 2,
+            });
+        }
+    }, [showOverlay]);
 
 
     return (
         <div className="flex flex-col items-center bg-gray-50 min-h-screen p-6 w-full relative">
-{showOverlay && (
-  <div className="fixed inset-0 backdrop-blur-sm bg-black/30 z-40 flex items-center justify-center transition-opacity duration-300">
-    {/* Focused box near the payment button */}
-    <div className="absolute top-50 sm:top-70 right-4 sm:right-10 z-50">
-      <div className="flex flex-col items-center gap-4">
-        <div className="flex gap-4">
-      
-          <Button
-            onClick={handleSkip}
-            className="px-6 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 shadow"
-          >
-            Skip
-          </Button>
-              <Button
-            onClick={handleOk}
-            type="primary"
-            className="px-6 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white shadow"
-          >
-            Ok,Proceed
-          </Button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+            {showOverlay && (
+                <>
+                    {/* Background Blur Overlay */}
+                    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"></div>
+
+                    {/* Tooltip box with arrow */}
+                    <div
+                        className="absolute z-[9999] bg-black/70 text-white shadow-xl rounded-md px-6 py-4 border border-gray-700 text-center"
+                        style={{
+                            top: tooltipPosition.top,
+                            left: tooltipPosition.left,
+                            transform: 'translateX(-50%)',
+                        }}
+                    >
+                        {/* Tooltip arrow (above box) */}
+                        <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-[9999]">
+                            <div className="w-3 h-3 bg-black border-l border-t border-gray-700 rotate-45 shadow-sm"></div>
+                        </div>
+
+                        <p className="font-semibold mb-3">Ready to proceed?</p>
+                        <div className="flex justify-center gap-4">
+                            <Button
+                                onClick={handleSkip}
+                                className="px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 shadow"
+                            >
+                                Skip
+                            </Button>
+                            <Button
+                                onClick={handleOk}
+                                type="primary"
+                                className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white shadow"
+                            >
+                                Ok, Proceed
+                            </Button>
+                        </div>
+                    </div>
+
+                </>
+            )}
+
+
 
 
 
@@ -513,12 +541,14 @@ const Suggestions = () => {
                     <div className="flex flex-col items-center sm:items-end gap-2 mt-2 sm:mt-0 relative z-50">
                         <Link to="https://pehlirasam.exlyapp.com/checkout/34a4a2b0-e647-4037-bc18-59d2a6923531" className="z-50">
                             <Button
+                                ref={paymentBtnRef}
                                 type="primary"
                                 size="large"
                                 className="px-5 py-2 rounded-md shadow-md w-full sm:w-auto text-center"
                             >
                                 Interested? Complete Payment 💍
                             </Button>
+
                         </Link>
                     </div>
 
