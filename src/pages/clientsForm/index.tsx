@@ -492,7 +492,7 @@ const Index = () => {
                                                 return (
                                                     <PhoneInput
                                                         {...field}
-                                                        country="us"
+                                                        country="in"
                                                         value={typeof field.value === 'string' ? field.value : ''}
                                                         onChange={(value) => field.onChange(value)}
                                                         placeholder="Enter phone number"

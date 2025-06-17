@@ -479,6 +479,21 @@ const Suggestions = () => {
             });
         }
     }, [showOverlay]);
+    useEffect(() => {
+    if (showOverlay) {
+        // Disable scrolling
+        document.body.style.overflow = 'hidden';
+    } else {
+        // Enable scrolling again
+        document.body.style.overflow = 'auto';
+    }
+
+    // Clean-up function to re-enable scroll if component unmounts
+    return () => {
+        document.body.style.overflow = 'auto';
+    };
+}, [showOverlay]);
+
 
 
     return (
