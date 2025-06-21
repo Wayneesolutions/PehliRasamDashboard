@@ -3,7 +3,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { Card, Button, Avatar, Modal, Pagination } from "antd";
 import logo from "../../components/images/logo.png";
 import { RightOutlined } from "@ant-design/icons";
-// import gif from "../../assets/next.GIF";
+
+import { ArrowRight, Sparkles } from 'lucide-react';
 
 const suggestionsData = [
     {
@@ -421,6 +422,11 @@ const suggestionsData = [
 ];
 
 const Suggestions = () => {
+    const [isHovered, setIsHovered] = useState(false);
+
+    const handleClick = () => {
+        window.open('https://pehlirasam.exlyapp.com/checkout/34a4a2b0-e647-4037-bc18-59d2a6923531', '_blank');
+    };
     const navigate = useNavigate();
     const [visibleCount, setVisibleCount] = useState(9);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -464,40 +470,149 @@ const Suggestions = () => {
     return (
         <div className="flex flex-col items-center bg-gray-50 min-h-screen p-6 w-full relative">
 
-            {/* Header */}
             <div className="fixed top-0 left-0 right-0 bg-white z-50 shadow-md">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full max-w-6xl mx-auto p-4 gap-4 sm:gap-0 relative">
-                    <div className="flex items-center">
-                        <img src={logo} alt="Logo" className="w-24 h-12 mr-3" />
+                <div className="w-full max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+
+                    {/* Left: Logo + Title */}
+                    <div className="flex items-center gap-3">
+                        <img src={logo} alt="Logo" className="w-24 h-12 object-contain" />
                         <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">
                             Profile Suggestions
                         </h2>
                     </div>
 
-              
-      <Link
-        to="https://pehlirasam.exlyapp.com/checkout/34a4a2b0-e647-4037-bc18-59d2a6923531"
-        className="z-50"
-      >
-        <div className="flex items-center gap-3 px-5 py-3 rounded-lg shadow-md bg-white hover:bg-gray-100 transition-all duration-300 cursor-pointer">
-          {/* <img
-            src={gif}
-            alt="Next GIF"
-            className="w-8 h-8 object-contain"
-          /> */}
-          <span className="text-black font-medium text-base">
-            Interested? Complete Payment 💍
-          </span>
-        </div>
-      </Link>
- 
+                    {/* Right: Next + Animated Arrow + Button */}
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-6 sm:ml-auto">
 
+                        {/* NEXT + Arrow Circle tightly together */}
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            {/* Text: Next */}
+                            <div className="relative">
+                                <span className="text-gray-800 font-bold text-lg sm:text-xl transition-all duration-500 hover:text-blue-600">
+                                    Next
+                                </span>
+                                <div className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-700 hover:w-full"></div>
+                                <Sparkles className="absolute -top-2 -right-2 w-4 h-4 text-blue-400 animate-pulse opacity-60" />
+                            </div>
+
+                            <div className="flex items-center justify-center">
+                                <div className="relative group w-16 h-16 flex items-center justify-center">
+                                    {/* Outer Glow */}
+                                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 opacity-60 blur-lg animate-pulse group-hover:animate-spin"></div>
+
+                                    {/* White Circle with Fixed Size */}
+                                    <div className="relative w-full h-full rounded-full bg-white border-2 border-white shadow-xl flex items-center justify-center overflow-hidden">
+                                        {/* Arrow with consistent animation across all devices */}
+                                        <div className="arrow-animated relative z-10 font-bold text-3xl">
+                                            <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent filter drop-shadow-sm">
+                                                <span className="text-4xl font-bold">➜</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* CTA Button */}
+                        <button
+                            onClick={handleClick}
+                            onMouseEnter={() => setIsHovered(true)}
+                            onMouseLeave={() => setIsHovered(false)}
+                            className="group relative px-6 sm:px-8 py-3 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 hover:from-purple-600 hover:via-pink-600 hover:to-blue-600 !text-white font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-500 sm:hover:-translate-y-1 sm:hover:scale-105 flex items-center gap-3"
+                        >
+                            {/* Gradient glow */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 opacity-0 group-hover:opacity-30 transition-opacity duration-500 animate-pulse"></div>
+
+                            {/* Shimmer */}
+                            <div className="relative z-10 flex items-center gap-2 whitespace-nowrap">
+                                <span>Complete Payment</span>
+                                <ArrowRight className={`w-5 h-5 transition-all duration-500 ${isHovered ? 'translate-x-2 rotate-12 scale-110' : ''}`} />
+                            </div>
+
+                            {/* 💳 - fix alignment for mobile too */}
+                            <div className="absolute top-1/2 right-2 -translate-y-1/2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center transform rotate-12 group-hover:rotate-45 transition-transform duration-500">
+                                <span className="text-xs">💳</span>
+                            </div>
+                        </button>
+                    </div>
                 </div>
             </div>
 
+            {/* Custom Animations */}
+            <style>{`
+        @keyframes orbit {
+          0% {
+            transform: rotate(0deg) translateX(40px) rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg) translateX(40px) rotate(-360deg);
+          }
+        }
+        
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+        }
+        
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes slide-x {
+          0%, 100% {
+            transform: translateX(0);
+          }
+          50% {
+            transform: translateX(8px);
+          }
+        }
+        
+        .animate-slide-x {
+          animation: slide-x 2s ease-in-out infinite;
+        }
+        
+        @keyframes slideLeftRight {
+          0%, 100% {
+            transform: translateX(-4px) scale(1);
+          }
+          50% {
+            transform: translateX(4px) scale(1.1);
+          }
+        }
+        
+        @keyframes glow {
+          0% {
+            filter: drop-shadow(0 0 2px rgba(59, 130, 246, 0.5));
+          }
+          100% {
+            filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.8)) drop-shadow(0 0 12px rgba(147, 51, 234, 0.6));
+          }
+        }
+        
+        /* Apply consistent animation to arrow on ALL devices */
+        .arrow-animated {
+          animation: slideLeftRight 2s ease-in-out infinite, glow 1.5s ease-in-out infinite alternate;
+        }
+        
+        /* Ensure mobile and desktop use the same animation */
+        @media (max-width: 639px) {
+          .arrow-animated {
+            animation: slideLeftRight 2s ease-in-out infinite, glow 1.5s ease-in-out infinite alternate;
+          }
+        }
+        
+        @media (min-width: 640px) {
+          .arrow-animated {
+            animation: slideLeftRight 2s ease-in-out infinite, glow 1.5s ease-in-out infinite alternate;
+          }
+        }
+      `}</style>
+
+
 
             {/* Profile Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl pt-32">
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl pt-45 md:pt-28">
+
                 {filteredSuggestions.slice(0, visibleCount).map((person) => (
                     <Card
                         key={person.id}
