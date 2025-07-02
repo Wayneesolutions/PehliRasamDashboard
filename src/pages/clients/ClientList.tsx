@@ -162,7 +162,7 @@ const ClientList: React.FC<ClientListManagerProps> = ({ customerId }) => {
       <button
         onClick={handleAddClientList}
         disabled={loading}
-        className={`w-full py-2 text-white !mt-5 font-medium rounded-lg transition ${loading ? "bg-gray-400" : "bg-blue-500 hover:bg-blue-600"
+        className={`w-full py-2 !text-white !mt-5 font-medium rounded-lg transition ${loading ? "bg-gray-400" : "bg-blue-500 hover:bg-blue-600"
           }`}
       >
         {loading ? "Adding..." : "Add"}

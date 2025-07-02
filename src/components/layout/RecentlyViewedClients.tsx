@@ -10,6 +10,17 @@ interface Client {
   phone?: string;
 }
 
+const bgColors = [
+  "bg-amber-300",     // soft gold
+  "bg-rose-300",      // elegant rose
+  "bg-sky-300",       // light blue
+  "bg-emerald-300",   // fresh green
+  "bg-violet-300",    // modern purple
+  "bg-orange-300",    // warm orange
+  "bg-indigo-300",    // deep blue
+  "bg-teal-300",      // minty teal
+];
+
 const RecentlyViewedClients: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -65,7 +76,7 @@ const RecentlyViewedClients: React.FC = () => {
                 className="w-16 h-16 rounded-full object-cover border-2 border-gray-300"
               />
             ) : (
-              <div className="w-16 h-16 flex items-center justify-center rounded-full bg-gray-900 text-white text-2xl font-bold">
+                        <div className={`w-12 h-12 flex items-center justify-center rounded-full text-white text-lg font-bold shadow-md ${bgColors[index % bgColors.length]}`}>
                 {client.initials}
               </div>
             )}

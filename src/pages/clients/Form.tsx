@@ -278,7 +278,22 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                             />
                                                         );
                                                     }
-
+                                                    if (field.fieldName?.trim().toLowerCase() === "other family details") {
+                                                        return (
+                                                            <textarea
+                                                                className="w-2/3 border p-2 rounded"
+                                                                rows={4}
+                                                                value={field.value || ""}
+                                                                placeholder="Enter other family details"
+                                                                onChange={(e) =>
+                                                                    handleFieldChange(group.groupId, field.fieldId, e.target.value)
+                                                                }
+                                                                onKeyDown={(e) =>
+                                                                    handleFieldSaveOnEnter(e, group.groupId, field.fieldId)
+                                                                }
+                                                            />
+                                                        );
+                                                    }
                                                     switch (field.attributeType) {
                                                         case "select":
                                                             return (

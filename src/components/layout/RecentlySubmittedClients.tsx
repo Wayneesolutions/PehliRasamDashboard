@@ -13,6 +13,17 @@ interface Client {
   initials: string;
   avatar?: string;
 }
+const bgColors = [
+  "bg-amber-300",     // soft gold
+  "bg-rose-300",      // elegant rose
+  "bg-sky-300",       // light blue
+  "bg-emerald-300",   // fresh green
+  "bg-violet-300",    // modern purple
+  "bg-orange-300",    // warm orange
+  "bg-indigo-300",    // deep blue
+  "bg-teal-300",      // minty teal
+];
+
 
 const RecentlySubmittedClients = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -73,10 +84,11 @@ const RecentlySubmittedClients = () => {
             {client.avatar ? (
               <img src={client.avatar} alt={client.name} className="w-12 h-12 rounded-full object-cover" />
             ) : (
-              <div className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-900 text-white text-lg font-bold">
+              <div className={`w-12 h-12 flex items-center justify-center rounded-full text-white text-lg font-bold shadow-md ${bgColors[index % bgColors.length]}`}>
                 {client.initials}
               </div>
             )}
+
             <div>
               <p className="text-md font-medium">
                 {client.name}

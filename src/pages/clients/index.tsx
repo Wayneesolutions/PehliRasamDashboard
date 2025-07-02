@@ -6,6 +6,18 @@ import { addCustomerByAdmin, allActiveCustomer } from "../../config/apiClient";
 import { ActiveClientDetails } from "../../schema/customernew";
 
 
+const bgColors = [
+  "bg-amber-300",     // soft gold
+  "bg-rose-300",      // elegant rose
+  "bg-sky-300",       // clean blue
+  "bg-emerald-300",   // fresh green
+  "bg-violet-300",    // modern purple
+  "bg-orange-300",    // warm orange
+  "bg-indigo-300",    // deep blue
+  "bg-teal-300",      // minty teal
+];
+
+
 const Clients: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClient, setSelectedClient] = useState<any>(null);
@@ -29,29 +41,42 @@ const Clients: React.FC = () => {
       const values = await form.validateFields();
       const res = await addCustomerByAdmin(values);
 
-      const customerId = res.data._id;
+      const newClient = res.data;
+
+      // ✅ Prepend new client to activeclients list
+      setActiveClients((prevClients) => [newClient, ...prevClients]);
+
       setIsAddClientModalOpen(false);
 
       navigate("/dashboard/add-client", {
-        state: { customerId, customerData: res.data }
+        state: {
+          customerId: newClient._id,
+          customerData: newClient,
+        },
       });
     } catch (error) {
       console.error("Validation or API error:", error);
     }
   };
 
+
   useEffect(() => {
     const fetchingCustomers = async () => {
-      const res = await allActiveCustomer()
+      const res = await allActiveCustomer();
       if (res.success) {
-        setActiveClients(res?.data)
+        const sorted = [...res.data].sort((a, b) => {
+          return new Date(parseInt(b._id.substring(0, 8), 16) * 1000).getTime() -
+            new Date(parseInt(a._id.substring(0, 8), 16) * 1000).getTime();
+        });
+        setActiveClients(sorted);
       } else {
-        setActiveClients([])
+        setActiveClients([]);
       }
+    };
+    fetchingCustomers();
+  }, []);
 
-    }
-    fetchingCustomers()
-  }, [])
+
 
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,42 +112,42 @@ const Clients: React.FC = () => {
 
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 mt-8">
-        {filteredClients.map((client) => (
-          <div
-            key={client._id}
-            className="flex flex-col items-center text-center group relative"
-          >
-            {/* Profile image or initials */}
-            {client.imagePath ? (
-              <img
-                src={client.imagePath}
-                alt={`${client.firstName} ${client.lastName}`}
-                className="w-24 h-36 object-cover rounded-md shadow-md"
-              />
-            ) : (
-              <div className="w-24 h-36 flex items-center justify-center bg-yellow-400 rounded-md text-3xl font-bold text-white shadow-md">
-                {`${client.firstName[0]}${client.lastName[0]}`}
+        {filteredClients.map((client, index) => {
+          const initials = `${client.firstName[0]}${client.lastName[0]}`;
+          const bgColor = bgColors[index % bgColors.length]; // cycle through colors
+
+          return (
+            <div key={client._id} className="flex flex-col items-center text-center group relative">
+              {client.imagePath ? (
+                <img
+                  src={client.imagePath}
+                  alt={`${client.firstName} ${client.lastName}`}
+                  className="w-24 h-36 object-cover rounded-md shadow-md"
+                />
+              ) : (
+                <div className={`w-24 h-36 flex items-center justify-center ${bgColor} rounded-md text-3xl font-bold text-white shadow-md`}>
+                  {initials}
+                </div>
+              )}
+
+              <h3 className="!mt-3 text-sm font-semibold text-blue-600 truncate w-full">
+                {`${client.firstName} ${client.lastName}`}
+              </h3>
+
+
+
+              {/* Info Icon (hover) */}
+              <div className="absolute bottom-2 right-6  transition">
+                <button
+                  onClick={() => openClientModal(client)}
+                  className="!text-gray-500 hover:text-blue-500"
+                >
+                  <InfoCircleOutlined />
+                </button>
               </div>
-            )}
-
-            {/* Name */}
-            <h3 className="!mt-3 text-sm font-semibold text-blue-600 truncate w-full">
-              {`${client.firstName} ${client.lastName}`}
-            </h3>
-
-
-
-            {/* Info Icon (hover) */}
-            <div className="absolute bottom-2 right-6  transition">
-              <button
-                onClick={() => openClientModal(client)}
-                className="!text-gray-500 hover:text-blue-500"
-              >
-                <InfoCircleOutlined />
-              </button>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
 

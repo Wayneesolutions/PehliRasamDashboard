@@ -32,7 +32,7 @@ const cityOptions = [
 ];
 
 const fetchCountries = async (): Promise<CountryOption[]> => {
-  const { data } = await axios.get("https://restcountries.com/v3.1/all");
+  const { data } = await axios.get("https://restcountries.com/v3.1/all?fields=name,flags");
   return data
     .map((country: any) => ({
       label: country.name.common,
