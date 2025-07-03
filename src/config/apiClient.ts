@@ -515,3 +515,12 @@ export const getCustomerActivityLogsID = async (payload: CustomerActivityLogPayl
     throw error;
   }
 };
+
+export const deleteCustomer = async (id: string) => {
+  try {
+    const response = await apiClient.delete(`admin/delete-customer/${id}`);
+    return response?.data;
+  } catch (error) {
+    return (error as any)?.response?.data;
+  }
+};

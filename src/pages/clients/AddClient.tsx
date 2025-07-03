@@ -5,36 +5,43 @@ import MembershipForm from "./Form";
 import { useEffect, useMemo } from "react";
 
 const AddClient = () => {
-    const location = useLocation();
-    const stateCustomerId = location.state?.customerId;
+  const location = useLocation();
 
-    useEffect(() => {
-        if (stateCustomerId) {
-            localStorage.setItem("clientId", stateCustomerId);
-        }
-    }, [stateCustomerId]);
+  // Extract from state (in-app navigation)
+  const stateCustomerId = location.state?.customerId;
 
-    const customerId = useMemo(() => {
-        return stateCustomerId || localStorage.getItem("clientId");
-    }, [stateCustomerId]);
+  // Extract from URL param (new tab or refresh)
+  const queryParams = new URLSearchParams(location.search);
+  const urlCustomerId = queryParams.get("customerId");
 
-    const showMembershipForm = location.pathname === "/dashboard/add-client";
+  // Final fallback logic
+  const customerId = useMemo(() => {
+    return stateCustomerId || urlCustomerId || localStorage.getItem("clientId");
+  }, [stateCustomerId, urlCustomerId]);
 
-    return (
-        <div className="flex h-screen bg-gray-100">
-            <Sidebar customerId={customerId} />
-            <div className="flex-1 flex flex-col overflow-y-auto overflow-hidden p-6 pt-0">
-                <Header />
-                <div className="flex-1 pt-7">
-                    {showMembershipForm ? (
-                        <MembershipForm customerId={customerId} />
-                    ) : (
-                        <Outlet context={{ customerId }} />
-                    )}
-                </div>
-            </div>
+  useEffect(() => {
+    if (customerId) {
+      localStorage.setItem("clientId", customerId);
+    }
+  }, [customerId]);
+
+  const showMembershipForm = location.pathname === "/dashboard/add-client";
+
+  return (
+    <div className="flex h-screen bg-gray-100">
+      <Sidebar customerId={customerId} />
+      <div className="flex-1 flex flex-col overflow-y-auto overflow-hidden p-6 pt-0">
+        <Header />
+        <div className="flex-1 pt-7">
+          {showMembershipForm ? (
+            <MembershipForm customerId={customerId} />
+          ) : (
+            <Outlet context={{ customerId }} />
+          )}
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default AddClient;

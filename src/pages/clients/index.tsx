@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Input, Button, Modal, Form } from "antd";
-import { SearchOutlined, UserAddOutlined, InfoCircleOutlined } from "@ant-design/icons";
-import { addCustomerByAdmin, allActiveCustomer } from "../../config/apiClient";
+import { Input, Button, Modal, Form, Menu, Dropdown, message } from "antd";
+import { SearchOutlined, UserAddOutlined, InfoCircleOutlined, EllipsisOutlined } from "@ant-design/icons";
+import { addCustomerByAdmin, allActiveCustomer, deleteCustomer } from "../../config/apiClient";
 import { ActiveClientDetails } from "../../schema/customernew";
 
 
@@ -59,24 +59,42 @@ const Clients: React.FC = () => {
     }
   };
 
-
+  const fetchingCustomers = async () => {
+    const res = await allActiveCustomer();
+    if (res.success) {
+      const sorted = [...res.data].sort((a, b) => {
+        return (
+          new Date(parseInt(b._id.substring(0, 8), 16) * 1000).getTime() -
+          new Date(parseInt(a._id.substring(0, 8), 16) * 1000).getTime()
+        );
+      });
+      setActiveClients(sorted);
+    } else {
+      setActiveClients([]);
+    }
+  };
   useEffect(() => {
-    const fetchingCustomers = async () => {
-      const res = await allActiveCustomer();
-      if (res.success) {
-        const sorted = [...res.data].sort((a, b) => {
-          return new Date(parseInt(b._id.substring(0, 8), 16) * 1000).getTime() -
-            new Date(parseInt(a._id.substring(0, 8), 16) * 1000).getTime();
-        });
-        setActiveClients(sorted);
-      } else {
-        setActiveClients([]);
-      }
-    };
     fetchingCustomers();
   }, []);
+  const handleDeleteCustomer = (customerId: string) => {
+    Modal.confirm({
+      title: "Are you sure?",
+      content: "This will permanently delete the customer.",
+      okText: "Yes, Delete",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: async () => {
+        const res = await deleteCustomer(customerId);
+        if (res?.success) {
+          message.success("Customer deleted successfully"); // ✅ green check
+          await fetchingCustomers();
+        } else {
+          message.error(res?.message || "Failed to delete customer"); // ❌ red cross
+        }
 
-
+      },
+    });
+  };
 
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -134,10 +152,48 @@ const Clients: React.FC = () => {
                 {`${client.firstName} ${client.lastName}`}
               </h3>
 
+              {/* Top-right three dot menu */}
+              <div className="absolute top-1 !right-[36px] z-10">
+                <Dropdown
+                  overlay={
+                    <Menu>
+                      <Menu.Item key="openProfile">
+                        <a
+                          href={`/dashboard/add-client?customerId=${client._id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          🔗 Open Profile in New Tab
+                        </a>
+                      </Menu.Item>
+                      <Menu.Item
+                        key="deleteCustomer"
+                        danger
+                        onClick={() => handleDeleteCustomer(client._id)}
+                      >
+                        🗑️ Delete Customer
+                      </Menu.Item>
+                    </Menu>
+                  }
+                  trigger={["click"]}
+                >
+                  <Button
+                    type="text"
+                    className="!bg-gray-100 hover:bg-gray-200 rounded-full p-1"
+                    icon={
+                      <EllipsisOutlined
+                        style={{ transform: "rotate(90deg)", fontSize: 18 }}
+                      />
+                    }
+                  />
+                </Dropdown>
+              </div>
+
+
 
 
               {/* Info Icon (hover) */}
-              <div className="absolute bottom-2 right-6  transition">
+              <div className="absolute bottom-2 right-5  transition">
                 <button
                   onClick={() => openClientModal(client)}
                   className="!text-gray-500 hover:text-blue-500"

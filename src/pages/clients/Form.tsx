@@ -1,4 +1,4 @@
-import { message, Spin, Tabs, Collapse } from "antd";
+import { message, Spin, Tabs, Collapse, Select } from "antd";
 import { useEffect, useState } from "react";
 import { getCustomerMatchPreferencesDetail, getCustomerProfileDetail, uploadImage, updateCustomerProfile, updateCustomerMatchPreferencesDetail } from "../../config/apiClient";
 import { Group, MatchGroup } from "../clientsForm/types/clientTypes";
@@ -522,21 +522,38 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                         <label className="w-1/3 text-gray-600">{field.fieldName}</label>
 
                                                         <div className="w-2/3">
-                                                            {profileField === "select" && (
-                                                                <select
-                                                                    className="w-full border p-2 rounded"
+                                                            {field.fieldName === "Preferred Gender" && (
+                                                                <Select
+                                                                    allowClear
+                                                                    showSearch={false} // disable typing
+                                                                    className="w-full"
+                                                                    placeholder="Select gender"
                                                                     value={fieldValue}
-                                                                    onChange={(e) => handleUpdate(field.fieldId, e.target.value)}
-
-                                                                >
-                                                                    <option value="" disabled>Select an option</option>
-                                                                    {options.map((option) => (
-                                                                        <option key={option} value={option}>
-                                                                            {option}
-                                                                        </option>
-                                                                    ))}
-                                                                </select>
+                                                                    onChange={(value) => {
+                                                                        setMatchData((prev) =>
+                                                                            prev.map((g) =>
+                                                                                g.groupId === group.groupId
+                                                                                    ? {
+                                                                                        ...g,
+                                                                                        fields: g.fields.map((f) =>
+                                                                                            f.fieldId === field.fieldId
+                                                                                                ? { ...f, value }
+                                                                                                : f
+                                                                                        ),
+                                                                                    }
+                                                                                    : g
+                                                                            )
+                                                                        );
+                                                                        handleUpdate(field.fieldId, value);
+                                                                    }}
+                                                                    options={[
+                                                                        { label: "Male", value: "Male" },
+                                                                        { label: "Female", value: "Female" },
+                                                                     
+                                                                    ]}
+                                                                />
                                                             )}
+
 
                                                             {profileField === "date" && (
                                                                 <div className="flex gap-2">
@@ -568,8 +585,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                     />
                                                                 </div>
                                                             )}
-
-
 
                                                             {profileField === "height" && (
                                                                 <div className="flex gap-2">
@@ -606,6 +621,44 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                     </select>
                                                                 </div>
                                                             )}
+
+
+                                                            {profileField === "select" && (
+                                                                <Select
+                                                                    mode="multiple"
+                                                                    allowClear
+                                                                    showSearch={false} // disables typing
+                                                                    className="w-full"
+                                                                    placeholder="Select options"
+                                                                    value={
+                                                                        typeof fieldValue === "string"
+                                                                            ? fieldValue.split(",").filter(Boolean)
+                                                                            : Array.isArray(fieldValue)
+                                                                                ? fieldValue
+                                                                                : []
+                                                                    }
+                                                                    onChange={(selectedValues) => {
+                                                                        const stringValue = selectedValues.join(",");
+                                                                        setMatchData((prev) =>
+                                                                            prev.map((g) =>
+                                                                                g.groupId === group.groupId
+                                                                                    ? {
+                                                                                        ...g,
+                                                                                        fields: g.fields.map((f) =>
+                                                                                            f.fieldId === field.fieldId
+                                                                                                ? { ...f, value: stringValue }
+                                                                                                : f
+                                                                                        ),
+                                                                                    }
+                                                                                    : g
+                                                                            )
+                                                                        );
+                                                                        handleUpdate(field.fieldId, stringValue);
+                                                                    }}
+                                                                    options={options.map((opt) => ({ label: opt, value: opt }))}
+                                                                />
+                                                            )}
+
 
                                                             {(profileField === "number" ||
                                                                 profileField === "long text" ||
