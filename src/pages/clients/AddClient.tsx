@@ -2,28 +2,25 @@ import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import MembershipForm from "./Form";
-import { useEffect, useMemo } from "react";
+import { useEffect, useState } from "react";
 
 const AddClient = () => {
   const location = useLocation();
+const [customerId, setCustomerId] = useState<string>(""); // initialize as empty string
 
-  // Extract from state (in-app navigation)
   const stateCustomerId = location.state?.customerId;
+  const queryCustomerId = new URLSearchParams(location.search).get("customerId");
 
-  // Extract from URL param (new tab or refresh)
-  const queryParams = new URLSearchParams(location.search);
-  const urlCustomerId = queryParams.get("customerId");
-
-  // Final fallback logic
-  const customerId = useMemo(() => {
-    return stateCustomerId || urlCustomerId || localStorage.getItem("clientId");
-  }, [stateCustomerId, urlCustomerId]);
 
   useEffect(() => {
-    if (customerId) {
-      localStorage.setItem("clientId", customerId);
+    // Priority: state > query > localStorage
+    const finalId = stateCustomerId || queryCustomerId || localStorage.getItem("clientId");
+
+    if (finalId) {
+      localStorage.setItem("clientId", finalId);
+      setCustomerId(finalId); // ⬅️ use state to prevent fallback loops
     }
-  }, [customerId]);
+  }, [stateCustomerId, queryCustomerId]);
 
   const showMembershipForm = location.pathname === "/dashboard/add-client";
 
