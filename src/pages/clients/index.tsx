@@ -157,17 +157,19 @@ const Clients: React.FC = () => {
                 <Dropdown
                   overlay={
                     <Menu>
-              <Menu.Item key="openProfile">
-  <button
-    className="w-full text-left"
-    onClick={() => {
-      localStorage.setItem("clientId", client._id); // ✅ Set correct profile
-      window.open(`/dashboard/add-client?customerId=${client._id}`, "_blank");
-    }}
-  >
-    🔗 Open Profile in New Tab
-  </button>
-</Menu.Item>
+
+
+                      <Menu.Item key="openProfile">
+                        <button
+                          className="w-full text-left"
+                          onClick={() => {
+                            const url = `/dashboard/add-client?customerId=${client._id}`;
+                            window.open(url, "_blank");
+                          }}
+                        >
+                          🔗 Open Profile in New Tab
+                        </button>
+                      </Menu.Item>
 
 
 

@@ -6,14 +6,14 @@ import { useEffect, useState } from "react";
 
 const AddClient = () => {
   const location = useLocation();
-const [customerId, setCustomerId] = useState<string>(""); // initialize as empty string
+  const [customerId, setCustomerId] = useState<string>(""); // initialize as empty string
 
   const stateCustomerId = location.state?.customerId;
   const queryCustomerId = new URLSearchParams(location.search).get("customerId");
 
 
   useEffect(() => {
-    // Priority: state > query > localStorage
+
     const finalId = stateCustomerId || queryCustomerId || localStorage.getItem("clientId");
 
     if (finalId) {
@@ -28,7 +28,7 @@ const [customerId, setCustomerId] = useState<string>(""); // initialize as empty
     <div className="flex h-screen bg-gray-100">
       <Sidebar customerId={customerId} />
       <div className="flex-1 flex flex-col overflow-y-auto overflow-hidden p-6 pt-0">
-        <Header />
+        <Header customerId={customerId} />
         <div className="flex-1 pt-7">
           {showMembershipForm ? (
             <MembershipForm customerId={customerId} />

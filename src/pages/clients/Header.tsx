@@ -1,10 +1,14 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Dropdown, Menu } from "antd";
 import SendMessage from "./SendMessage";
 import SendIntro from "./SendIntro";
 
-const Header: React.FC = () => {
+type HeaderProps = {
+  customerId: string;
+};
+
+const Header = ({ customerId }: HeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -36,12 +40,7 @@ const Header: React.FC = () => {
     </Menu>
   );
 
-  // Get customerId from location state
-  const customerId = location.state?.customerId;
 
-  if (!customerId) {
-    console.log("No customerId found in location state");
-  }
 
   return (
     <div className="sticky top-0 bg-white shadow-md py-6 px-6 z-10 border-b border-gray-200">

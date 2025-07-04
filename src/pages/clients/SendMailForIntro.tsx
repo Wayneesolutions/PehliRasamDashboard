@@ -62,9 +62,7 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
 
 
     const handleSendEmail = async () => {
-        console.log('Email:', email);
-        console.log('Subject:', subject);
-        console.log('Content:', content);
+
 
         if (!email || !subject || !content) {
             message.error('Please fill in all fields.');
@@ -106,6 +104,7 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
             title="Send Intro Email"
             open={isOpen}
             onCancel={onClose}
+            width={800}
             footer={[
                 <Button key="cancel" onClick={onClose}>
                     Cancel
@@ -166,7 +165,7 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
                 >
                     <TinyMCEEditor
                         onInit={(_, editor) => (editorRef.current = editor)}
-                        value={content}
+
                         onEditorChange={(newContent) => setContent(newContent)}
                         apiKey="1ya1d1zav4tgpip8exgsyyatkcy07funukfyfrnn93t7wslj"
                         init={{
