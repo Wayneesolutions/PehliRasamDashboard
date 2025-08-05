@@ -6,7 +6,6 @@ import apiClient from '../../../config/apiClient';
 import dayjs from 'dayjs';
 import { HiBadgeCheck } from 'react-icons/hi';
 
-
 const ClientIntro = () => {
     const location = useLocation();
     const { introId } = location.state || {};
@@ -15,6 +14,7 @@ const ClientIntro = () => {
     const [fields, setFields] = useState<any[]>([]);
     const [editingExpiration, setEditingExpiration] = useState(false);
     const [newExpiration, setNewExpiration] = useState<dayjs.Dayjs | null>(null);
+    const [isExpired, setIsExpired] = useState(false);
 
     const [copied, setCopied] = useState(false);
 
@@ -67,15 +67,20 @@ const ClientIntro = () => {
         document.body.removeChild(textArea);
     };
 
-
     useEffect(() => {
         if (!introId) return;
         apiClient
             .post('/admin/getIntroFieldValues', { introId })
             .then((res) => {
                 if (res.data.success) {
-                    setIntro(res.data.intro);
+                    const introData = res.data.intro;
+                    setIntro(introData);
                     setFields(res.data.fields);
+
+                    // Check if the intro is expired
+                    const expirationDate = dayjs(introData.expiration);
+                    const currentDate = dayjs();
+                    setIsExpired(currentDate.isAfter(expirationDate));
                 }
             })
             .catch((err) => console.error(err));
@@ -92,6 +97,11 @@ const ClientIntro = () => {
                 ...prev,
                 expiration: formattedDate,
             }));
+
+            // Update expired status after changing expiration
+            const currentDate = dayjs();
+            setIsExpired(currentDate.isAfter(date));
+
             message.success('Expiration updated successfully');
         } catch (err) {
             console.error(err);
@@ -100,8 +110,6 @@ const ClientIntro = () => {
             setEditingExpiration(false);
         }
     };
-
-
 
     if (!intro) return <div>Loading...</div>;
 
@@ -131,6 +139,10 @@ const ClientIntro = () => {
                                 }}
                                 autoFocus
                             />
+                        ) : isExpired ? (
+                            <span className="text-red-600 font-semibold">
+                                Expired ({dayjs(intro.expiration).format('DD MMM YYYY')})
+                            </span>
                         ) : (
                             <span
                                 onClick={() => {
@@ -143,7 +155,6 @@ const ClientIntro = () => {
                             </span>
                         )}
                     </div>
-
 
                     <div className="text-sm text-gray-700">
                         Created: {dayjs(intro.createdAt).format('DD MMM YYYY h:mm A')}
@@ -175,11 +186,8 @@ const ClientIntro = () => {
                     <div className="md:w-1/2 p-6 relative">
                         <Card bordered={false} className="shadow-none">
                             <div className="flex items-center space-x-3 mb-4">
-
                                 <div className="text-gray-600 font-medium">Verified Profile</div>
                                 <HiBadgeCheck className="text-blue-500 text-4xl" />
-
-
                             </div>
 
                             <Divider />

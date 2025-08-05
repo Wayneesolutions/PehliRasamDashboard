@@ -4,20 +4,39 @@ import { Card } from "antd";
 import logo from "../../../components/images/logo.png";
 import apiClient from "../../../config/apiClient";
 import { HiBadgeCheck } from 'react-icons/hi';
-
+import dayjs from "dayjs";
 
 const ClientIntroduction = () => {
     const { introId } = useParams();
     const [intro, setIntro] = useState<any>(null);
     const [groupedFields, setGroupedFields] = useState<Record<string, any[]>>({});
+    const [isExpired, setIsExpired] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!introId) return;
+        if (!introId) {
+            setLoading(false);
+            return;
+        }
+
         apiClient
             .post("/admin/getIntroFieldValues", { introId })
             .then((res) => {
                 if (res.data.success) {
-                    setIntro(res.data.intro);
+                    const introData = res.data.intro;
+
+                    // Check expiration first - compare current date with expiration date
+                    const expirationDate = dayjs(introData.expiration);
+                    const currentDate = dayjs();
+
+                    if (currentDate.isAfter(expirationDate)) {
+                        setIsExpired(true);
+                        setLoading(false);
+                        return;
+                    }
+
+                    setIntro(introData);
+
                     // Group fields by fieldsFor
                     const groups: Record<string, any[]> = {};
                     (res.data.fields || []).forEach((field: any) => {
@@ -27,9 +46,36 @@ const ClientIntroduction = () => {
                     });
                     setGroupedFields(groups);
                 }
+                setLoading(false);
             })
-            .catch((err) => console.error(err));
+            .catch((err) => {
+                console.error(err);
+                setIsExpired(true);
+                setLoading(false);
+            });
     }, [introId]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
+                <div className="bg-white shadow-md rounded-lg p-8 max-w-md text-center">
+                    <p className="text-gray-700">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (isExpired) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
+                <div className="bg-white shadow-md rounded-lg p-8 max-w-md text-center">
+                    <h2 className="text-2xl font-semibold text-red-600 mb-4">Page Not Found</h2>
+                    <p className="text-gray-700 mb-2">The page you are looking for is not found.</p>
+                    <p className="text-gray-500 text-sm">This introduction link may have expired or is no longer accessible.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="relative min-h-screen bg-[#f8fafc] flex justify-center items-center p-8 overflow-hidden">
@@ -40,7 +86,7 @@ const ClientIntroduction = () => {
             <div className="relative z-10 flex flex-col md:flex-row gap-2 w-[90%] mx-auto items-start">
                 {/* Left - Image */}
                 <div className="flex justify-center items-start w-full md:w-1/2">
-                    <div className="w-full md:w-[300px] !h-[450px] md:h-[200px]  overflow-hidden flex justify-center items-center p-2">
+                    <div className="w-full md:w-[300px] !h-[450px] md:h-[200px] overflow-hidden flex justify-center items-center p-2">
                         <img
                             src={
                                 intro?.profileImage && intro.profileImage !== ""
@@ -53,8 +99,6 @@ const ClientIntroduction = () => {
                             }}
                             className="w-full h-full object-contain rounded-lg border-[5px] border-white"
                         />
-
-
                     </div>
                 </div>
 
