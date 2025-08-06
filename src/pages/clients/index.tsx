@@ -153,7 +153,7 @@ const Clients: React.FC = () => {
               </h3>
 
               {/* Top-right three dot menu */}
-              <div className="absolute top-1 !right-[36px] z-10">
+              <div className="absolute top-1 !right-[28px] z-10">
                 <Dropdown
                   overlay={
                     <Menu>

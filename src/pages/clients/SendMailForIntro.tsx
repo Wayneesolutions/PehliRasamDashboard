@@ -158,8 +158,9 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
             } else {
                 message.error(response.data.message || 'Failed to send email.');
             }
-        } catch (error) {
-            message.error('Error sending email.');
+        } catch (error: any) {
+            const errorMsg = error?.response?.data?.message || 'Error sending email.';
+            message.error(errorMsg);
         } finally {
             setLoading(false);
         }
@@ -220,10 +221,10 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
                     validateStatus={emails.length === 0 ? 'error' : ''}
                     help={emails.length === 0 ? 'Please add at least one email address' : `${emails.length} recipient(s) added. Type email and press Enter or comma to add more.`}
                 >
-                    <div style={{ 
-                        border: '1px solid #d9d9d9', 
-                        borderRadius: '6px', 
-                        padding: '4px 8px', 
+                    <div style={{
+                        border: '1px solid #d9d9d9',
+                        borderRadius: '6px',
+                        padding: '4px 8px',
                         minHeight: '32px',
                         display: 'flex',
                         flexWrap: 'wrap',
@@ -247,9 +248,9 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
                             onChange={handleEmailInputChange}
                             onKeyPress={handleEmailInputKeyPress}
                             onBlur={handleEmailInputBlur}
-                            style={{ 
-                                border: 'none', 
-                                outline: 'none', 
+                            style={{
+                                border: 'none',
+                                outline: 'none',
                                 boxShadow: 'none',
                                 flex: 1,
                                 minWidth: '200px'

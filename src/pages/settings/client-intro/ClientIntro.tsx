@@ -131,10 +131,10 @@ const ClientIntro = () => {
                         {editingExpiration ? (
                             <DatePicker
                                 value={newExpiration}
-                                onChange={(date) => setNewExpiration(date)}
-                                onOpenChange={(open) => {
-                                    if (!open && newExpiration) {
-                                        handleExpirationChange(newExpiration);
+                                onChange={(date) => {
+                                    if (date) {
+                                        setNewExpiration(date);
+                                        handleExpirationChange(date);
                                     }
                                 }}
                                 autoFocus
