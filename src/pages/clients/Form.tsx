@@ -29,8 +29,6 @@ interface FormProps {
     customerId?: string;
 }
 
-
-
 const Form: React.FC<FormProps> = ({ customerId }) => {
     const context = useOutletContext<ContextType>();
     const resolvedCustomerId = customerId || context?.customerId;
@@ -52,7 +50,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
         setActivePanels(allGroupIds);
     }, [formData, matchdata]);
 
-
     useEffect(() => {
         if (customerId) {
             async function getCustomerMatch() {
@@ -63,6 +60,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
             getCustomerMatch();
         }
     }, [customerId]);
+
     const fetchCustomerMatchPreferences = async () => {
         try {
             const res = await getCustomerMatchPreferencesDetail({ customerId: resolvedCustomerId });
@@ -75,12 +73,12 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
             message.error("Something went wrong while fetching preferences.");
         }
     };
+
     useEffect(() => {
         if (customerId) {
             fetchCustomerMatchPreferences();
         }
     }, [customerId]);
-
 
     useEffect(() => {
         if (!resolvedCustomerId) return;
@@ -111,8 +109,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                     setFormData(formattedData);
                 }
 
-
-
                 // Handle match preferences
                 if (matchRes.success) setMatchData(matchRes.data);
 
@@ -126,10 +122,11 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
         fetchData();
     }, [resolvedCustomerId]);
 
-    const generateFullPayload = () => {
+    // Fixed: Generate payload with current form data state
+    const generateFullPayload = (currentFormData: IGroup[]) => {
         return {
             customerId: resolvedCustomerId,
-            profileValue: formData
+            profileValue: currentFormData
                 .map((group) => {
                     const filledFields = group.fields
                         .map((field) => {
@@ -141,8 +138,10 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                 valueToSend = field.value?.trim?.() || "";
                             }
 
-                            // Ensure Image field is included if it has a URL
-                            if (!valueToSend) return null;
+                            // Include field even if empty for certain types to ensure proper updates
+                            if (!valueToSend && !["select", "radio", "checkbox"].includes(field.attributeType)) {
+                                return null;
+                            }
 
                             return {
                                 fieldID: field.fieldId,
@@ -162,9 +161,10 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
         };
     };
 
-
-    const saveFieldValue = async () => {
-        const payload = generateFullPayload();
+    // Fixed: Save function that accepts current state
+    const saveFieldValue = async (currentFormData?: IGroup[]) => {
+        const dataToUse = currentFormData || formData;
+        const payload = generateFullPayload(dataToUse);
 
         if (payload.profileValue.length === 0) {
             message.warning("Nothing to update.");
@@ -175,39 +175,45 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
             const res = await updateCustomerProfile(payload);
             if (res.success) {
                 message.success("Profile updated successfully");
+                return true;
             } else {
                 message.error(res.message || "Update failed");
+                return false;
             }
         } catch (err) {
             message.error("Update failed");
+            return false;
         }
     };
 
-
-
-
-    // Fixed handleFieldChange function
-    const handleFieldChange = (
+    // Fixed: Handle field change with immediate save for select fields
+    const handleFieldChange = async (
         groupId: string,
         fieldId: string,
-        value: string
+        value: string,
+        shouldSaveImmediately = false
     ) => {
-        setFormData((prev) => {
-            const updated = prev.map((group) =>
-                group.groupId === groupId
-                    ? {
-                        ...group,
-                        fields: group.fields.map((field) =>
-                            field.fieldId === fieldId ? { ...field, value } : field
-                        ),
-                    }
-                    : group
-            );
-            return updated;
-        });
+        const updatedFormData = formData.map((group) =>
+            group.groupId === groupId
+                ? {
+                    ...group,
+                    fields: group.fields.map((field) =>
+                        field.fieldId === fieldId ? { ...field, value } : field
+                    ),
+                }
+                : group
+        );
 
-        setRecentlyUpdatedFieldId(fieldId); // trigger effect
+        setFormData(updatedFormData);
+
+        // For select, radio, checkbox, and date fields, save immediately
+        if (shouldSaveImmediately) {
+            await saveFieldValue(updatedFormData);
+        } else {
+            setRecentlyUpdatedFieldId(fieldId);
+        }
     };
+
     useEffect(() => {
         if (!recentlyUpdatedFieldId) return;
 
@@ -222,10 +228,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
         }
     }, [recentlyUpdatedFieldId, formData]);
 
-
-
-
-
     const handleFieldSaveOnEnter = async (
         e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
         groupId: string,
@@ -233,9 +235,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
     ) => {
         if (e.key === "Enter") {
             const value = (e.target as HTMLInputElement).value;
-
-            handleFieldChange(groupId, fieldId, value);
-            await saveFieldValue();
+            await handleFieldChange(groupId, fieldId, value, true);
         }
     };
 
@@ -304,8 +304,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                     name={`${group.groupId}-${field.fieldId}`}
                                                                     onChange={async (e) => {
                                                                         const selectedValue = e.target.value;
-                                                                        handleFieldChange(group.groupId, field.fieldId, selectedValue);
-                                                                        await saveFieldValue();
+                                                                        await handleFieldChange(group.groupId, field.fieldId, selectedValue, true);
                                                                     }}
                                                                 >
                                                                     <option value="">Select an option</option>
@@ -327,8 +326,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                     placeholder="Select a date"
                                                                     onChange={async (e) => {
                                                                         const selectedDate = e.target.value;
-                                                                        handleFieldChange(group.groupId, field.fieldId, selectedDate);
-                                                                        await saveFieldValue();
+                                                                        await handleFieldChange(group.groupId, field.fieldId, selectedDate, true);
                                                                     }}
                                                                 />
                                                             );
@@ -367,8 +365,9 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                                 name={field.fieldId}
                                                                                 value={option}
                                                                                 checked={field.value === option}
-                                                                                onChange={() => handleFieldChange(group.groupId, field.fieldId, option)}
-                                                                                onKeyDown={(e) => handleFieldSaveOnEnter(e, group.groupId, field.fieldId)}
+                                                                                onChange={async () => {
+                                                                                    await handleFieldChange(group.groupId, field.fieldId, option, true);
+                                                                                }}
                                                                             />
                                                                             {option}
                                                                         </label>
@@ -393,8 +392,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                                     value={option}
                                                                                     checked={checked}
                                                                                     onChange={async () => {
-                                                                                        handleFieldChange(group.groupId, field.fieldId, newValue);
-                                                                                        await saveFieldValue();
+                                                                                        await handleFieldChange(group.groupId, field.fieldId, newValue, true);
                                                                                     }}
                                                                                 />
                                                                                 {option}
@@ -432,9 +430,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                             const uploadResult = await uploadImage(file);
 
                                                                             if (uploadResult?.success && uploadResult.fileUrls?.[0]) {
-                                                                                handleFieldChange(group.groupId, field.fieldId, uploadResult.fileUrls[0]);
-
-                                                                                saveFieldValue();
+                                                                                await handleFieldChange(group.groupId, field.fieldId, uploadResult.fileUrls[0], true);
                                                                             } else {
                                                                                 console.error("Image upload failed:", uploadResult?.message || "Unknown error");
                                                                                 message.error("Image upload failed");
@@ -443,7 +439,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                     />
                                                                 </div>
                                                             );
-
 
                                                         default:
                                                             return <span className="text-red-500">Unsupported field type</span>;
@@ -456,8 +451,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                             </Collapse>
                         </div>
                     </TabPane>
-
-
 
                     <TabPane tab="Matching Preferences" key="2">
                         <div className="w-full">
@@ -504,8 +497,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                     }
                                                 };
 
-
-
                                                 const generateHeights = () => {
                                                     const heights = [];
                                                     for (let feet = 4; feet <= 7; feet++) {
@@ -550,11 +541,9 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                     options={[
                                                                         { label: "Male", value: "Male" },
                                                                         { label: "Female", value: "Female" },
-
                                                                     ]}
                                                                 />
                                                             )}
-
 
                                                             {profileField === "date" && (
                                                                 <div className="flex gap-2">
@@ -623,7 +612,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                 </div>
                                                             )}
 
-
                                                             {profileField === "select" && (
                                                                 <Select
                                                                     mode="multiple"
@@ -660,7 +648,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                 />
                                                             )}
 
-
                                                             {(profileField === "number" ||
                                                                 profileField === "long text" ||
                                                                 !["select", "multiselect", "date", "height"].includes(profileField)) && (
@@ -682,7 +669,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                                         : g
                                                                                 )
                                                                             );
-
                                                                         }}
                                                                         onKeyDown={(e) => {
                                                                             if (e.key === "Enter") {
@@ -690,8 +676,6 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                                 handleUpdate(field.fieldId, target.value);
                                                                             }
                                                                         }}
-
-
                                                                     />
                                                                 )}
                                                         </div>
@@ -706,12 +690,8 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                             </Collapse>
                         </div>
                     </TabPane>
-
-
-
                 </Tabs>
             </div>
-
         </div>
     );
 };

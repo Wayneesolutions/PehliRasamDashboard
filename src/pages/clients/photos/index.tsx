@@ -131,7 +131,7 @@ const Index = () => {
 
           if (response.data.success) {
             message.success('Photo deleted successfully');
-            await fetchCustomerDetails(); 
+            await fetchCustomerDetails();
           } else {
             message.error(response.data.message || 'Failed to delete photo');
           }
@@ -172,7 +172,7 @@ const Index = () => {
                 />
                 <button
                   onClick={() => handleRemovePreview(idx)}
-                  className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                  className="absolute top-2 right-2 bg-red-600 !text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
                   title="Remove image"
                 >
                   <DeleteOutlined style={{ fontSize: "16px" }} />
@@ -186,7 +186,7 @@ const Index = () => {
           <div className="flex justify-end mt-6">
             <button
               onClick={handleUpload}
-              className="bg-green-600 hover:bg-green-700 transition text-white px-6 py-2 rounded-md font-medium"
+              className="bg-green-600 hover:bg-green-700 transition !text-white px-6 py-2 rounded-md font-medium"
             >
               Upload Images
             </button>
