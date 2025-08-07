@@ -68,9 +68,7 @@ const Index = () => {
                 <Space>
                     <a
                         onClick={() =>
-                            navigate('/dashboard/client-intro', {
-                                state: { introId: record.introId }
-                            })
+                           navigate(`/dashboard/client-intro/${record.introId}`)
                         }
                         title="View Profile"
                     >

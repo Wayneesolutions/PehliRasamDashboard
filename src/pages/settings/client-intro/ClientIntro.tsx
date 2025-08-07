@@ -1,14 +1,13 @@
 import { useEffect, useState, Fragment } from 'react';
 import { Card, Divider, DatePicker, message } from 'antd';
 import { LinkOutlined } from '@ant-design/icons';
-import { useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import apiClient from '../../../config/apiClient';
 import dayjs from 'dayjs';
 import { HiBadgeCheck } from 'react-icons/hi';
 
 const ClientIntro = () => {
-    const location = useLocation();
-    const { introId } = location.state || {};
+  const { introId } = useParams();
 
     const [intro, setIntro] = useState<any>(null);
     const [fields, setFields] = useState<any[]>([]);

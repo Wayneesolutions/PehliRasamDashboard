@@ -186,6 +186,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
 
 
 
+    // Fixed handleFieldChange function
     const handleFieldChange = (
         groupId: string,
         fieldId: string,
@@ -549,7 +550,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                     options={[
                                                                         { label: "Male", value: "Male" },
                                                                         { label: "Female", value: "Female" },
-                                                                     
+
                                                                     ]}
                                                                 />
                                                             )}

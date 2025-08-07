@@ -13,6 +13,26 @@ const ClientIntroduction = () => {
     const [isExpired, setIsExpired] = useState(false);
     const [loading, setLoading] = useState(true);
 
+    // Helper function to check if a value is valid (not null, empty, undefined, or "NaN")
+    const isValidValue = (value: any) => {
+        if (value === null || value === undefined || value === "") return false;
+        if (typeof value === "string" && (value.trim() === "" || value === "NaN")) return false;
+        return true;
+    };
+
+    // Helper function to remove duplicates based on fieldName and value
+    const removeDuplicates = (fields: any[]) => {
+        const seen = new Map();
+        return fields.filter(field => {
+            const key = `${field.fieldName}-${field.value}`;
+            if (seen.has(key)) {
+                return false;
+            }
+            seen.set(key, true);
+            return true;
+        });
+    };
+
     useEffect(() => {
         if (!introId) {
             setLoading(false);
@@ -37,13 +57,22 @@ const ClientIntroduction = () => {
 
                     setIntro(introData);
 
+                    // Filter fields with valid values only
+                    const validFields = (res.data.fields || []).filter((field: any) => 
+                        isValidValue(field.value)
+                    );
+
+                    // Remove duplicates
+                    const uniqueFields = removeDuplicates(validFields);
+
                     // Group fields by fieldsFor
                     const groups: Record<string, any[]> = {};
-                    (res.data.fields || []).forEach((field: any) => {
+                    uniqueFields.forEach((field: any) => {
                         const key = field.fieldsFor || "Other";
                         if (!groups[key]) groups[key] = [];
                         groups[key].push(field);
                     });
+                    
                     setGroupedFields(groups);
                 }
                 setLoading(false);
@@ -136,7 +165,7 @@ const ClientIntroduction = () => {
                                                 {item.fieldName.replace(/([A-Z])/g, ' $1')}
                                             </div>
                                             <div className="font-medium">
-                                                {item.value ?? "--"}
+                                                {item.value}
                                             </div>
                                         </div>
                                     ))}

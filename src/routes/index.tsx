@@ -71,7 +71,8 @@ const AppRoutes = () => {
                         <Route path="profile-setting-info" element={<ProfileInfo />} />
                         <Route path="emailsettings" element={<EmailSettings />} />
                         <Route path="allclient-intro" element={<AllClientIntro />} />
-                        <Route path="client-intro" element={<ClientIntro />} />
+                        <Route path="client-intro/:introId" element={<ClientIntro />} />
+
                     </Route>
                 </Route>
             </Routes>

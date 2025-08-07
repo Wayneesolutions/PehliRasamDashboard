@@ -22,6 +22,8 @@ type TimelineEvent = {
   link: string;
   icon: ReactElement;
   date: string;
+  isIntroAction?: boolean;
+  customerId?: string;
 };
 
 type ChartDataItem = {
@@ -42,8 +44,11 @@ const TimelineMain: React.FC = () => {
   const paginatedData = timelineData.slice(startIndex, endIndex);
   const totalPages = Math.ceil(timelineData.length / itemsPerPage);
 
-
-
+  // Function to extract customer ID from changeSummary URL
+  const extractCustomerIdFromUrl = (changeSummary: string): string | null => {
+    const urlMatch = changeSummary.match(/\/client\/(\d+)/);
+    return urlMatch ? urlMatch[1] : null;
+  };
 
   const fetchTimelineLogs = async () => {
     setLoading(true);
@@ -54,17 +59,33 @@ const TimelineMain: React.FC = () => {
         (a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       );
 
-      const formatted: TimelineEvent[] = sortedLogs.map((log: any) => ({
-        time: moment(log.createdAt).format("hh:mm A"),
-        text: log.changeSummary,
-        link: `${log.customerData?.firstName || "Unknown"} ${log.customerData?.lastName || ""}`,
-        icon: log.action.toLowerCase().includes("update") ? (
-          <FaRegEdit className="text-pink-500 text-lg" />
-        ) : (
-          <IoInformationCircleOutline className="text-blue-500 text-lg" />
-        ),
-        date: moment(log.createdAt).format("YYYY-MM-DD"),
-      }));
+      const formatted: TimelineEvent[] = sortedLogs.map((log: any) => {
+        const isIntroAction = log.action.toLowerCase().includes("intro");
+        const customerId = isIntroAction ? extractCustomerIdFromUrl(log.changeSummary) : null;
+        
+        // Debug log to check detection
+        if (isIntroAction) {
+          console.log('Intro action detected:', {
+            action: log.action,
+            changeSummary: log.changeSummary,
+            customerId
+          });
+        }
+        
+        return {
+          time: moment(log.createdAt).format("hh:mm A"),
+          text: log.changeSummary,
+          link: `${log.customerData?.firstName || "Unknown"} ${log.customerData?.lastName || ""}`,
+          icon: log.action.toLowerCase().includes("update") ? (
+            <FaRegEdit className="text-pink-500 text-lg" />
+          ) : (
+            <IoInformationCircleOutline className="text-blue-500 text-lg" />
+          ),
+          date: moment(log.createdAt).format("YYYY-MM-DD"),
+          isIntroAction,
+          customerId,
+        };
+      });
 
       setTimelineData(formatted);
 
@@ -74,7 +95,6 @@ const TimelineMain: React.FC = () => {
       setLoading(false);
     }
   };
-
 
   const fetchChartLogs = async () => {
     try {
@@ -97,6 +117,42 @@ const TimelineMain: React.FC = () => {
     fetchTimelineLogs();
     fetchChartLogs();
   }, []);
+
+  // Function to render the timeline event text with clickable link for intro actions
+  const renderEventText = (event: TimelineEvent) => {
+    if (event.isIntroAction && event.customerId) {
+      const paddedId = event.customerId.padStart(5, '0');
+      
+      // For intro actions, create a special formatted message
+      const customerName = event.link.trim();
+      
+      return (
+        <p className="text-gray-700 text-sm">
+          Intro generated for{" "}
+          <a 
+            href={`/dashboard/client-intro/${paddedId}`}
+            className="text-blue-500 font-medium hover:underline cursor-pointer"
+            onClick={(e) => {
+              e.preventDefault();
+              console.log('Navigating to:', `/dashboard/client-intro/${paddedId}`);
+              // You can use your router navigation here instead
+              window.location.href = `/dashboard/client-intro/${paddedId}`;
+            }}
+          >
+            {customerName} ({paddedId})
+          </a>
+          {" "}by Admin user
+        </p>
+      );
+    } else {
+      return (
+        <p className="text-gray-700 text-sm">
+          {event.text}{" "}
+          <span className="text-blue-500 font-medium">{event.link}</span>
+        </p>
+      );
+    }
+  };
 
   return (
     <div className="p-6 bg-white shadow-md rounded-lg">
@@ -147,10 +203,7 @@ const TimelineMain: React.FC = () => {
             {logs.map((event, index) => (
               <div key={index} className="flex items-start gap-4 mb-2">
                 {event.icon}
-                <p className="text-gray-700 text-sm">
-                  {event.text}{" "}
-                  <span className="text-blue-500 font-medium">{event.link}</span>
-                </p>
+                {renderEventText(event)}
                 <span className="text-gray-500 text-xs">{event.time}</span>
               </div>
             ))}
@@ -159,7 +212,6 @@ const TimelineMain: React.FC = () => {
       ) : (
         <p className="text-sm text-gray-500 mt-4">Loading activity logs...</p>
       )}
-
 
       <div className="mt-6 flex justify-center items-center gap-2">
         <button
@@ -180,7 +232,6 @@ const TimelineMain: React.FC = () => {
           Next
         </button>
       </div>
-
     </div>
   );
 };
