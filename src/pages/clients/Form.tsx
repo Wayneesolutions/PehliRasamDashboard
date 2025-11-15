@@ -138,8 +138,8 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                 valueToSend = field.value?.trim?.() || "";
                             }
 
-                            // Include field even if empty for certain types to ensure proper updates
-                            if (!valueToSend && !["select", "radio", "checkbox"].includes(field.attributeType)) {
+                            // Don't include fields with empty values
+                            if (!valueToSend || valueToSend.trim() === "") {
                                 return null;
                             }
 

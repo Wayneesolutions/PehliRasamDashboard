@@ -88,10 +88,18 @@ const ClientList: React.FC<ClientListManagerProps> = ({ customerId }) => {
 
       setSelectedClientListId("");
 
-      if (response?.success) {
+      // Check if response is successful or if message indicates success
+      const isSuccess = response?.success === true || 
+                       (response?.message?.toLowerCase().includes("successfully") && 
+                        !response?.message?.toLowerCase().includes("error") &&
+                        !response?.message?.toLowerCase().includes("fail"));
+
+      if (isSuccess) {
         const msg = response.message?.toLowerCase();
         if (msg?.includes("already")) {
           message.info(response.message);
+        } else {
+          message.success(response.message || "Customer added to the client list successfully.");
         }
       } else {
         message.error(response?.message || "Could not add client to the list.");
