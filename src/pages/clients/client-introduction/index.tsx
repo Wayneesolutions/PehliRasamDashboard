@@ -20,6 +20,13 @@ const ClientIntroduction = () => {
         return true;
     };
 
+    // Helper function to check if a value is an image URL
+    const isImageUrl = (value: any): boolean => {
+        if (!value || typeof value !== 'string') return false;
+        const urlPattern = /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i;
+        return urlPattern.test(value);
+    };
+
     // Helper function to remove duplicates based on fieldName and value
     const removeDuplicates = (fields: any[]) => {
         const seen = new Map();
@@ -165,7 +172,18 @@ const ClientIntroduction = () => {
                                                 {item.fieldName.replace(/([A-Z])/g, ' $1')}
                                             </div>
                                             <div className="font-medium">
-                                                {item.value}
+                                                {isImageUrl(item.value) ? (
+                                                    <img
+                                                        src={item.value}
+                                                        alt={item.fieldName}
+                                                        className="max-w-full h-auto max-h-32 object-contain rounded"
+                                                        onError={(e) => {
+                                                            e.currentTarget.style.display = 'none';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    item.value
+                                                )}
                                             </div>
                                         </div>
                                     ))}

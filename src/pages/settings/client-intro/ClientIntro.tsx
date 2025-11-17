@@ -17,6 +17,13 @@ const ClientIntro = () => {
 
     const [copied, setCopied] = useState(false);
 
+    // Helper function to check if a value is an image URL
+    const isImageUrl = (value: any): boolean => {
+        if (!value || typeof value !== 'string') return false;
+        const urlPattern = /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i;
+        return urlPattern.test(value);
+    };
+
     const handleCopy = () => {
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(intro.link)
@@ -198,7 +205,20 @@ const ClientIntro = () => {
                                     .map((f) => (
                                         <Fragment key={f.fieldName}>
                                             <div className="font-medium text-gray-600">{f.fieldName}</div>
-                                            <div>{f.value}</div>
+                                            <div>
+                                                {isImageUrl(f.value) ? (
+                                                    <img
+                                                        src={f.value}
+                                                        alt={f.fieldName}
+                                                        className="max-w-full h-auto max-h-32 object-contain rounded"
+                                                        onError={(e) => {
+                                                            e.currentTarget.style.display = 'none';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    f.value
+                                                )}
+                                            </div>
                                         </Fragment>
                                     ))}
                             </div>
