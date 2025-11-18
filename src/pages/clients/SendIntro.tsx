@@ -19,6 +19,8 @@ interface Group {
 interface Field {
   id: string;
   Kind: string;
+  AllowEdit?: boolean;
+  Required?: boolean;
 }
 
 const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
@@ -78,6 +80,8 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
     const fields = presetFields.map(field => ({
       fieldId: field.id,
       fieldsFor: field.Kind?.toLowerCase() === 'preference' ? 'Preferences' : 'Profile',
+      AllowEdit: field.AllowEdit ?? true,  // Default to true if not specified
+      isRequired: field.Required ?? false,  // Default to false if not specified
     }));
 
 

@@ -50,7 +50,9 @@ const Presets = () => {
                 _id: group._id,
                 name: group.name,
                 formFields: (group.fields || []).map((field: any) => ({
-                    _id: field.id,
+                    _id: field.presetFieldId || field.id, // Use presetFieldId if available, fallback to id
+                    presetFieldId: field.presetFieldId, // Store the PresetFields document ID
+                    fieldsId: field.id, // Store the FormField/PreferencesField ID
                     label: field.Label || "",
                     kind: field.Kind || "",
                     fieldType: field.Field || "",
