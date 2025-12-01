@@ -372,7 +372,7 @@ const ClientIntro = () => {
                             <h3 className="text-lg font-semibold mb-4">Profile</h3>
                             <div className="grid grid-cols-2 gap-4 text-sm">
                                 {fields
-                                    .filter((f) => f.fieldsFor === 'Profile' && (f.value || f.isRequired || f.fieldId))
+                                    .filter((f) => f.fieldsFor === 'Profile' && f.value)
                                     .map((f) => (
                                         <Fragment key={f.fieldId || f.fieldName}>
                                             <div className="font-medium text-gray-600 flex items-center gap-2">
@@ -396,23 +396,17 @@ const ClientIntro = () => {
                                                 ) : (
                                                     <>
                                                         <div className="flex-1">
-                                                            {f.value ? (
-                                                                isImageUrl(f.value) ? (
-                                                                    <img
-                                                                        src={f.value}
-                                                                        alt={f.fieldName}
-                                                                        className="max-w-full h-auto max-h-32 object-contain rounded"
-                                                                        onError={(e) => {
-                                                                            e.currentTarget.style.display = 'none';
-                                                                        }}
-                                                                    />
-                                                                ) : (
-                                                                    f.value
-                                                                )
+                                                            {isImageUrl(f.value) ? (
+                                                                <img
+                                                                    src={f.value}
+                                                                    alt={f.fieldName}
+                                                                    className="max-w-full h-auto max-h-32 object-contain rounded"
+                                                                    onError={(e) => {
+                                                                        e.currentTarget.style.display = 'none';
+                                                                    }}
+                                                                />
                                                             ) : (
-                                                                <span className="text-gray-400 italic">
-                                                                    {f.isRequired ? 'Required - Click to edit' : 'No value'}
-                                                                </span>
+                                                                f.value
                                                             )}
                                                         </div>
                                                         {f.fieldId && f.AllowEdit !== false && (
@@ -428,13 +422,13 @@ const ClientIntro = () => {
                                         </Fragment>
                                     ))}
                             </div>
-                            {fields.filter((f) => f.fieldsFor === 'Preferences' && (f.value || f.isRequired || f.fieldId)).length > 0 && (
+                            {fields.filter((f) => f.fieldsFor === 'Preferences' && f.value).length > 0 && (
                                 <>
                                     <Divider />
                                     <h3 className="text-lg font-semibold mb-4">Preferences</h3>
                                     <div className="grid grid-cols-2 gap-4 text-sm">
                                         {fields
-                                            .filter((f) => f.fieldsFor === 'Preferences' && (f.value || f.isRequired || f.fieldId))
+                                            .filter((f) => f.fieldsFor === 'Preferences' && f.value)
                                             .map((f) => (
                                                 <Fragment key={f.fieldId || f.fieldName}>
                                                     <div className="font-medium text-gray-600 flex items-center gap-2">
@@ -457,15 +451,7 @@ const ClientIntro = () => {
                                                             </div>
                                                         ) : (
                                                             <>
-                                                                <div className="flex-1">
-                                                                    {f.value ? (
-                                                                        f.value
-                                                                    ) : (
-                                                                        <span className="text-gray-400 italic">
-                                                                            {f.isRequired ? 'Required - Click to edit' : 'No value'}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
+                                                                <div className="flex-1">{f.value}</div>
                                                                 {f.fieldId && f.AllowEdit !== false && (
                                                                     <EditOutlined
                                                                         className="text-blue-500 cursor-pointer hover:text-blue-700"

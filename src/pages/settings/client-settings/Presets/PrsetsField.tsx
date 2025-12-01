@@ -29,33 +29,39 @@ const PrsetsField: React.FC<FieldModalProps> = ({ visible,
     const [, setSelectedField] = useState<{ fieldsId: string; fieldsFor: string } | null>(null);
     const [preferenceGroups, setPreferenceGroups] = useState<PreferenceGroup[]>([]);
 
+
+
     useEffect(() => {
         fetchAll();
     }, []);
 
-    const fetchProfileFieldGroups = async () => {
+    const fetchGroupsWithFields = async () => {
         try {
             const response = await apiClient.get("/admin/getFromGroupList");
-            const formatted = (response.data.data || []).map((group: any) => ({
+            const formattedGroups: Group[] = response.data.data.map((group: { _id: string; groupName: string; fields: any[]; }) => ({
                 _id: group._id,
                 name: group.groupName,
-                formFields: (group.fields || []).map((field: any) => ({
+                formFields: group.fields.map((field) => ({
                     _id: field.attributeId,
                     attributeName: field.attributeName,
                     attributeType: field.attributeType,
                     attributeOption: field.attributeOption || [],
+                    attributeStatus: field.attributeStatus ?? true,
+                    attributePlaceHolder: field.attributePlaceHolder ?? "",
+                    visibility: field.visibility ?? true,
+                    active: field.active ?? true,
+                    form_group_id: group._id,
                 })),
             }));
-            setFields(formatted);
+            setFields(formattedGroups);
         } catch (error) {
-            console.error("Error fetching profile field groups:", error);
-            message.error("Failed to load profile field groups.");
+            message.error("Failed to load groups.");
         }
     };
 
     const fetchAll = async () => {
         await Promise.all([
-            fetchProfileFieldGroups(),
+            fetchGroupsWithFields(),
             fetchPreferenceGroupsWithFields(),
         ]);
     };
@@ -92,9 +98,6 @@ const PrsetsField: React.FC<FieldModalProps> = ({ visible,
         const fetchAndSetData = async () => {
             if (visible) {
                 await fetchGroupList();
-                // Refresh profile and preference fields when modal opens
-                await fetchProfileFieldGroups();
-                await fetchPreferenceGroupsWithFields();
 
                 if (editingField && selectedGroup) {
                     setEditingGroup(selectedGroup);
@@ -151,22 +154,19 @@ const PrsetsField: React.FC<FieldModalProps> = ({ visible,
             setLoading(true);
 
             if (editingField && editingField._id) {
-                // Use presetFieldId if available, otherwise use _id
-                const presetFieldId = (editingField as any).presetFieldId || editingField._id;
-                
                 // Update payload
                 const updatePayload = {
-                    presetFieldId: presetFieldId,
+                    presetFieldId: editingField._id,
                     AllowEdit: values.AllowEdit ?? true,
                     isRequired: values.isRequired ?? false,
                 };
 
                 const response = await apiClient.post("/admin/updatePresetField", updatePayload);
 
-                if (response.data?.success) {
+                if (response.status === 200) {
                     message.success("Field updated successfully!");
                 } else {
-                    message.error(response.data?.message || "Failed to update the field.");
+                    message.error("Failed to update the field.");
                 }
             } else {
                 // Create payload

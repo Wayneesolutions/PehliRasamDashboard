@@ -37,6 +37,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
     const [formData, setFormData] = useState<IGroup[]>([]);
     const [matchdata, setMatchData] = useState<MatchGroup[]>([]);
     const [loading, setLoading] = useState(false);
+    const [ageRangeInputs, setAgeRangeInputs] = useState<Record<string, { from: string; to: string }>>({});
     const [activePanels, setActivePanels] = useState<string[]>([
         ...formData.map((group) => group.groupId),
         ...matchdata.map((group) => group.groupId),
@@ -79,6 +80,23 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
             fetchCustomerMatchPreferences();
         }
     }, [customerId]);
+
+    // Sync age range inputs when matchdata changes
+    useEffect(() => {
+        const newAgeRangeInputs: Record<string, { from: string; to: string }> = {};
+        matchdata.forEach((group) => {
+            group.fields.forEach((field) => {
+                if (field.profileField?.trim()?.toLowerCase() === "date" && field.value && field.value !== "NaN") {
+                    const ageRange = field.value.split(" - ") || ["", ""];
+                    newAgeRangeInputs[field.fieldId] = {
+                        from: ageRange[0] || "",
+                        to: ageRange[1] || "",
+                    };
+                }
+            });
+        });
+        setAgeRangeInputs((prev) => ({ ...prev, ...newAgeRangeInputs }));
+    }, [matchdata]);
 
     useEffect(() => {
         if (!resolvedCustomerId) return;
@@ -469,32 +487,80 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                 const options = field.choices || [];
 
                                                 const handleUpdate = async (updatedFieldId: string, updatedValue: any) => {
-                                                    const currentGroup = matchdata.find((g) => g.groupId === group.groupId);
+                                                    // Use functional update to get latest state and build payload
+                                                    setMatchData((prevMatchData) => {
+                                                        const currentGroup = prevMatchData.find((g) => g.groupId === group.groupId);
 
-                                                    if (!currentGroup) return;
+                                                        if (!currentGroup) return prevMatchData;
 
-                                                    const updatedFields = currentGroup.fields.map((f) => ({
-                                                        fieldId: f.fieldId,
-                                                        fieldValue: f.fieldId === updatedFieldId ? updatedValue : (f.value || ""),
-                                                    }));
+                                                        // Build updated fields array for API payload
+                                                        // Only include fields with non-empty values
+                                                        const updatedFields = currentGroup.fields
+                                                            .map((f) => {
+                                                                // Get the value for this field
+                                                                let fieldValue: string;
+                                                                if (f.fieldId === updatedFieldId) {
+                                                                    // Use the new updated value
+                                                                    fieldValue = updatedValue?.toString().trim() || "";
+                                                                } else {
+                                                                    // Use existing value, but convert "NaN" to empty string
+                                                                    const existingValue = f.value === "NaN" ? "" : (f.value || "");
+                                                                    fieldValue = existingValue.trim();
+                                                                }
+                                                                
+                                                                return {
+                                                                    fieldId: f.fieldId,
+                                                                    fieldValue: fieldValue,
+                                                                };
+                                                            })
+                                                            .filter((f) => {
+                                                                // Filter out empty values - backend requires non-empty fieldValue
+                                                                const value = f.fieldValue?.trim();
+                                                                return value && value !== "" && value !== "NaN";
+                                                            });
 
-                                                    const payload = {
-                                                        customerId: resolvedCustomerId,
-                                                        matchPreferences: [
-                                                            {
-                                                                preferencesGroupId: group.groupId,
-                                                                groupFields: updatedFields,
-                                                            },
-                                                        ],
-                                                    };
+                                                        // Only send payload if there are fields with values
+                                                        if (updatedFields.length > 0) {
+                                                            // Prepare payload
+                                                            const payload = {
+                                                                customerId: resolvedCustomerId,
+                                                                matchPreferences: [
+                                                                    {
+                                                                        preferencesGroupId: group.groupId,
+                                                                        groupFields: updatedFields,
+                                                                    },
+                                                                ],
+                                                            };
 
-                                                    try {
-                                                        await updateCustomerMatchPreferencesDetail(payload);
-                                                        message.success("Preference updated successfully.");
-                                                        await fetchCustomerMatchPreferences(); // Refresh updated values
-                                                    } catch {
-                                                        message.error("Failed to update preference.");
-                                                    }
+                                                            // Call API asynchronously (fire and forget)
+                                                            updateCustomerMatchPreferencesDetail(payload)
+                                                                .then(() => {
+                                                                    message.success("Preference updated successfully.");
+                                                                    fetchCustomerMatchPreferences(); // Refresh to get server state
+                                                                })
+                                                                .catch(() => {
+                                                                    message.error("Failed to update preference.");
+                                                                    // Revert on error by refetching
+                                                                    fetchCustomerMatchPreferences();
+                                                                });
+                                                        }
+
+                                                        // Return updated state optimistically
+                                                        // Normalize the value - use empty string if empty, otherwise use trimmed value
+                                                        const normalizedValue = updatedValue?.toString().trim() || "";
+                                                        return prevMatchData.map((g) =>
+                                                            g.groupId === group.groupId
+                                                                ? {
+                                                                      ...g,
+                                                                      fields: g.fields.map((f) =>
+                                                                          f.fieldId === updatedFieldId
+                                                                              ? { ...f, value: normalizedValue }
+                                                                              : f
+                                                                      ),
+                                                                  }
+                                                                : g
+                                                        );
+                                                    });
                                                 };
 
                                                 const generateHeights = () => {
@@ -545,36 +611,87 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                 />
                                                             )}
 
-                                                            {profileField === "date" && (
-                                                                <div className="flex gap-2">
-                                                                    <input
-                                                                        type="number"
-                                                                        className="w-1/2 border p-2 rounded"
-                                                                        placeholder="From"
-                                                                        defaultValue={fieldValue?.split(" - ")[0] || ""}
-                                                                        onKeyDown={(e) => {
-                                                                            if (e.key === "Enter") {
-                                                                                const to = fieldValue?.split(" - ")[1] || "";
-                                                                                const from = (e.target as HTMLInputElement).value;
-                                                                                handleUpdate(field.fieldId, `${from} - ${to}`);
+                                                            {profileField === "date" && (() => {
+                                                                const ageRange = fieldValue?.split(" - ") || ["", ""];
+                                                                const currentFrom = ageRangeInputs[field.fieldId]?.from ?? ageRange[0] ?? "";
+                                                                const currentTo = ageRangeInputs[field.fieldId]?.to ?? ageRange[1] ?? "";
+
+                                                                const handleAgeChange = (type: "from" | "to", value: string) => {
+                                                                    setAgeRangeInputs((prev) => ({
+                                                                        ...prev,
+                                                                        [field.fieldId]: {
+                                                                            from: type === "from" ? value : (prev[field.fieldId]?.from ?? ageRange[0] ?? ""),
+                                                                            to: type === "to" ? value : (prev[field.fieldId]?.to ?? ageRange[1] ?? ""),
+                                                                        },
+                                                                    }));
+                                                                };
+
+                                                                const createAgeBlurHandler = (type: "from" | "to") => {
+                                                                    return (e: React.FocusEvent<HTMLInputElement>) => {
+                                                                        const currentInputValue = e.target.value.trim();
+                                                                        // Update state with current input value
+                                                                        setAgeRangeInputs((prev) => {
+                                                                            const updatedState = {
+                                                                                ...prev,
+                                                                                [field.fieldId]: {
+                                                                                    from: type === "from" ? currentInputValue : (prev[field.fieldId]?.from ?? ageRange[0] ?? ""),
+                                                                                    to: type === "to" ? currentInputValue : (prev[field.fieldId]?.to ?? ageRange[1] ?? ""),
+                                                                                },
+                                                                            };
+                                                                            
+                                                                            const fromValue = updatedState[field.fieldId].from.trim();
+                                                                            const toValue = updatedState[field.fieldId].to.trim();
+                                                                            
+                                                                            // Save if at least one value is present
+                                                                            if (fromValue || toValue) {
+                                                                                // Format: "from - to" or just the value if one is empty
+                                                                                const formattedValue = fromValue && toValue 
+                                                                                    ? `${fromValue} - ${toValue}`
+                                                                                    : fromValue 
+                                                                                        ? `${fromValue} - ${toValue || ""}`
+                                                                                        : ` - ${toValue}`;
+                                                                                handleUpdate(field.fieldId, formattedValue);
                                                                             }
-                                                                        }}
-                                                                    />
-                                                                    <input
-                                                                        type="number"
-                                                                        className="w-1/2 border p-2 rounded"
-                                                                        placeholder="To"
-                                                                        defaultValue={fieldValue?.split(" - ")[1] || ""}
-                                                                        onKeyDown={(e) => {
-                                                                            if (e.key === "Enter") {
-                                                                                const from = fieldValue?.split(" - ")[0] || "";
-                                                                                const to = (e.target as HTMLInputElement).value;
-                                                                                handleUpdate(field.fieldId, `${from} - ${to}`);
-                                                                            }
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                            )}
+                                                                            
+                                                                            return updatedState;
+                                                                        });
+                                                                    };
+                                                                };
+
+                                                                const handleFromBlur = createAgeBlurHandler("from");
+                                                                const handleToBlur = createAgeBlurHandler("to");
+
+                                                                return (
+                                                                    <div className="flex gap-2">
+                                                                        <input
+                                                                            type="number"
+                                                                            className="w-1/2 border p-2 rounded"
+                                                                            placeholder="From"
+                                                                            value={currentFrom}
+                                                                            onChange={(e) => handleAgeChange("from", e.target.value)}
+                                                                            onBlur={handleFromBlur}
+                                                                            onKeyDown={(e) => {
+                                                                                if (e.key === "Enter") {
+                                                                                    handleFromBlur(e as any);
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                        <input
+                                                                            type="number"
+                                                                            className="w-1/2 border p-2 rounded"
+                                                                            placeholder="To"
+                                                                            value={currentTo}
+                                                                            onChange={(e) => handleAgeChange("to", e.target.value)}
+                                                                            onBlur={handleToBlur}
+                                                                            onKeyDown={(e) => {
+                                                                                if (e.key === "Enter") {
+                                                                                    handleToBlur(e as any);
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                );
+                                                            })()}
 
                                                             {profileField === "height" && (
                                                                 <div className="flex gap-2">
@@ -612,41 +729,146 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                 </div>
                                                             )}
 
-                                                            {profileField === "select" && (
-                                                                <Select
-                                                                    mode="multiple"
-                                                                    allowClear
-                                                                    showSearch={false} // disables typing
-                                                                    className="w-full"
-                                                                    placeholder="Select options"
-                                                                    value={
-                                                                        typeof fieldValue === "string"
-                                                                            ? fieldValue.split(",").filter(Boolean)
-                                                                            : Array.isArray(fieldValue)
-                                                                                ? fieldValue
-                                                                                : []
-                                                                    }
-                                                                    onChange={(selectedValues) => {
-                                                                        const stringValue = selectedValues.join(",");
-                                                                        setMatchData((prev) =>
-                                                                            prev.map((g) =>
-                                                                                g.groupId === group.groupId
-                                                                                    ? {
-                                                                                        ...g,
-                                                                                        fields: g.fields.map((f) =>
-                                                                                            f.fieldId === field.fieldId
-                                                                                                ? { ...f, value: stringValue }
-                                                                                                : f
-                                                                                        ),
+                                                            {profileField === "select" && (() => {
+                                                                // Exclude fields that should be single select
+                                                                const isSingleSelectField = 
+                                                                    field.fieldName === "Preferred Gender" ||
+                                                                    field.fieldName === "Preferred Age Range" ||
+                                                                    field.fieldName === "Preferred Height (ft & in)";
+                                                                
+                                                                // Use multi-select for all select fields except the excluded ones
+                                                                if (!isSingleSelectField) {
+                                                                    // Smart parsing function to handle values that contain commas
+                                                                    // Works for all select fields:
+                                                                    // - Options without commas: "Sikh,Hindu,Muslim" -> ["Sikh", "Hindu", "Muslim"]
+                                                                    // - Options with commas: "Yes,occasionally,No" -> ["Yes,occasionally", "No"]
+                                                                    // - Single values: "Sikh" -> ["Sikh"]
+                                                                    // - Handles edge cases and removes duplicates/invalid values
+                                                                    const parseMultiSelectValue = (value: string, availableOptions: string[]): string[] => {
+                                                                        if (!value || value === "NaN") return [];
+                                                                        
+                                                                        // First, check if the entire value matches a single option
+                                                                        if (availableOptions.includes(value)) {
+                                                                            return [value];
+                                                                        }
+                                                                        
+                                                                        // Sort options by length (longest first) to match longer values first
+                                                                        // This ensures "Yes,occasionally" matches before "Yes" if both exist
+                                                                        const sortedOptions = [...availableOptions].sort((a, b) => b.length - a.length);
+                                                                        
+                                                                        // Try to parse comma-separated values intelligently
+                                                                        const result: string[] = [];
+                                                                        let remaining = value;
+                                                                        
+                                                                        while (remaining.length > 0) {
+                                                                            let matched = false;
+                                                                            
+                                                                            // Try to match against each option (longest first)
+                                                                            for (const option of sortedOptions) {
+                                                                                // Check if remaining starts with this option
+                                                                                if (remaining.startsWith(option)) {
+                                                                                    // Check if it's followed by comma or end of string
+                                                                                    const nextChar = remaining[option.length];
+                                                                                    if (!nextChar || nextChar === ',') {
+                                                                                        result.push(option);
+                                                                                        // Remove matched option and comma if present
+                                                                                        remaining = remaining.substring(option.length);
+                                                                                        if (remaining.startsWith(',')) {
+                                                                                            remaining = remaining.substring(1).trim();
+                                                                                        }
+                                                                                        matched = true;
+                                                                                        break;
                                                                                     }
-                                                                                    : g
-                                                                            )
-                                                                        );
-                                                                        handleUpdate(field.fieldId, stringValue);
-                                                                    }}
-                                                                    options={options.map((opt) => ({ label: opt, value: opt }))}
-                                                                />
-                                                            )}
+                                                                                }
+                                                                            }
+                                                                            
+                                                                            // If no match found, try simple comma split as fallback
+                                                                            if (!matched) {
+                                                                                // Fallback: split by comma and filter to valid options
+                                                                                const fallbackValues = remaining.split(',').map(v => v.trim()).filter(Boolean);
+                                                                                const validValues = fallbackValues.filter(v => availableOptions.includes(v));
+                                                                                result.push(...validValues);
+                                                                                break;
+                                                                            }
+                                                                        }
+                                                                        
+                                                                        // Remove duplicates and return only valid options
+                                                                        return [...new Set(result.filter(v => availableOptions.includes(v)))];
+                                                                    };
+                                                                    
+                                                                    // Parse current values intelligently
+                                                                    const currentValues = parseMultiSelectValue(fieldValue, options);
+                                                                    
+                                                                    return (
+                                                                        <Select
+                                                                            mode="multiple"
+                                                                            allowClear
+                                                                            showSearch={false}
+                                                                            className="w-full"
+                                                                            placeholder="Select options"
+                                                                            value={currentValues}
+                                                                            onChange={(selectedValues) => {
+                                                                                // Ensure selectedValues is an array and filter to only valid options
+                                                                                const validValues = Array.isArray(selectedValues) 
+                                                                                    ? selectedValues.filter(v => options.includes(v))
+                                                                                    : [];
+                                                                                
+                                                                                // Remove duplicates
+                                                                                const uniqueValues = [...new Set(validValues)];
+                                                                                
+                                                                                const stringValue = uniqueValues.join(",");
+                                                                                
+                                                                                setMatchData((prev) =>
+                                                                                    prev.map((g) =>
+                                                                                        g.groupId === group.groupId
+                                                                                            ? {
+                                                                                                  ...g,
+                                                                                                  fields: g.fields.map((f) =>
+                                                                                                      f.fieldId === field.fieldId
+                                                                                                          ? { ...f, value: stringValue }
+                                                                                                          : f
+                                                                                                  ),
+                                                                                              }
+                                                                                            : g
+                                                                                    )
+                                                                                );
+                                                                                handleUpdate(field.fieldId, stringValue);
+                                                                            }}
+                                                                            options={options.map((opt) => ({ label: opt, value: opt }))}
+                                                                        />
+                                                                    );
+                                                                } else {
+                                                                    // Single select mode for excluded fields
+                                                                    return (
+                                                                        <Select
+                                                                            allowClear
+                                                                            showSearch={false}
+                                                                            className="w-full"
+                                                                            placeholder="Select an option"
+                                                                            value={fieldValue && fieldValue !== "NaN" ? fieldValue : undefined}
+                                                                            onChange={(value) => {
+                                                                                const stringValue = value || "";
+                                                                                setMatchData((prev) =>
+                                                                                    prev.map((g) =>
+                                                                                        g.groupId === group.groupId
+                                                                                            ? {
+                                                                                                  ...g,
+                                                                                                  fields: g.fields.map((f) =>
+                                                                                                      f.fieldId === field.fieldId
+                                                                                                          ? { ...f, value: stringValue }
+                                                                                                          : f
+                                                                                                  ),
+                                                                                              }
+                                                                                            : g
+                                                                                    )
+                                                                                );
+                                                                                handleUpdate(field.fieldId, stringValue);
+                                                                            }}
+                                                                            options={options.map((opt) => ({ label: opt, value: opt }))}
+                                                                        />
+                                                                    );
+                                                                }
+                                                            })()}
 
                                                             {(profileField === "number" ||
                                                                 profileField === "long text" ||
