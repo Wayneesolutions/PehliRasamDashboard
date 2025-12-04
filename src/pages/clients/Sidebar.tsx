@@ -20,16 +20,7 @@ type SidebarProps = {
   customerId: string;
 };
 
-const cityOptions = [
-  "Amritsar", "Barnala", "Bathinda", "Dera Bassi", "Delhi", "Chandigarh",
-  "Faridkot", "Fatehgarh Sahib", "Firozpur", "Gurdaspur", "Gujarat",
-  "Hoshiarpur", "Himachal Pradesh", "Haryana", "Jalandhar", "Jammu and Kashmir",
-  "Kapurthala", "Khanna", "Ludhiana", "Mansa", "Moga", "Muktsar(Sri Muktsar Sahib)",
-  "Nakodar", "Patiala", "Phagwara", "Rupnagar", "Rajasthan",
-  "(Mohali)Sahibzada Ajit Singh Nagar", "Sangrur",
-  "(Nawanshahr)Shahid Bhagat Singh Nagar", "Tarn Taran", "Uttarakhand",
-  "Uttar Pradesh", "Zirakpur"
-];
+
 
 const fetchCountries = async (): Promise<CountryOption[]> => {
   const { data } = await axios.get("https://restcountries.com/v3.1/all?fields=name,flags");
@@ -501,30 +492,33 @@ const Sidebar = ({ customerId }: SidebarProps) => {
                   value={address.street}
                   onChange={(e) => setAddress({ ...address, street: e.target.value })}
                   onKeyDown={handleKeyDown}
-                  className="px-2 py-1 border rounded w-full mb-2"
+                  className="px-2 py-1 border rounded w-full !mb-2"
                   autoFocus
                   placeholder="Street"
                 />
-
-                <select
+                <input
+                  type="text"
                   value={address.city}
                   onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                  className="px-2 py-1 border rounded w-full mb-2"
-                >
-                  <option value="" disabled>Select City</option>
-                  {cityOptions.map((city) => (
-                    <option key={city} value={city}>
-                      {city}
-                    </option>
-                  ))}
-                </select>
-
+                  onKeyDown={handleKeyDown}
+                  className="px-2 py-1 border rounded w-full !mb-2"
+                  autoFocus
+                  placeholder="City"
+                />
+                <input
+                  type="text"
+                  value={address.state}
+                  onChange={(e) => setAddress({ ...address, state: e.target.value })}
+                  onKeyDown={handleKeyDown}
+                  className="px-2 py-1 border rounded w-full !mb-2"
+                  placeholder="State"
+                />
                 <input
                   type="text"
                   value={address.postalCode}
                   onChange={(e) => setAddress({ ...address, postalCode: e.target.value })}
                   onKeyDown={handleKeyDown}
-                  className="px-2 py-1 border rounded w-full mb-2"
+                  className="px-2 py-1 border rounded w-full !mb-2"
                   placeholder="Postal Code"
                 />
 
@@ -567,7 +561,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
                 }}
               >
                 {customer?.address
-                  ? `${customer.address.street || ""}, ${customer.address.city || ""}, ${customer.address.postalCode || ""}, ${customer.address.country || ""}`
+                  ? `${customer.address.street || ""}, ${customer.address.city || ""}, ${customer.address.state || ""}, ${customer.address.postalCode || ""}, ${customer.address.country || ""}`
                   : "N/A"}
               </span>
             )}

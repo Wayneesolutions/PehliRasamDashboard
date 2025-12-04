@@ -2,8 +2,15 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input, Button, Modal, Form, Menu, Dropdown, message } from "antd";
 import { SearchOutlined, UserAddOutlined, InfoCircleOutlined, EllipsisOutlined } from "@ant-design/icons";
-import { addCustomerByAdmin, allActiveCustomer, deleteCustomer } from "../../config/apiClient";
+import { addCustomerByAdmin, allActiveCustomer, deleteCustomer, getCustomerBasicDetail } from "../../config/apiClient";
 import { ActiveClientDetails } from "../../schema/customernew";
+
+type ClientList = {
+  _id: string;
+  listName: string;
+  color: string;
+  status: string;
+};
 
 
 const bgColors = [
@@ -24,6 +31,7 @@ const Clients: React.FC = () => {
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
   const [activeclients, setActiveClients] = useState<ActiveClientDetails[]>([])
+  const [clientListsMap, setClientListsMap] = useState<Record<string, ClientList[]>>({});
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
@@ -45,6 +53,28 @@ const Clients: React.FC = () => {
 
       // ✅ Prepend new client to activeclients list
       setActiveClients((prevClients) => [newClient, ...prevClients]);
+      
+      // Fetch client lists for the new client
+      try {
+        const detailRes = await getCustomerBasicDetail(newClient._id);
+        if (detailRes.success && detailRes.data?.clientLists) {
+          setClientListsMap((prev) => ({
+            ...prev,
+            [newClient._id]: detailRes.data.clientLists,
+          }));
+        } else {
+          setClientListsMap((prev) => ({
+            ...prev,
+            [newClient._id]: [],
+          }));
+        }
+      } catch (error) {
+        console.error(`Error fetching client lists for new client:`, error);
+        setClientListsMap((prev) => ({
+          ...prev,
+          [newClient._id]: [],
+        }));
+      }
 
       setIsAddClientModalOpen(false);
 
@@ -69,8 +99,28 @@ const Clients: React.FC = () => {
         );
       });
       setActiveClients(sorted);
+      
+      // Fetch client lists for each customer
+      const listsMap: Record<string, ClientList[]> = {};
+      await Promise.all(
+        sorted.map(async (client) => {
+          try {
+            const detailRes = await getCustomerBasicDetail(client._id);
+            if (detailRes.success && detailRes.data?.clientLists) {
+              listsMap[client._id] = detailRes.data.clientLists;
+            } else {
+              listsMap[client._id] = [];
+            }
+          } catch (error) {
+            console.error(`Error fetching client lists for ${client._id}:`, error);
+            listsMap[client._id] = [];
+          }
+        })
+      );
+      setClientListsMap(listsMap);
     } else {
       setActiveClients([]);
+      setClientListsMap({});
     }
   };
   useEffect(() => {
@@ -151,6 +201,42 @@ const Clients: React.FC = () => {
               <h3 className="!mt-3 text-sm font-semibold text-blue-600 truncate w-full">
                 {`${client.firstName} ${client.lastName}`}
               </h3>
+              
+              {/* Client List Colors and Info Icon Container */}
+              <div className="flex items-center justify-center gap-2 mt-1.5 min-h-[20px] w-full">
+                {/* Client List Colors */}
+                {clientListsMap[client._id] && clientListsMap[client._id].length > 0 ? (
+                  <div className="flex items-center justify-center gap-1.5 flex-wrap max-w-[80px]">
+                    {clientListsMap[client._id].slice(0, 6).map((list) => (
+                      <span
+                        key={list._id}
+                        className="w-4 h-4 rounded-full border border-gray-300 shadow-sm flex-shrink-0"
+                        style={{ backgroundColor: list.color }}
+                        title={list.listName}
+                      />
+                    ))}
+                    {clientListsMap[client._id].length > 6 && (
+                      <span
+                        className="text-xs text-gray-500 font-medium"
+                        title={clientListsMap[client._id].slice(6).map(l => l.listName).join(', ')}
+                      >
+                        +{clientListsMap[client._id].length - 6}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="w-[80px]"></div>
+                )}
+                
+                {/* Info Icon */}
+                <button
+                  onClick={() => openClientModal(client)}
+                  className="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors duration-200 group"
+                  title="View client details"
+                >
+                  <InfoCircleOutlined className="text-xs text-gray-600 group-hover:text-blue-500" />
+                </button>
+              </div>
 
               {/* Top-right three dot menu */}
               <div className="absolute top-1 !right-[28px] z-10">
@@ -199,15 +285,6 @@ const Clients: React.FC = () => {
 
 
 
-              {/* Info Icon (hover) */}
-              <div className="absolute bottom-2 right-5  transition">
-                <button
-                  onClick={() => openClientModal(client)}
-                  className="!text-gray-500 hover:text-blue-500"
-                >
-                  <InfoCircleOutlined />
-                </button>
-              </div>
             </div>
           );
         })}

@@ -1,4 +1,4 @@
-import { useEffect, useState, Fragment } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, Divider, DatePicker, message, Input, Select, InputNumber } from 'antd';
 import { LinkOutlined, EditOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { useParams } from 'react-router-dom';
@@ -10,7 +10,7 @@ const ClientIntro = () => {
   const { introId } = useParams();
 
     const [intro, setIntro] = useState<any>(null);
-    const [fields, setFields] = useState<any[]>([]);
+    const [groupedFields, setGroupedFields] = useState<any[]>([]);
     const [editingExpiration, setEditingExpiration] = useState(false);
     const [newExpiration, setNewExpiration] = useState<dayjs.Dayjs | null>(null);
     const [isExpired, setIsExpired] = useState(false);
@@ -75,6 +75,41 @@ const ClientIntro = () => {
         document.body.removeChild(textArea);
     };
 
+    // Helper function to group and sort fields
+    const groupAndSortFields = (allFields: any[]) => {
+        const groupMap = new Map<string, any[]>();
+        
+        // Define group order (matching Form page order)
+        const groupOrder: Record<string, number> = {
+            'basicInfo': 0, // Basic Info (firstName, lastName, etc.) - show first
+            'Membership Information': 1,
+            'Basic Information': 2,
+            'Education & Profession': 3,
+            'Family Details': 4,
+            'Location Details': 5,
+            'About Me': 6
+        };
+
+        allFields.forEach((field: any) => {
+            if (!field.value || field.value === 'NaN' || field.value === '') return;
+            
+            const groupKey = field.groupId || field.groupName || 'Other';
+            
+            if (!groupMap.has(groupKey)) {
+                groupMap.set(groupKey, []);
+            }
+            groupMap.get(groupKey)!.push(field);
+        });
+
+        // Convert to array and sort by group order
+        return Array.from(groupMap.entries()).map(([groupId, fields]) => ({
+            groupId,
+            groupName: fields[0]?.groupName || 'Other',
+            fields,
+            order: groupOrder[fields[0]?.groupName || ''] ?? 999
+        })).sort((a, b) => a.order - b.order);
+    };
+
     useEffect(() => {
         if (!introId) return;
         apiClient
@@ -83,7 +118,9 @@ const ClientIntro = () => {
                 if (res.data.success) {
                     const introData = res.data.intro;
                     setIntro(introData);
-                    setFields(res.data.fields);
+                    const allFields = res.data.fields || [];
+                    const grouped = groupAndSortFields(allFields);
+                    setGroupedFields(grouped);
 
                     // Check if the intro is expired
                     const expirationDate = dayjs(introData.expiration);
@@ -191,7 +228,9 @@ const ClientIntro = () => {
                     // Refresh fields
                     const response = await apiClient.post('/admin/getIntroFieldValues', { introId });
                     if (response.data.success) {
-                        setFields(response.data.fields);
+                        const allFields = response.data.fields || [];
+                        const grouped = groupAndSortFields(allFields);
+                        setGroupedFields(grouped);
                     }
                     setEditingFieldId(null);
                     setEditingValue('');
@@ -216,7 +255,9 @@ const ClientIntro = () => {
                     // Refresh fields
                     const response = await apiClient.post('/admin/getIntroFieldValues', { introId });
                     if (response.data.success) {
-                        setFields(response.data.fields);
+                        const allFields = response.data.fields || [];
+                        const grouped = groupAndSortFields(allFields);
+                        setGroupedFields(grouped);
                     }
                     setEditingFieldId(null);
                     setEditingValue('');
@@ -306,18 +347,41 @@ const ClientIntro = () => {
                     <div className="text-sm text-gray-700">
                         Expiration:{' '}
                         {editingExpiration ? (
-                            <DatePicker
-                                value={newExpiration}
-                                onChange={(date) => {
-                                    if (date) {
-                                        setNewExpiration(date);
-                                        handleExpirationChange(date);
-                                    }
-                                }}
-                                autoFocus
-                            />
+                            <div className="flex items-center gap-2">
+                                <DatePicker
+                                    value={newExpiration}
+                                    onChange={(date) => {
+                                        if (date) {
+                                            setNewExpiration(date);
+                                        }
+                                    }}
+                                    autoFocus
+                                />
+                                <CheckOutlined
+                                    className="text-green-500 cursor-pointer hover:text-green-700"
+                                    onClick={() => {
+                                        if (newExpiration) {
+                                            handleExpirationChange(newExpiration);
+                                        }
+                                    }}
+                                />
+                                <CloseOutlined
+                                    className="text-red-500 cursor-pointer hover:text-red-700"
+                                    onClick={() => {
+                                        setEditingExpiration(false);
+                                        setNewExpiration(null);
+                                    }}
+                                />
+                            </div>
                         ) : isExpired ? (
-                            <span className="text-red-600 font-semibold">
+                            <span
+                                onClick={() => {
+                                    setNewExpiration(dayjs(intro.expiration));
+                                    setEditingExpiration(true);
+                                }}
+                                className="text-red-600 font-semibold underline cursor-pointer hover:text-red-500"
+                                title="Click to update expiration date"
+                            >
                                 Expired ({dayjs(intro.expiration).format('DD MMM YYYY')})
                             </span>
                         ) : (
@@ -369,102 +433,149 @@ const ClientIntro = () => {
 
                             <Divider />
 
-                            <h3 className="text-lg font-semibold mb-4">Profile</h3>
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                                {fields
-                                    .filter((f) => f.fieldsFor === 'Profile' && f.value)
-                                    .map((f) => (
-                                        <Fragment key={f.fieldId || f.fieldName}>
-                                            <div className="font-medium text-gray-600 flex items-center gap-2">
-                                                {f.fieldName}
-                                                {f.isRequired && <span className="text-red-500">*</span>}
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                {editingFieldId === f.fieldId ? (
-                                                    <div className="flex-1 flex items-center gap-2">
-                                                        {renderFieldInput(f)}
-                                                        <CheckOutlined
-                                                            className="text-green-500 cursor-pointer hover:text-green-700"
-                                                            onClick={() => handleSaveField(f)}
-                                                            disabled={saving}
-                                                        />
-                                                        <CloseOutlined
-                                                            className="text-red-500 cursor-pointer hover:text-red-700"
-                                                            onClick={handleCancelEdit}
-                                                        />
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        <div className="flex-1">
-                                                            {isImageUrl(f.value) ? (
-                                                                <img
-                                                                    src={f.value}
-                                                                    alt={f.fieldName}
-                                                                    className="max-w-full h-auto max-h-32 object-contain rounded"
-                                                                    onError={(e) => {
-                                                                        e.currentTarget.style.display = 'none';
-                                                                    }}
-                                                                />
+                            {/* Profile Fields grouped by sections (no group names shown) */}
+                            {groupedFields
+                                .filter((group) => group.fields.some((f: any) => f.fieldsFor === 'Profile'))
+                                .map((group, groupIndex) => {
+                                    const profileFields = group.fields.filter((f: any) => f.fieldsFor === 'Profile' && f.value && f.value !== 'NaN');
+                                    if (profileFields.length === 0) return null;
+
+                                    return (
+                                        <div key={group.groupId} className={groupIndex > 0 ? 'mt-6' : ''}>
+                                            <div className="space-y-3">
+                                                {profileFields.map((field: any) => (
+                                                    <div key={field.fieldId || field.fieldName} className="flex mb-3">
+                                                        <label className="w-1/3 text-gray-600 flex items-center gap-2">
+                                                            {field.fieldName}
+                                                            {field.isRequired && <span className="text-red-500">*</span>}
+                                                        </label>
+                                                        <div className="w-2/3 flex items-center gap-2">
+                                                            {editingFieldId === field.fieldId ? (
+                                                                <div className="flex-1 flex items-center gap-2">
+                                                                    {renderFieldInput(field)}
+                                                                    <CheckOutlined
+                                                                        className="text-green-500 cursor-pointer hover:text-green-700"
+                                                                        onClick={() => handleSaveField(field)}
+                                                                        disabled={saving}
+                                                                    />
+                                                                    <CloseOutlined
+                                                                        className="text-red-500 cursor-pointer hover:text-red-700"
+                                                                        onClick={handleCancelEdit}
+                                                                    />
+                                                                </div>
                                                             ) : (
-                                                                f.value
+                                                                <>
+                                                                    <div className="flex-1">
+                                                                        {isImageUrl(field.value) ? (
+                                                                            <img
+                                                                                src={field.value}
+                                                                                alt={field.fieldName}
+                                                                                className="max-w-full h-auto max-h-32 object-contain rounded"
+                                                                                onError={(e) => {
+                                                                                    e.currentTarget.style.display = 'none';
+                                                                                }}
+                                                                            />
+                                                                        ) : field.fieldName?.toLowerCase().includes('birthday') && field.attributeType === 'date' ? (
+                                                                            <div>
+                                                                                {field.value}
+                                                                                {(() => {
+                                                                                    const calculateAge = (birthDate: string): number | null => {
+                                                                                        if (!birthDate || birthDate === "NaN") return null;
+                                                                                        try {
+                                                                                            const birth = new Date(birthDate);
+                                                                                            const today = new Date();
+                                                                                            let age = today.getFullYear() - birth.getFullYear();
+                                                                                            const monthDiff = today.getMonth() - birth.getMonth();
+                                                                                            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                                                                                                age--;
+                                                                                            }
+                                                                                            return age >= 0 ? age : null;
+                                                                                        } catch (error) {
+                                                                                            return null;
+                                                                                        }
+                                                                                    };
+                                                                                    const age = calculateAge(field.value);
+                                                                                    return age !== null ? (
+                                                                                        <span className="ml-2 text-blue-600 font-medium">
+                                                                                            (Age: {age} {age === 1 ? 'year' : 'years'})
+                                                                                        </span>
+                                                                                    ) : null;
+                                                                                })()}
+                                                                            </div>
+                                                                        ) : (
+                                                                            field.value
+                                                                        )}
+                                                                    </div>
+                                                                    {field.fieldId && field.AllowEdit !== false && (
+                                                                        <EditOutlined
+                                                                            className="text-blue-500 cursor-pointer hover:text-blue-700"
+                                                                            onClick={() => handleEditField(field)}
+                                                                            title="Edit field"
+                                                                        />
+                                                                    )}
+                                                                </>
                                                             )}
                                                         </div>
-                                                        {f.fieldId && f.AllowEdit !== false && (
-                                                            <EditOutlined
-                                                                className="text-blue-500 cursor-pointer hover:text-blue-700"
-                                                                onClick={() => handleEditField(f)}
-                                                                title="Edit field"
-                                                            />
-                                                        )}
-                                                    </>
-                                                )}
+                                                    </div>
+                                                ))}
                                             </div>
-                                        </Fragment>
-                                    ))}
-                            </div>
-                            {fields.filter((f) => f.fieldsFor === 'Preferences' && f.value).length > 0 && (
+                                        </div>
+                                    );
+                                })}
+
+                            {/* Preferences Fields */}
+                            {groupedFields.some((group) => group.fields.some((f: any) => f.fieldsFor === 'Preferences' && f.value)) && (
                                 <>
                                     <Divider />
                                     <h3 className="text-lg font-semibold mb-4">Preferences</h3>
-                                    <div className="grid grid-cols-2 gap-4 text-sm">
-                                        {fields
-                                            .filter((f) => f.fieldsFor === 'Preferences' && f.value)
-                                            .map((f) => (
-                                                <Fragment key={f.fieldId || f.fieldName}>
-                                                    <div className="font-medium text-gray-600 flex items-center gap-2">
-                                                        {f.fieldName}
-                                                        {f.isRequired && <span className="text-red-500">*</span>}
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        {editingFieldId === f.fieldId ? (
-                                                            <div className="flex-1 flex items-center gap-2">
-                                                                {renderFieldInput(f)}
-                                                                <CheckOutlined
-                                                                    className="text-green-500 cursor-pointer hover:text-green-700"
-                                                                    onClick={() => handleSaveField(f)}
-                                                                    disabled={saving}
-                                                                />
-                                                                <CloseOutlined
-                                                                    className="text-red-500 cursor-pointer hover:text-red-700"
-                                                                    onClick={handleCancelEdit}
-                                                                />
+                                    {groupedFields
+                                        .filter((group) => group.fields.some((f: any) => f.fieldsFor === 'Preferences'))
+                                        .map((group, groupIndex) => {
+                                            const prefFields = group.fields.filter((f: any) => f.fieldsFor === 'Preferences' && f.value && f.value !== 'NaN');
+                                            if (prefFields.length === 0) return null;
+
+                                            return (
+                                                <div key={`pref-${group.groupId}`} className={groupIndex > 0 ? 'mt-6' : ''}>
+                                                    <div className="space-y-3">
+                                                        {prefFields.map((field: any) => (
+                                                            <div key={field.fieldId || field.fieldName} className="flex mb-3">
+                                                                <label className="w-1/3 text-gray-600 flex items-center gap-2">
+                                                                    {field.fieldName}
+                                                                    {field.isRequired && <span className="text-red-500">*</span>}
+                                                                </label>
+                                                                <div className="w-2/3 flex items-center gap-2">
+                                                                    {editingFieldId === field.fieldId ? (
+                                                                        <div className="flex-1 flex items-center gap-2">
+                                                                            {renderFieldInput(field)}
+                                                                            <CheckOutlined
+                                                                                className="text-green-500 cursor-pointer hover:text-green-700"
+                                                                                onClick={() => handleSaveField(field)}
+                                                                                disabled={saving}
+                                                                            />
+                                                                            <CloseOutlined
+                                                                                className="text-red-500 cursor-pointer hover:text-red-700"
+                                                                                onClick={handleCancelEdit}
+                                                                            />
+                                                                        </div>
+                                                                    ) : (
+                                                                        <>
+                                                                            <div className="flex-1">{field.value}</div>
+                                                                            {field.fieldId && field.AllowEdit !== false && (
+                                                                                <EditOutlined
+                                                                                    className="text-blue-500 cursor-pointer hover:text-blue-700"
+                                                                                    onClick={() => handleEditField(field)}
+                                                                                    title="Edit field"
+                                                                                />
+                                                                            )}
+                                                                        </>
+                                                                    )}
+                                                                </div>
                                                             </div>
-                                                        ) : (
-                                                            <>
-                                                                <div className="flex-1">{f.value}</div>
-                                                                {f.fieldId && f.AllowEdit !== false && (
-                                                                    <EditOutlined
-                                                                        className="text-blue-500 cursor-pointer hover:text-blue-700"
-                                                                        onClick={() => handleEditField(f)}
-                                                                        title="Edit field"
-                                                                    />
-                                                                )}
-                                                            </>
-                                                        )}
+                                                        ))}
                                                     </div>
-                                                </Fragment>
-                                            ))}
-                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                 </>
                             )}
                         </Card>

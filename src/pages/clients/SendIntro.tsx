@@ -86,7 +86,7 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
 
 
     const payload = {
-      expiration: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+      expiration: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(), // 6 days
       profileImage: basicInfo?.imagePath || "https://default-image-url.com",
       customerId,
       fields,

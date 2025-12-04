@@ -313,8 +313,39 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                             />
                                                         );
                                                     }
+                                                    // Special case for "Education" field - render as textarea
+                                                    if (field.fieldName?.trim().toLowerCase() === "education") {
+                                                        return (
+                                                            <textarea
+                                                                className="w-2/3 border p-2 rounded"
+                                                                rows={4}
+                                                                value={field.value || ""}
+                                                                placeholder="Enter education details"
+                                                                onChange={(e) =>
+                                                                    handleFieldChange(group.groupId, field.fieldId, e.target.value)
+                                                                }
+                                                                onKeyDown={(e) =>
+                                                                    handleFieldSaveOnEnter(e, group.groupId, field.fieldId)
+                                                                }
+                                                            />
+                                                        );
+                                                    }
                                                     switch (field.attributeType) {
                                                         case "select":
+                                                            // Special case: City field should be text input instead of select
+                                                            if (field.fieldName?.trim().toLowerCase() === "city") {
+                                                                return (
+                                                                    <input
+                                                                        type="text"
+                                                                        className="w-2/3 border p-2 rounded"
+                                                                        value={field.value || ""}
+                                                                        name={`${group.groupId}-${field.fieldId}`}
+                                                                        placeholder="Enter City"
+                                                                        onChange={(e) => handleFieldChange(group.groupId, field.fieldId, e.target.value)}
+                                                                        onKeyDown={(e) => handleFieldSaveOnEnter(e, group.groupId, field.fieldId)}
+                                                                    />
+                                                                );
+                                                            }
                                                             return (
                                                                 <select
                                                                     className="w-2/3 border p-2 rounded"
@@ -335,6 +366,47 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                             );
 
                                                         case "date":
+                                                            // Special case: Birthday (Age) field - calculate and display age
+                                                            if (field.fieldName?.trim().toLowerCase() === "birthday (age)" || field.fieldName?.trim().toLowerCase().includes("birthday")) {
+                                                                const calculateAge = (birthDate: string): number | null => {
+                                                                    if (!birthDate || birthDate === "NaN") return null;
+                                                                    try {
+                                                                        const birth = new Date(birthDate);
+                                                                        const today = new Date();
+                                                                        let age = today.getFullYear() - birth.getFullYear();
+                                                                        const monthDiff = today.getMonth() - birth.getMonth();
+                                                                        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                                                                            age--;
+                                                                        }
+                                                                        return age >= 0 ? age : null;
+                                                                    } catch (error) {
+                                                                        return null;
+                                                                    }
+                                                                };
+
+                                                                const age = calculateAge(field.value || "");
+
+                                                                return (
+                                                                    <div className="w-2/3">
+                                                                        <input
+                                                                            type="date"
+                                                                            className="w-full border p-2 rounded"
+                                                                            name={`${group.groupId}-${field.fieldId}`}
+                                                                            value={field.value && field.value !== "NaN" ? field.value : ""}
+                                                                            placeholder="Select a date"
+                                                                            onChange={async (e) => {
+                                                                                const selectedDate = e.target.value;
+                                                                                await handleFieldChange(group.groupId, field.fieldId, selectedDate, true);
+                                                                            }}
+                                                                        />
+                                                                        {age !== null && (
+                                                                            <div className="mt-1 text-sm text-blue-600 font-medium">
+                                                                                Age: {age} {age === 1 ? 'year' : 'years'}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            }
                                                             return (
                                                                 <input
                                                                     type="date"
