@@ -18,7 +18,13 @@ const Index = () => {
             try {
                 const response = await apiClient.get('/admin/getAllIntroSummaries');
                 if (response.data && Array.isArray(response.data.data)) {
-                    setData(response.data.data);
+                    // Sort by createdAt descending (newest first) as backup
+                    const sortedData = [...response.data.data].sort((a, b) => {
+                        const dateA = new Date(a.createdAt).getTime();
+                        const dateB = new Date(b.createdAt).getTime();
+                        return dateB - dateA; // Descending order (newest first)
+                    });
+                    setData(sortedData);
                 } else {
                     console.error('Unexpected response format', response.data);
                     setData([]);

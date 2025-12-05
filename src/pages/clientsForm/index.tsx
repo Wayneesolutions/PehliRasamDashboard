@@ -20,6 +20,47 @@ const punjabCities = [
     "Tarn Taran", "Zirakpur"
 ];
 
+// Allowed cities from backend (must match backend validation)
+const allowedCities = [
+    "Amritsar", "Barnala", "Bathinda", "Dera Bassi", "Delhi", "Chandigarh",
+    "Faridkot", "Fatehgarh Sahib", "Firozpur", "Gurdaspur", "Gujarat", "Hoshiarpur",
+    "Himachal Pradesh", "Haryana", "Jalandhar", "Jammu and Kashmir", "Kapurthala",
+    "Khanna", "Ludhiana", "Mansa", "Moga", "Muktsar(Sri Muktsar Sahib)", "Nakodar",
+    "Patiala", "Phagwara", "Rupnagar", "Rajasthan", "(Mohali)Sahibzada Ajit Singh Nagar",
+    "Sangrur", "(Nawanshahr)Shahid Bhagat Singh Nagar", "Tarn Taran", "Uttarakhand",
+    "Uttar Pradesh", "Zirakpur"
+];
+
+// Normalize city name to match backend allowed cities (case-insensitive matching)
+const normalizeCityName = (cityInput: string): string => {
+    if (!cityInput || cityInput.trim() === "") return "";
+    
+    const trimmedCity = cityInput.trim();
+    
+    // Try to find exact match first (case-sensitive)
+    const exactMatch = allowedCities.find(city => city === trimmedCity);
+    if (exactMatch) return exactMatch;
+    
+    // Try case-insensitive match
+    const caseInsensitiveMatch = allowedCities.find(
+        city => city.toLowerCase() === trimmedCity.toLowerCase()
+    );
+    if (caseInsensitiveMatch) return caseInsensitiveMatch;
+    
+    // Try partial match (for cases like "Ludhiana" matching "ludhiana")
+    const partialMatch = allowedCities.find(
+        city => city.toLowerCase().includes(trimmedCity.toLowerCase()) ||
+                trimmedCity.toLowerCase().includes(city.toLowerCase())
+    );
+    if (partialMatch) return partialMatch;
+    
+    // If no match found, return the original input (backend will handle validation)
+    // But we'll try to capitalize it properly
+    return trimmedCity.split(' ').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    ).join(' ');
+};
+
 interface Field {
     _id: string;
     label: string;
@@ -244,7 +285,6 @@ const Index = () => {
 
     if (loading) return <div>Loading...</div>;
 
-    const cityOptions: string[] = formData?.BasicDetail?.address?.cityOptions ?? [];
     const requiredBasicFields: Array<keyof FormValues["BasicDetail"]> = [
         "firstName",
         "lastName",
@@ -524,67 +564,55 @@ const Index = () => {
                                         control={control}
                                         defaultValue={formData?.BasicDetail?.address?.[key] ?? ""}
                                         render={({ field }) => {
-                                            // Handle city
+                                            // Handle city - Changed to text input
                                             if (key === "city") {
-                                                return (
-                                                    <Select
-                                                        {...field}
-                                                        placeholder="Select City"
-                                                        options={cityOptions.map((city: string) => ({
-                                                            label: city,
-                                                            value: city,
-                                                        }))}
-                                                        showSearch
-                                                        optionFilterProp="label"
-                                                        onChange={(value) => {
-                                                            // Update form value for city
-                                                            field.onChange(value);
+                                                const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+                                                    const value = e.target.value;
+                                                    // Update form value for city
+                                                    field.onChange(value);
 
-                                                            // Determine the derived state
-                                                            const derivedState = punjabCities.includes(value)
-                                                                ? "Punjab"
-                                                                : value.includes("Haryana")
-                                                                    ? "Haryana"
-                                                                    : value.includes("Himachal Pradesh")
-                                                                        ? "Himachal Pradesh"
-                                                                        : value.includes("Chandigarh")
-                                                                            ? "Chandigarh"
-                                                                            : value.includes("Delhi")
-                                                                                ? "Delhi"
-                                                                                : value.includes("Rajasthan")
-                                                                                    ? "Rajasthan"
-                                                                                    : value.includes("Uttarakhand")
-                                                                                        ? "Uttarakhand"
-                                                                                        : value.includes("Uttar Pradesh")
-                                                                                            ? "Uttar Pradesh"
-                                                                                            : value.includes("Gujarat")
-                                                                                                ? "Gujarat"
-                                                                                                : value.includes("Jammu and Kashmir")
-                                                                                                    ? "Jammu and Kashmir"
-                                                                                                    : "";
+                                                    // Determine the derived state based on city input
+                                                    const derivedState = punjabCities.includes(value)
+                                                        ? "Punjab"
+                                                        : value.includes("Haryana")
+                                                            ? "Haryana"
+                                                            : value.includes("Himachal Pradesh")
+                                                                ? "Himachal Pradesh"
+                                                                : value.includes("Chandigarh")
+                                                                    ? "Chandigarh"
+                                                                    : value.includes("Delhi")
+                                                                        ? "Delhi"
+                                                                        : value.includes("Rajasthan")
+                                                                            ? "Rajasthan"
+                                                                            : value.includes("Uttarakhand")
+                                                                                ? "Uttarakhand"
+                                                                                : value.includes("Uttar Pradesh")
+                                                                                    ? "Uttar Pradesh"
+                                                                                    : value.includes("Gujarat")
+                                                                                        ? "Gujarat"
+                                                                                        : value.includes("Jammu and Kashmir")
+                                                                                            ? "Jammu and Kashmir"
+                                                                                            : "";
 
-                                                            setValue("BasicDetail.address.state", derivedState);
-                                                        }}
-                                                    />
-                                                );
-                                            }
-
-                                            // Handle state (read-only, derived)
-                                            if (key === "state") {
-                                                const stateValue = watch("BasicDetail.address.state");
+                                                    setValue("BasicDetail.address.state", derivedState);
+                                                };
 
                                                 return (
                                                     <Input
                                                         {...field}
-                                                        value={stateValue}
-                                                        disabled
-                                                        style={{
-                                                            fontWeight: "bold",
-                                                            color: "#1677ff",
-                                                            backgroundColor: "#f0f5ff",
-                                                            cursor: "default",
-                                                        }}
-                                                        placeholder="State"
+                                                        placeholder="Enter City"
+                                                        onChange={handleCityChange}
+                                                        onBlur={handleCityChange}
+                                                    />
+                                                );
+                                            }
+
+                                            // Handle state - Changed to editable text input
+                                            if (key === "state") {
+                                                return (
+                                                    <Input
+                                                        {...field}
+                                                        placeholder="Enter State"
                                                     />
                                                 );
                                             }
