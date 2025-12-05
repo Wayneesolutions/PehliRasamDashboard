@@ -145,12 +145,13 @@ export const addCustomerPhoto = async ({
   url,
 }: {
   customerId: string;
-  url: string;
+  url: string | string[];
 }) => {
   try {
+    const photoUrls = Array.isArray(url) ? url : [url];
     const res = await apiClient.post("/admin/addCustomerPhoto", {
       customerId,
-      url,
+      url: photoUrls,
     });
     return res?.data;
   } catch (error) {
