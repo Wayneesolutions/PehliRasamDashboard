@@ -194,9 +194,6 @@ const ClientIntroduction = () => {
                         <div className="text-sm flex-grow">
                             {groupedFields.map((group) => (
                                 <div key={group.key}>
-                                    <div className="text-md font-semibold text-blue-700 border-b border-gray-200 py-2 px-2 bg-gray-100">
-                                        {group.name}
-                                    </div>
                                     {group.items.map((item, idx) => (
                                         <div
                                             key={`${group.key}-${idx}`}
