@@ -12,7 +12,6 @@ import { MoreOutlined, DeleteOutlined, DownloadOutlined } from "@ant-design/icon
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
-
 interface CustomerWithPhotos extends Customer {
   photos?: {
     _id: string;
@@ -159,10 +158,16 @@ const Index = () => {
     }
   };
 
-  const downloadImage = async (url: string, filename: string): Promise<Blob> => {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    return blob;
+  // Improved download method from second code
+  const fetchImageAsBlob = async (url: string): Promise<Blob | null> => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Failed to fetch: ${url}`);
+      return await response.blob();
+    } catch (error) {
+      console.error("Error fetching image:", error);
+      return null;
+    }
   };
 
   const handleDownloadSelected = async () => {
@@ -185,21 +190,29 @@ const Index = () => {
       if (selectedPhotoData.length === 1) {
         // Single image download
         const photo = selectedPhotoData[0];
-        const blob = await downloadImage(photo.url, `photo-${photo._id}`);
-        const extension = photo.url.split('.').pop()?.split('?')[0] || 'jpg';
-        saveAs(blob, `customer-photo-${photo._id}.${extension}`);
+        const blob = await fetchImageAsBlob(photo.url);
+        
+        if (!blob) {
+          message.error("Failed to download photo");
+          return;
+        }
+
+        const fileName = photo.url.split('/').pop() || `customer-photo-${photo._id}.jpg`;
+        saveAs(blob, fileName);
         message.success("Photo downloaded successfully");
       } else {
         // Multiple images - download as zip
         const zip = new JSZip();
-        const imageFolder = zip.folder("customer-photos");
 
-        for (let i = 0; i < selectedPhotoData.length; i++) {
-          const photo = selectedPhotoData[i];
-          const blob = await downloadImage(photo.url, `photo-${photo._id}`);
-          const extension = photo.url.split('.').pop()?.split('?')[0] || 'jpg';
-          imageFolder?.file(`photo-${i + 1}.${extension}`, blob);
-        }
+        const imageFetchPromises = selectedPhotoData.map(async (photo, index) => {
+          const blob = await fetchImageAsBlob(photo.url);
+          if (blob) {
+            const fileName = photo.url.split('/').pop() || `photo-${index + 1}.jpg`;
+            zip.file(fileName, blob);
+          }
+        });
+
+        await Promise.all(imageFetchPromises);
 
         const content = await zip.generateAsync({ type: "blob" });
         saveAs(content, `customer-photos-${customerId}.zip`);
