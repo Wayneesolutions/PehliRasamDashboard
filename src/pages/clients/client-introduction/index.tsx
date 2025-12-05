@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Card } from "antd";
 import logo from "../../../components/images/logo.png";
 import apiClient from "../../../config/apiClient";
-import { HiBadgeCheck } from 'react-icons/hi';
+import { HiBadgeCheck } from "react-icons/hi";
 import dayjs from "dayjs";
 
 const ClientIntroduction = () => {
     const { introId } = useParams();
     const [intro, setIntro] = useState<any>(null);
-    const [groupedFields, setGroupedFields] = useState<Record<string, any[]>>({});
+    const [groupedFields, setGroupedFields] = useState<Array<{ key: string; name: string; order: number; items: any[] }>>([]);
     const [isExpired, setIsExpired] = useState(false);
     const [loading, setLoading] = useState(true);
 
@@ -30,7 +30,7 @@ const ClientIntroduction = () => {
     // Helper function to remove duplicates based on fieldName and value
     const removeDuplicates = (fields: any[]) => {
         const seen = new Map();
-        return fields.filter(field => {
+        return fields.filter((field) => {
             const key = `${field.fieldName}-${field.value}`;
             if (seen.has(key)) {
                 return false;
@@ -39,6 +39,48 @@ const ClientIntroduction = () => {
             return true;
         });
     };
+
+    // Keep fields in the same order as the add-client form by sorting with backend-provided groupOrder and creation order
+    const groupFieldsByOrder = useMemo(
+        () => (fields: any[]) => {
+            const groupsMap = new Map<
+                string,
+                { key: string; name: string; order: number; items: any[] }
+            >();
+
+            fields.forEach((field) => {
+                const groupKey =
+                    field.groupId ||
+                    field.preferencesGroupId ||
+                    field.groupName ||
+                    field.preferencesGroupName ||
+                    field.fieldsFor ||
+                    "Other";
+
+                const groupName =
+                    field.groupName ||
+                    field.preferencesGroupName ||
+                    (field.fieldsFor === "Profile" ? "Profile" : "Preferences");
+
+                const groupOrder =
+                    typeof field.groupOrder === "number" ? field.groupOrder : 999;
+
+                if (!groupsMap.has(groupKey)) {
+                    groupsMap.set(groupKey, {
+                        key: groupKey,
+                        name: groupName,
+                        order: groupOrder,
+                        items: [],
+                    });
+                }
+
+                groupsMap.get(groupKey)!.items.push(field);
+            });
+
+            return Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
+        },
+        []
+    );
 
     useEffect(() => {
         if (!introId) {
@@ -72,15 +114,8 @@ const ClientIntroduction = () => {
                     // Remove duplicates
                     const uniqueFields = removeDuplicates(validFields);
 
-                    // Group fields by fieldsFor
-                    const groups: Record<string, any[]> = {};
-                    uniqueFields.forEach((field: any) => {
-                        const key = field.fieldsFor || "Other";
-                        if (!groups[key]) groups[key] = [];
-                        groups[key].push(field);
-                    });
-                    
-                    setGroupedFields(groups);
+                    const orderedGroups = groupFieldsByOrder(uniqueFields);
+                    setGroupedFields(orderedGroups);
                 }
                 setLoading(false);
             })
@@ -157,19 +192,20 @@ const ClientIntroduction = () => {
 
                         {/* Profile Details Grouped */}
                         <div className="text-sm flex-grow">
-                            {Object.entries(groupedFields).map(([group, items]) => (
-                                <div key={group}>
+                            {groupedFields.map((group) => (
+                                <div key={group.key}>
                                     <div className="text-md font-semibold text-blue-700 border-b border-gray-200 py-2 px-2 bg-gray-100">
-                                        {group}
+                                        {group.name}
                                     </div>
-                                    {items.map((item, idx) => (
+                                    {group.items.map((item, idx) => (
                                         <div
-                                            key={idx}
-                                            className={`flex justify-between py-2 px-2 ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                                                } md:flex-row flex-col`}
+                                            key={`${group.key}-${idx}`}
+                                            className={`flex justify-between py-2 px-2 ${
+                                                idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                            } md:flex-row flex-col`}
                                         >
                                             <div className="text-gray-500 capitalize">
-                                                {item.fieldName.replace(/([A-Z])/g, ' $1')}
+                                                {item.fieldName.replace(/([A-Z])/g, " $1")}
                                             </div>
                                             <div className="font-medium">
                                                 {isImageUrl(item.value) ? (
@@ -178,7 +214,7 @@ const ClientIntroduction = () => {
                                                         alt={item.fieldName}
                                                         className="max-w-full h-auto max-h-32 object-contain rounded"
                                                         onError={(e) => {
-                                                            e.currentTarget.style.display = 'none';
+                                                            e.currentTarget.style.display = "none";
                                                         }}
                                                     />
                                                 ) : (
