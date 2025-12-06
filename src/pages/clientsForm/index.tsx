@@ -21,45 +21,9 @@ const punjabCities = [
 ];
 
 // Allowed cities from backend (must match backend validation)
-const allowedCities = [
-    "Amritsar", "Barnala", "Bathinda", "Dera Bassi", "Delhi", "Chandigarh",
-    "Faridkot", "Fatehgarh Sahib", "Firozpur", "Gurdaspur", "Gujarat", "Hoshiarpur",
-    "Himachal Pradesh", "Haryana", "Jalandhar", "Jammu and Kashmir", "Kapurthala",
-    "Khanna", "Ludhiana", "Mansa", "Moga", "Muktsar(Sri Muktsar Sahib)", "Nakodar",
-    "Patiala", "Phagwara", "Rupnagar", "Rajasthan", "(Mohali)Sahibzada Ajit Singh Nagar",
-    "Sangrur", "(Nawanshahr)Shahid Bhagat Singh Nagar", "Tarn Taran", "Uttarakhand",
-    "Uttar Pradesh", "Zirakpur"
-];
 
 // Normalize city name to match backend allowed cities (case-insensitive matching)
-const normalizeCityName = (cityInput: string): string => {
-    if (!cityInput || cityInput.trim() === "") return "";
-    
-    const trimmedCity = cityInput.trim();
-    
-    // Try to find exact match first (case-sensitive)
-    const exactMatch = allowedCities.find(city => city === trimmedCity);
-    if (exactMatch) return exactMatch;
-    
-    // Try case-insensitive match
-    const caseInsensitiveMatch = allowedCities.find(
-        city => city.toLowerCase() === trimmedCity.toLowerCase()
-    );
-    if (caseInsensitiveMatch) return caseInsensitiveMatch;
-    
-    // Try partial match (for cases like "Ludhiana" matching "ludhiana")
-    const partialMatch = allowedCities.find(
-        city => city.toLowerCase().includes(trimmedCity.toLowerCase()) ||
-                trimmedCity.toLowerCase().includes(city.toLowerCase())
-    );
-    if (partialMatch) return partialMatch;
-    
-    // If no match found, return the original input (backend will handle validation)
-    // But we'll try to capitalize it properly
-    return trimmedCity.split(' ').map(word => 
-        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-    ).join(' ');
-};
+
 
 interface Field {
     _id: string;

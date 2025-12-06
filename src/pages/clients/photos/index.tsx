@@ -11,6 +11,7 @@ import { Customer } from "../../../schema/customernew";
 import { MoreOutlined, DeleteOutlined, DownloadOutlined } from "@ant-design/icons";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import axios from "axios";
 
 interface CustomerWithPhotos extends Customer {
   photos?: {
@@ -158,12 +159,100 @@ const Index = () => {
     }
   };
 
-  // Improved download method from second code
+  // Improved download method using backend proxy to bypass CORS
   const fetchImageAsBlob = async (url: string): Promise<Blob | null> => {
     try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`Failed to fetch: ${url}`);
-      return await response.blob();
+      // Method 1: Use backend proxy (bypasses CORS issues)
+      try {
+        const response = await apiClient.post('/admin/proxyImage', 
+          { imageUrl: url },
+          { responseType: 'blob', timeout: 30000 }
+        );
+        if (response.data instanceof Blob && response.data.size > 0) {
+          return response.data;
+        }
+      } catch (proxyError) {
+        console.log("Backend proxy failed, trying direct fetch:", proxyError);
+      }
+
+      // Method 2: Try using axios directly (for external URLs)
+      try {
+        const response = await axios.get(url, {
+          responseType: 'blob',
+          timeout: 30000, // 30 second timeout
+        });
+        if (response.data instanceof Blob && response.data.size > 0) {
+          return response.data;
+        }
+      } catch (axiosError) {
+        console.log("Axios fetch failed, trying fetch API:", axiosError);
+      }
+
+      // Method 3: Try using fetch with CORS mode
+      try {
+        const response = await fetch(url, {
+          mode: 'cors',
+          credentials: 'omit',
+        });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const blob = await response.blob();
+        if (blob && blob.size > 0) {
+          return blob;
+        }
+      } catch (fetchError) {
+        console.log("Fetch API failed, trying canvas method:", fetchError);
+      }
+
+      // Method 4: Canvas-based approach (works even with CORS)
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        let resolved = false;
+        let timeoutId: NodeJS.Timeout;
+        
+        const resolveOnce = (blob: Blob | null) => {
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeoutId);
+            resolve(blob);
+          }
+        };
+        
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0);
+              canvas.toBlob((blob) => {
+                resolveOnce(blob);
+              }, 'image/jpeg', 0.95);
+            } else {
+              resolveOnce(null);
+            }
+          } catch (error) {
+            console.error("Canvas conversion error:", error);
+            resolveOnce(null);
+          }
+        };
+
+        img.onerror = () => {
+          console.error("Image load error for URL:", url);
+          resolveOnce(null);
+        };
+
+        // Set a timeout for image loading
+        timeoutId = setTimeout(() => {
+          if (!img.complete && !resolved) {
+            console.error("Image load timeout for URL:", url);
+            resolveOnce(null);
+          }
+        }, 30000);
+
+        img.src = url;
+      });
     } catch (error) {
       console.error("Error fetching image:", error);
       return null;
@@ -184,6 +273,7 @@ const Index = () => {
 
       if (!selectedPhotoData || selectedPhotoData.length === 0) {
         message.error("No photos found to download");
+        setDownloading(false);
         return;
       }
 
@@ -192,8 +282,9 @@ const Index = () => {
         const photo = selectedPhotoData[0];
         const blob = await fetchImageAsBlob(photo.url);
         
-        if (!blob) {
+        if (!blob || blob.size === 0) {
           message.error("Failed to download photo");
+          setDownloading(false);
           return;
         }
 
@@ -203,20 +294,48 @@ const Index = () => {
       } else {
         // Multiple images - download as zip
         const zip = new JSZip();
+        let successCount = 0;
+        let failCount = 0;
 
         const imageFetchPromises = selectedPhotoData.map(async (photo, index) => {
           const blob = await fetchImageAsBlob(photo.url);
-          if (blob) {
-            const fileName = photo.url.split('/').pop() || `photo-${index + 1}.jpg`;
+          if (blob && blob.size > 0) {
+            // Extract filename from URL or use index
+            let fileName = photo.url.split('/').pop() || `photo-${index + 1}.jpg`;
+            // Remove query parameters if any
+            fileName = fileName.split('?')[0];
+            // Ensure unique filename if duplicates exist
+            if (zip.file(fileName)) {
+              const ext = fileName.split('.').pop() || 'jpg';
+              const nameWithoutExt = fileName.replace(`.${ext}`, '');
+              fileName = `${nameWithoutExt}-${index + 1}.${ext}`;
+            }
             zip.file(fileName, blob);
+            successCount++;
+          } else {
+            failCount++;
+            console.error(`Failed to fetch image: ${photo.url}`);
           }
         });
 
         await Promise.all(imageFetchPromises);
 
+        // Check if we have any files in the zip
+        const fileCount = Object.keys(zip.files).length;
+        if (fileCount === 0) {
+          message.error("Failed to download any photos. Please check your network connection and try again.");
+          setDownloading(false);
+          return;
+        }
+
         const content = await zip.generateAsync({ type: "blob" });
         saveAs(content, `customer-photos-${customerId}.zip`);
-        message.success(`${selectedPhotoData.length} photos downloaded as ZIP`);
+        
+        if (failCount > 0) {
+          message.warning(`${successCount} photos downloaded, ${failCount} failed`);
+        } else {
+          message.success(`${successCount} photos downloaded as ZIP`);
+        }
       }
 
       setSelectedPhotos([]);

@@ -10,7 +10,7 @@ const { Title } = Typography;
 const Index = () => {
     const navigate = useNavigate();
 
-    const [data, setData] = useState([]);
+    const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
