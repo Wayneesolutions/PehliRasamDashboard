@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Card } from "antd";
+import { Card, Modal } from "antd";
 import logo from "../../../components/images/logo.png";
 import apiClient from "../../../config/apiClient";
 import { HiBadgeCheck } from "react-icons/hi";
@@ -12,6 +12,7 @@ const ClientIntroduction = () => {
     const [groupedFields, setGroupedFields] = useState<Array<{ key: string; name: string; order: number; items: any[] }>>([]);
     const [isExpired, setIsExpired] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     // Helper function to check if a value is valid (not null, empty, undefined, or "NaN")
     const isValidValue = (value: any) => {
@@ -168,7 +169,16 @@ const ClientIntroduction = () => {
                             onError={(e) => {
                                 e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
                             }}
-                            className="w-full h-full object-contain rounded-lg border-[5px] border-white"
+                            onClick={() => {
+                                if (intro?.profileImage && intro.profileImage !== "") {
+                                    setSelectedImage(intro.profileImage);
+                                }
+                            }}
+                            className={`w-full h-full object-contain rounded-lg border-[5px] border-white ${
+                                intro?.profileImage && intro.profileImage !== ""
+                                    ? "cursor-pointer hover:opacity-90 transition-opacity duration-200"
+                                    : ""
+                            }`}
                         />
                     </div>
                 </div>
@@ -209,7 +219,8 @@ const ClientIntroduction = () => {
                                                     <img
                                                         src={item.value}
                                                         alt={item.fieldName}
-                                                        className="max-w-full h-auto max-h-32 object-contain rounded"
+                                                        className="max-w-full h-auto max-h-32 object-contain rounded cursor-pointer hover:opacity-90 transition-opacity duration-200 shadow-sm hover:shadow-md"
+                                                        onClick={() => setSelectedImage(item.value)}
                                                         onError={(e) => {
                                                             e.currentTarget.style.display = "none";
                                                         }}
@@ -226,6 +237,60 @@ const ClientIntroduction = () => {
                     </Card>
                 </div>
             </div>
+
+            {/* Image Modal */}
+            <Modal
+                open={!!selectedImage}
+                onCancel={() => setSelectedImage(null)}
+                footer={null}
+                centered
+                width="90%"
+                style={{ maxWidth: '1200px' }}
+                className="image-modal"
+                closeIcon={
+                    <div className="text-white bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full p-2 transition-all duration-200">
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </div>
+                }
+                styles={{
+                    content: {
+                        padding: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                    },
+                    body: {
+                        padding: 0,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        minHeight: '80vh',
+                    },
+                }}
+            >
+                {selectedImage && (
+                    <div className="relative w-full h-full flex items-center justify-center p-4">
+                        <img
+                            src={selectedImage}
+                            alt="Full size"
+                            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                            onError={(e) => {
+                                e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
+                            }}
+                        />
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 };
