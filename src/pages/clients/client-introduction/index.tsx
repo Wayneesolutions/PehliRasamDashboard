@@ -41,7 +41,7 @@ const ClientIntroduction = () => {
         });
     };
 
-    // Keep fields in the same order as the add-client form by sorting with backend-provided groupOrder and creation order
+    // Keep fields in the same order as the add-client form by sorting with backend-provided groupOrder
     const groupFieldsByOrder = useMemo(
         () => (fields: any[]) => {
             const groupsMap = new Map<
@@ -50,19 +50,17 @@ const ClientIntroduction = () => {
             >();
 
             fields.forEach((field) => {
-                const groupKey =
-                    field.groupId ||
-                    field.preferencesGroupId ||
-                    field.groupName ||
-                    field.preferencesGroupName ||
-                    field.fieldsFor ||
-                    "Other";
-
+                // Use groupName as the primary key for grouping (consistent with Form page)
                 const groupName =
                     field.groupName ||
                     field.preferencesGroupName ||
-                    (field.fieldsFor === "Profile" ? "Profile" : "Preferences");
+                    (field.fieldsFor === "Profile" ? "Profile" : "Preferences") ||
+                    "Other";
 
+                // Use groupName as the key for consistent grouping
+                const groupKey = groupName;
+
+                // Get groupOrder from field, default to 999 if not provided
                 const groupOrder =
                     typeof field.groupOrder === "number" ? field.groupOrder : 999;
 
@@ -78,6 +76,7 @@ const ClientIntroduction = () => {
                 groupsMap.get(groupKey)!.items.push(field);
             });
 
+            // Sort by order (matching Form page order)
             return Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
         },
         []
