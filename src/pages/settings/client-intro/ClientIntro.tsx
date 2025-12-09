@@ -118,6 +118,8 @@ const ClientIntro = () => {
                 if (res.data.success) {
                     const introData = res.data.intro;
                     setIntro(introData);
+                    // Only use fields returned by the API (these are the preset fields from IntroFields)
+                    // The API already filters to only return fields that are part of the preset group
                     const allFields = res.data.fields || [];
                     const grouped = groupAndSortFields(allFields);
                     setGroupedFields(grouped);
@@ -156,7 +158,41 @@ const ClientIntro = () => {
         }
     };
 
+    // Check if a field is a basic info field that should not be editable
+    const isBasicInfoField = (fieldName: string): boolean => {
+        if (!fieldName) return false;
+        
+        const normalizedName = fieldName.toLowerCase().trim();
+        
+        // Exact matches for common basic info fields
+        const exactMatches = [
+            'firstname', 'first name', 'firstname', 'first_name', 'firstname',
+            'lastname', 'last name', 'lastname', 'last_name', 'lastname',
+            'middlename', 'middle name', 'middlename', 'middle_name', 'middelname', 'middel name',
+            'email', 'e-mail', 'e mail',
+            'phone', 'phone number', 'phonenumber', 'phone_number', 'mobile', 'mobile number', 'mobilenumber',
+            'number', 'contact number', 'contactnumber',
+            'address', 'street', 'street address', 'streetaddress',
+            'city', 'state', 'postalcode', 'postal code', 'postal_code', 'zipcode', 'zip code',
+            'country', 'addressline', 'address line', 'address_line', 'address1', 'address2', 'address 1', 'address 2'
+        ];
+        
+        // Check for exact matches
+        if (exactMatches.includes(normalizedName)) {
+            return true;
+        }
+        
+        // Check if field name contains basic info keywords (to catch variations)
+        const keywords = ['firstname', 'lastname', 'middlename', 'email', 'phone', 'mobile', 'address', 'street', 'city', 'state', 'postal', 'zip', 'country'];
+        return keywords.some(keyword => normalizedName.includes(keyword));
+    };
+
     const handleEditField = (field: any) => {
+        // Check if this is a basic info field - these should not be editable
+        if (isBasicInfoField(field.fieldName)) {
+            message.warning('Basic information fields (First Name, Last Name, Email, Phone, Address) cannot be edited');
+            return;
+        }
         // Check if field has fieldId (required for editing)
         if (!field.fieldId) {
             message.warning('This field cannot be edited');
@@ -506,7 +542,7 @@ const ClientIntro = () => {
                                                                             field.value
                                                                         )}
                                                                     </div>
-                                                                    {field.fieldId && field.AllowEdit !== false && (
+                                                                    {field.fieldId && field.AllowEdit !== false && !isBasicInfoField(field.fieldName) && (
                                                                         <EditOutlined
                                                                             className="text-blue-500 cursor-pointer hover:text-blue-700"
                                                                             onClick={() => handleEditField(field)}
@@ -560,7 +596,7 @@ const ClientIntro = () => {
                                                                     ) : (
                                                                         <>
                                                                             <div className="flex-1">{field.value}</div>
-                                                                            {field.fieldId && field.AllowEdit !== false && (
+                                                                            {field.fieldId && field.AllowEdit !== false && !isBasicInfoField(field.fieldName) && (
                                                                                 <EditOutlined
                                                                                     className="text-blue-500 cursor-pointer hover:text-blue-700"
                                                                                     onClick={() => handleEditField(field)}

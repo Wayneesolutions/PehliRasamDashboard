@@ -6,6 +6,20 @@ import { Group } from "../Fields/types";
 import { Field as PreferenceField, Group as PreferenceGroup } from "../matching/types";
 import { Field as PresetField, Group as PresetGroup } from './types';
 
+// Dynamic basic info fields configuration - matches backend structure
+// These fields are automatically included by the backend in getIntroFieldValues
+const BASIC_INFO_FIELDS = [
+    { key: 'basic-firstName', value: 'basic-firstName', label: 'First Name', fieldKey: 'firstName' },
+    { key: 'basic-middleName', value: 'basic-middleName', label: 'Middle Name', fieldKey: 'middelName' },
+    { key: 'basic-lastName', value: 'basic-lastName', label: 'Last Name', fieldKey: 'lastName' },
+    { key: 'basic-email', value: 'basic-email', label: 'Email', fieldKey: 'email' },
+    { key: 'basic-phone', value: 'basic-phone', label: 'Phone Number', fieldKey: 'Number' },
+    { key: 'basic-address-street', value: 'basic-address-street', label: 'Address (Street)', fieldKey: 'address.street' },
+    { key: 'basic-address-city', value: 'basic-address-city', label: 'City', fieldKey: 'address.city' },
+    { key: 'basic-address-state', value: 'basic-address-state', label: 'State', fieldKey: 'address.state' },
+    { key: 'basic-address-postalCode', value: 'basic-address-postalCode', label: 'Postal Code', fieldKey: 'address.postalCode' },
+    { key: 'basic-address-country', value: 'basic-address-country', label: 'Country', fieldKey: 'address.country' },
+];
 
 interface FieldModalProps {
     visible: boolean;
@@ -179,9 +193,10 @@ const PrsetsField: React.FC<FieldModalProps> = ({ visible,
                 }
 
                 // Combine selected fields from both types
+                // Basic info fields (starting with "basic-") are now supported by the backend
                 const createPayload = [
                     ...profileField.map((id: string) => ({
-                        fieldsId: id,
+                        fieldsId: id, // Can be ObjectId for FormFields or string like "basic-firstName" for basic info
                         fieldsFor: "profile",
                         AllowEdit: AllowEdit ?? true,
                         isRequired: isRequired ?? false,
@@ -244,6 +259,21 @@ const PrsetsField: React.FC<FieldModalProps> = ({ visible,
                                     });
                                 }}
                             >
+                                {/* Basic Information Fields - Dynamically loaded from configuration */}
+                                {BASIC_INFO_FIELDS.length > 0 && (
+                                    <OptGroup
+                                        key="basic-info"
+                                        label={<span style={{ fontWeight: "bold", color: "#999" }}>Basic Information</span>}
+                                    >
+                                        {BASIC_INFO_FIELDS.map((field) => (
+                                            <Option key={field.key} value={field.value}>
+                                                {field.label}
+                                            </Option>
+                                        ))}
+                                    </OptGroup>
+                                )}
+                                
+                                {/* Regular FormFields from database */}
                                 {fields.map((group) => (
                                     <OptGroup
                                         key={group._id}

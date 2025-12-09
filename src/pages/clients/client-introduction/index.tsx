@@ -106,8 +106,13 @@ const ClientIntroduction = () => {
 
                     setIntro(introData);
 
+                    // Only use fields returned by the API (these are the preset fields from IntroFields)
+                    // The API already filters to only return fields that are part of the preset group
+                    // Basic info fields are only included if they're in the selected preset
+                    const apiFields = res.data.fields || [];
+                    
                     // Filter fields with valid values only
-                    const validFields = (res.data.fields || []).filter((field: any) => 
+                    const validFields = apiFields.filter((field: any) => 
                         isValidValue(field.value)
                     );
 
@@ -201,37 +206,110 @@ const ClientIntroduction = () => {
 
                         {/* Profile Details Grouped */}
                         <div className="text-sm flex-grow">
-                            {groupedFields.map((group) => (
-                                <div key={group.key}>
-                                    {group.items.map((item, idx) => (
-                                        <div
-                                            key={`${group.key}-${idx}`}
-                                            className={`flex justify-between py-2 px-2 ${
-                                                idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                                            } md:flex-row flex-col`}
-                                        >
-                                            <div className="text-gray-500 capitalize">
-                                                {item.fieldName.replace(/([A-Z])/g, " $1")}
-                                            </div>
-                                            <div className="font-medium">
-                                                {isImageUrl(item.value) ? (
-                                                    <img
-                                                        src={item.value}
-                                                        alt={item.fieldName}
-                                                        className="max-w-full h-auto max-h-32 object-contain rounded cursor-pointer hover:opacity-90 transition-opacity duration-200 shadow-sm hover:shadow-md"
-                                                        onClick={() => setSelectedImage(item.value)}
-                                                        onError={(e) => {
-                                                            e.currentTarget.style.display = "none";
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    item.value
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ))}
+                            {(() => {
+                                // Separate Profile and Preferences fields
+                                const profileGroups = groupedFields.filter((group) => 
+                                    group.items.some((item: any) => item.fieldsFor === "Profile")
+                                );
+                                const preferencesGroups = groupedFields.filter((group) => 
+                                    group.items.some((item: any) => item.fieldsFor === "Preferences")
+                                );
+
+                                let itemIndex = 0;
+
+                                return (
+                                    <>
+                                        {/* Render Profile fields */}
+                                        {profileGroups.map((group) => {
+                                            const profileItems = group.items.filter((item: any) => item.fieldsFor === "Profile");
+                                            if (profileItems.length === 0) return null;
+
+                                            return (
+                                                <div key={group.key}>
+                                                    {profileItems.map((item, idx) => {
+                                                        const currentIndex = itemIndex++;
+                                                        return (
+                                                            <div
+                                                                key={`${group.key}-${idx}`}
+                                                                className={`flex justify-between py-2 px-2 ${
+                                                                    currentIndex % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                                                } md:flex-row flex-col`}
+                                                            >
+                                                                <div className="text-gray-500 capitalize">
+                                                                    {item.fieldName.replace(/([A-Z])/g, " $1")}
+                                                                </div>
+                                                                <div className="font-medium">
+                                                                    {isImageUrl(item.value) ? (
+                                                                        <img
+                                                                            src={item.value}
+                                                                            alt={item.fieldName}
+                                                                            className="max-w-full h-auto max-h-32 object-contain rounded cursor-pointer hover:opacity-90 transition-opacity duration-200 shadow-sm hover:shadow-md"
+                                                                            onClick={() => setSelectedImage(item.value)}
+                                                                            onError={(e) => {
+                                                                                e.currentTarget.style.display = "none";
+                                                                            }}
+                                                                        />
+                                                                    ) : (
+                                                                        item.value
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        })}
+
+                                        {/* Render Preferences heading and fields */}
+                                        {preferencesGroups.length > 0 && (
+                                            <>
+                                                <div className="text-lg font-semibold mt-4 mb-2 text-gray-700">
+                                                    Preferences
+                                                </div>
+                                                {preferencesGroups.map((group) => {
+                                                    const preferenceItems = group.items.filter((item: any) => item.fieldsFor === "Preferences");
+                                                    if (preferenceItems.length === 0) return null;
+
+                                                    return (
+                                                        <div key={group.key}>
+                                                            {preferenceItems.map((item, idx) => {
+                                                                const currentIndex = itemIndex++;
+                                                                return (
+                                                                    <div
+                                                                        key={`${group.key}-${idx}`}
+                                                                        className={`flex justify-between py-2 px-2 ${
+                                                                            currentIndex % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                                                        } md:flex-row flex-col`}
+                                                                    >
+                                                                        <div className="text-gray-500 capitalize">
+                                                                            {item.fieldName.replace(/([A-Z])/g, " $1")}
+                                                                        </div>
+                                                                        <div className="font-medium">
+                                                                            {isImageUrl(item.value) ? (
+                                                                                <img
+                                                                                    src={item.value}
+                                                                                    alt={item.fieldName}
+                                                                                    className="max-w-full h-auto max-h-32 object-contain rounded cursor-pointer hover:opacity-90 transition-opacity duration-200 shadow-sm hover:shadow-md"
+                                                                                    onClick={() => setSelectedImage(item.value)}
+                                                                                    onError={(e) => {
+                                                                                        e.currentTarget.style.display = "none";
+                                                                                    }}
+                                                                                />
+                                                                            ) : (
+                                                                                item.value
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </>
+                                        )}
+                                    </>
+                                );
+                            })()}
                         </div>
                     </Card>
                 </div>

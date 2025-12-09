@@ -77,12 +77,22 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
     if (!customerId) return message.error("Customer ID is missing.");
     if (presetFields.length === 0) return message.error("Selected preset has no fields.");
 
-    const fields = presetFields.map(field => ({
-      fieldId: field.id,
-      fieldsFor: field.Kind?.toLowerCase() === 'preference' ? 'Preferences' : 'Profile',
-      AllowEdit: field.AllowEdit ?? true,  // Default to true if not specified
-      isRequired: field.Required ?? false,  // Default to false if not specified
-    }));
+    // Filter out basic info fields - they are automatically included by getIntroFieldValues
+    // Basic info fields have id starting with "basic-" and don't need to be stored in IntroFields
+    const fields = presetFields
+      .filter(field => {
+        // Skip basic info fields (they're automatically included, don't need to be sent)
+        if (typeof field.id === 'string' && field.id.startsWith('basic-')) {
+          return false;
+        }
+        return true;
+      })
+      .map(field => ({
+        fieldId: field.id,
+        fieldsFor: field.Kind?.toLowerCase() === 'preference' ? 'Preferences' : 'Profile',
+        AllowEdit: field.AllowEdit ?? true,  // Default to true if not specified
+        isRequired: field.Required ?? false,  // Default to false if not specified
+      }));
 
 
     const payload = {
@@ -90,6 +100,7 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
       profileImage: basicInfo?.imagePath || "https://default-image-url.com",
       customerId,
       fields,
+      presetId: selectedPreset, // Include the preset ID
     };
 
     try {
