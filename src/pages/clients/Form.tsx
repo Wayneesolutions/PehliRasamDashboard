@@ -1,5 +1,5 @@
 import { message, Spin, Tabs, Collapse, Select } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getCustomerMatchPreferencesDetail, getCustomerProfileDetail, uploadImage, updateCustomerProfile, updateCustomerMatchPreferencesDetail } from "../../config/apiClient";
 import { Group, MatchGroup } from "../clientsForm/types/clientTypes";
 import { useOutletContext } from "react-router-dom";
@@ -38,6 +38,9 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
     const [matchdata, setMatchData] = useState<MatchGroup[]>([]);
     const [loading, setLoading] = useState(false);
     const [ageRangeInputs, setAgeRangeInputs] = useState<Record<string, { from: string; to: string }>>({});
+    const updatingGroupsRef = useRef<Set<string>>(new Set());
+    const ageRangeSaveTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
+    const pendingNotificationsRef = useRef<Set<string>>(new Set());
     const [activePanels, setActivePanels] = useState<string[]>([
         ...formData.map((group) => group.groupId),
         ...matchdata.map((group) => group.groupId),
@@ -86,12 +89,20 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
         const newAgeRangeInputs: Record<string, { from: string; to: string }> = {};
         matchdata.forEach((group) => {
             group.fields.forEach((field) => {
-                if (field.profileField?.trim()?.toLowerCase() === "date" && field.value && field.value !== "NaN") {
-                    const ageRange = field.value.split(" - ") || ["", ""];
-                    newAgeRangeInputs[field.fieldId] = {
-                        from: ageRange[0] || "",
-                        to: ageRange[1] || "",
-                    };
+                if (field.profileField?.trim()?.toLowerCase() === "date") {
+                    if (field.value && field.value !== "NaN" && field.value.trim() !== "") {
+                        const ageRange = field.value.split(" - ") || ["", ""];
+                        newAgeRangeInputs[field.fieldId] = {
+                            from: (ageRange[0] || "").trim(),
+                            to: (ageRange[1] || "").trim(),
+                        };
+                    } else {
+                        // Clear the inputs if value is empty or NaN
+                        newAgeRangeInputs[field.fieldId] = {
+                            from: "",
+                            to: "",
+                        };
+                    }
                 }
             });
         });
@@ -276,7 +287,23 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                 activeKey={activePanels}
                                 onChange={(keys) => setActivePanels(Array.isArray(keys) ? keys : [keys])}
                             >
-                                {formData.map((group) => (
+                                {(() => {
+                                    // Reorder groups: Membership Information first, About Me last, others in middle
+                                    const membershipInfo = formData.find(g => g.groupName?.toLowerCase().includes("membership information"));
+                                    const aboutMe = formData.find(g => g.groupName?.toLowerCase().includes("about me"));
+                                    const middleGroups = formData.filter(g => {
+                                        const name = g.groupName?.toLowerCase() || "";
+                                        return !name.includes("membership information") && !name.includes("about me");
+                                    });
+                                    
+                                    const sortedGroups = [
+                                        ...(membershipInfo ? [membershipInfo] : []),
+                                        ...middleGroups,
+                                        ...(aboutMe ? [aboutMe] : [])
+                                    ];
+                                    
+                                    return sortedGroups;
+                                })().map((group) => (
                                     <Panel header={group.groupName} key={group.groupId} className="w-full">
                                         {group.fields.map((field) => (
                                             <div key={field.fieldId} className="flex mb-3">
@@ -559,23 +586,51 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                 const options = field.choices || [];
 
                                                 const handleUpdate = async (updatedFieldId: string, updatedValue: any) => {
-                                                    // Use functional update to get latest state and build payload
+                                                    // Prevent duplicate API calls for the same group
+                                                    if (updatingGroupsRef.current.has(group.groupId)) {
+                                                        // Update state optimistically but skip API call
+                                                        const normalizedValue = updatedValue?.toString().trim() || "";
+                                                        setMatchData((prevMatchData) =>
+                                                            prevMatchData.map((g) =>
+                                                                g.groupId === group.groupId
+                                                                    ? {
+                                                                          ...g,
+                                                                          fields: g.fields.map((f) =>
+                                                                              f.fieldId === updatedFieldId
+                                                                                  ? { ...f, value: normalizedValue }
+                                                                                  : f
+                                                                          ),
+                                                                      }
+                                                                    : g
+                                                            )
+                                                        );
+                                                        return;
+                                                    }
+
+                                                    // Mark this group as updating and prevent duplicate notifications
+                                                    updatingGroupsRef.current.add(group.groupId);
+                                                    pendingNotificationsRef.current.add(group.groupId);
+
+                                                    // Normalize the value
+                                                    const normalizedValue = updatedValue?.toString().trim() || "";
+
+                                                    // Use functional update to get current state and build payload
                                                     setMatchData((prevMatchData) => {
                                                         const currentGroup = prevMatchData.find((g) => g.groupId === group.groupId);
 
-                                                        if (!currentGroup) return prevMatchData;
+                                                        if (!currentGroup) {
+                                                            updatingGroupsRef.current.delete(group.groupId);
+                                                            pendingNotificationsRef.current.delete(group.groupId);
+                                                            return prevMatchData;
+                                                        }
 
                                                         // Build updated fields array for API payload
-                                                        // Only include fields with non-empty values
                                                         const updatedFields = currentGroup.fields
                                                             .map((f) => {
-                                                                // Get the value for this field
                                                                 let fieldValue: string;
                                                                 if (f.fieldId === updatedFieldId) {
-                                                                    // Use the new updated value
-                                                                    fieldValue = updatedValue?.toString().trim() || "";
+                                                                    fieldValue = normalizedValue;
                                                                 } else {
-                                                                    // Use existing value, but convert "NaN" to empty string
                                                                     const existingValue = f.value === "NaN" ? "" : (f.value || "");
                                                                     fieldValue = existingValue.trim();
                                                                 }
@@ -586,14 +641,12 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                 };
                                                             })
                                                             .filter((f) => {
-                                                                // Filter out empty values - backend requires non-empty fieldValue
                                                                 const value = f.fieldValue?.trim();
                                                                 return value && value !== "" && value !== "NaN";
                                                             });
 
-                                                        // Only send payload if there are fields with values
+                                                        // Prepare payload if we have fields to update
                                                         if (updatedFields.length > 0) {
-                                                            // Prepare payload
                                                             const payload = {
                                                                 customerId: resolvedCustomerId,
                                                                 matchPreferences: [
@@ -607,19 +660,33 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                             // Call API asynchronously (fire and forget)
                                                             updateCustomerMatchPreferencesDetail(payload)
                                                                 .then(() => {
-                                                                    message.success("Preference updated successfully.");
-                                                                    fetchCustomerMatchPreferences(); // Refresh to get server state
+                                                                    // Only show notification once
+                                                                    if (pendingNotificationsRef.current.has(group.groupId)) {
+                                                                        message.success("Preference updated successfully.");
+                                                                        pendingNotificationsRef.current.delete(group.groupId);
+                                                                        fetchCustomerMatchPreferences();
+                                                                    }
                                                                 })
                                                                 .catch(() => {
-                                                                    message.error("Failed to update preference.");
-                                                                    // Revert on error by refetching
-                                                                    fetchCustomerMatchPreferences();
+                                                                    if (pendingNotificationsRef.current.has(group.groupId)) {
+                                                                        message.error("Failed to update preference.");
+                                                                        pendingNotificationsRef.current.delete(group.groupId);
+                                                                        fetchCustomerMatchPreferences();
+                                                                    }
+                                                                })
+                                                                .finally(() => {
+                                                                    // Remove from updating set after a short delay
+                                                                    setTimeout(() => {
+                                                                        updatingGroupsRef.current.delete(group.groupId);
+                                                                    }, 500);
                                                                 });
+                                                        } else {
+                                                            // No fields to update, remove from updating set immediately
+                                                            updatingGroupsRef.current.delete(group.groupId);
+                                                            pendingNotificationsRef.current.delete(group.groupId);
                                                         }
 
                                                         // Return updated state optimistically
-                                                        // Normalize the value - use empty string if empty, otherwise use trimmed value
-                                                        const normalizedValue = updatedValue?.toString().trim() || "";
                                                         return prevMatchData.map((g) =>
                                                             g.groupId === group.groupId
                                                                 ? {
@@ -698,40 +765,50 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                     }));
                                                                 };
 
-                                                                const createAgeBlurHandler = (type: "from" | "to") => {
-                                                                    return (e: React.FocusEvent<HTMLInputElement>) => {
-                                                                        const currentInputValue = e.target.value.trim();
-                                                                        // Update state with current input value
-                                                                        setAgeRangeInputs((prev) => {
-                                                                            const updatedState = {
-                                                                                ...prev,
-                                                                                [field.fieldId]: {
-                                                                                    from: type === "from" ? currentInputValue : (prev[field.fieldId]?.from ?? ageRange[0] ?? ""),
-                                                                                    to: type === "to" ? currentInputValue : (prev[field.fieldId]?.to ?? ageRange[1] ?? ""),
-                                                                                },
-                                                                            };
-                                                                            
-                                                                            const fromValue = updatedState[field.fieldId].from.trim();
-                                                                            const toValue = updatedState[field.fieldId].to.trim();
-                                                                            
-                                                                            // Save if at least one value is present
-                                                                            if (fromValue || toValue) {
-                                                                                // Format: "from - to" or just the value if one is empty
-                                                                                const formattedValue = fromValue && toValue 
-                                                                                    ? `${fromValue} - ${toValue}`
-                                                                                    : fromValue 
-                                                                                        ? `${fromValue} - ${toValue || ""}`
-                                                                                        : ` - ${toValue}`;
-                                                                                handleUpdate(field.fieldId, formattedValue);
-                                                                            }
-                                                                            
-                                                                            return updatedState;
-                                                                        });
-                                                                    };
+                                                                const handleAgeSave = (e: React.FocusEvent<HTMLInputElement> | React.KeyboardEvent<HTMLInputElement>) => {
+                                                                    // Clear any existing timer for this field
+                                                                    if (ageRangeSaveTimersRef.current[field.fieldId]) {
+                                                                        clearTimeout(ageRangeSaveTimersRef.current[field.fieldId]);
+                                                                    }
+                                                                    
+                                                                    // Capture the container reference before the timeout
+                                                                    const container = e.currentTarget.parentElement;
+                                                                    if (!container) return;
+                                                                    
+                                                                    // Debounce the save to prevent multiple calls when both inputs trigger events
+                                                                    ageRangeSaveTimersRef.current[field.fieldId] = setTimeout(() => {
+                                                                        const inputs = container.querySelectorAll('input[type="number"]');
+                                                                        const fromInput = inputs[0] as HTMLInputElement;
+                                                                        const toInput = inputs[1] as HTMLInputElement;
+                                                                        
+                                                                        // Read values directly from input elements to get the most current values
+                                                                        const fromValue = fromInput?.value.trim() || "";
+                                                                        const toValue = toInput?.value.trim() || "";
+                                                                        
+                                                                        // Update state with current values
+                                                                        setAgeRangeInputs((prev) => ({
+                                                                            ...prev,
+                                                                            [field.fieldId]: {
+                                                                                from: fromValue,
+                                                                                to: toValue,
+                                                                            },
+                                                                        }));
+                                                                        
+                                                                        // Save if at least one value is present
+                                                                        if (fromValue || toValue) {
+                                                                            // Format: "from - to" or just the value if one is empty
+                                                                            const formattedValue = fromValue && toValue 
+                                                                                ? `${fromValue} - ${toValue}`
+                                                                                : fromValue 
+                                                                                    ? `${fromValue} - ${toValue || ""}`
+                                                                                    : ` - ${toValue}`;
+                                                                            handleUpdate(field.fieldId, formattedValue);
+                                                                        }
+                                                                        
+                                                                        // Clean up timer reference
+                                                                        delete ageRangeSaveTimersRef.current[field.fieldId];
+                                                                    }, 300); // 300ms debounce
                                                                 };
-
-                                                                const handleFromBlur = createAgeBlurHandler("from");
-                                                                const handleToBlur = createAgeBlurHandler("to");
 
                                                                 return (
                                                                     <div className="flex gap-2">
@@ -741,10 +818,12 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                             placeholder="From"
                                                                             value={currentFrom}
                                                                             onChange={(e) => handleAgeChange("from", e.target.value)}
-                                                                            onBlur={handleFromBlur}
+                                                                            onBlur={handleAgeSave}
                                                                             onKeyDown={(e) => {
                                                                                 if (e.key === "Enter") {
-                                                                                    handleFromBlur(e as any);
+                                                                                    handleAgeSave(e);
+                                                                                    // Optionally blur to trigger visual feedback
+                                                                                    e.currentTarget.blur();
                                                                                 }
                                                                             }}
                                                                         />
@@ -754,10 +833,12 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                             placeholder="To"
                                                                             value={currentTo}
                                                                             onChange={(e) => handleAgeChange("to", e.target.value)}
-                                                                            onBlur={handleToBlur}
+                                                                            onBlur={handleAgeSave}
                                                                             onKeyDown={(e) => {
                                                                                 if (e.key === "Enter") {
-                                                                                    handleToBlur(e as any);
+                                                                                    handleAgeSave(e);
+                                                                                    // Optionally blur to trigger visual feedback
+                                                                                    e.currentTarget.blur();
                                                                                 }
                                                                             }}
                                                                         />
