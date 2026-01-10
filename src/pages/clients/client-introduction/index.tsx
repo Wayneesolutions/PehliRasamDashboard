@@ -28,6 +28,42 @@ const ClientIntroduction = () => {
         return urlPattern.test(value);
     };
 
+    // Helper function to calculate age from date string
+    const calculateAge = (dateString: string): number | null => {
+        if (!dateString || typeof dateString !== 'string' || dateString === "NaN") return null;
+        
+        try {
+            const birth = new Date(dateString);
+            if (isNaN(birth.getTime())) return null;
+            
+            const today = new Date();
+            let age = today.getFullYear() - birth.getFullYear();
+            const monthDiff = today.getMonth() - birth.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                age--;
+            }
+            return age >= 0 ? age : null;
+        } catch (error) {
+            console.error('Error calculating age:', error);
+            return null;
+        }
+    };
+
+    // Helper function to format birthday with age
+    const formatBirthdayWithAge = (fieldName: string, value: any): any => {
+        // Check if this is the Birthday (Age) field - handle variations in field name
+        const normalizedFieldName = (fieldName || '').trim().toLowerCase();
+        const isBirthdayField = normalizedFieldName.includes('birthday') && normalizedFieldName.includes('age');
+        
+        if (isBirthdayField && value && typeof value === 'string') {
+            const age = calculateAge(value);
+            if (age !== null) {
+                return `${value} (${age})`;
+            }
+        }
+        return value;
+    };
+
     // Helper function to remove duplicates based on fieldName and value
     const removeDuplicates = (fields: any[]) => {
         const seen = new Map();
@@ -550,7 +586,7 @@ const ClientIntroduction = () => {
                                                                             }}
                                                                         />
                                                                     ) : (
-                                                                        item.value
+                                                                        formatBirthdayWithAge(item.fieldName, item.value)
                                                                     )}
                                                                 </div>
                                                             </div>
