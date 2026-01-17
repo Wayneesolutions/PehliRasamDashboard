@@ -85,28 +85,74 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
     }, [customerId]);
 
     // Sync age range inputs when matchdata changes
+    // IMPORTANT: Preserve user-entered values when server response is empty/NaN
     useEffect(() => {
-        const newAgeRangeInputs: Record<string, { from: string; to: string }> = {};
-        matchdata.forEach((group) => {
-            group.fields.forEach((field) => {
-                if (field.profileField?.trim()?.toLowerCase() === "date") {
-                    if (field.value && field.value !== "NaN" && field.value.trim() !== "") {
-                        const ageRange = field.value.split(" - ") || ["", ""];
-                        newAgeRangeInputs[field.fieldId] = {
-                            from: (ageRange[0] || "").trim(),
-                            to: (ageRange[1] || "").trim(),
-                        };
-                    } else {
-                        // Clear the inputs if value is empty or NaN
-                        newAgeRangeInputs[field.fieldId] = {
-                            from: "",
-                            to: "",
-                        };
+        setAgeRangeInputs((prev) => {
+            const newAgeRangeInputs: Record<string, { from: string; to: string }> = { ...prev };
+            matchdata.forEach((group) => {
+                group.fields.forEach((field) => {
+                    if (field.profileField?.trim()?.toLowerCase() === "date") {
+                        const serverValue = field.value;
+                        const hasValidServerValue = serverValue && serverValue !== "NaN" && serverValue.trim() !== "";
+                        
+                        if (hasValidServerValue) {
+                            // Server has a valid value - sync from server
+                            // Handle formats like "12 -" (from only), " - 30" (to only), or "12 - 30" (both)
+                            const trimmedValue = serverValue.trim();
+                            let fromValue = "";
+                            let toValue = "";
+                            
+                            // Split by " - " pattern (with spaces)
+                            if (trimmedValue.includes(" - ")) {
+                                const parts = trimmedValue.split(" - ");
+                                fromValue = (parts[0] || "").trim();
+                                toValue = (parts[1] || "").trim();
+                            }
+                                                            // Handle "12 -" or "12 - " format (from only) - dash at the end without "to" value
+                            else if (trimmedValue.match(/^\d+\s*-/)) {
+                                // Extract number before dash - match pattern like "12 -" or "12 - "
+                                const match = trimmedValue.match(/^(\d+)\s*-/);
+                                fromValue = match ? match[1] : trimmedValue.replace(/\s*-+\s*.*$/, "").trim();
+                                toValue = "";
+                            }
+                            // Handle " - 30" or " -30" format (to only)
+                            else if (trimmedValue.match(/^\s*-/)) {
+                                fromValue = "";
+                                // Extract number after dash
+                                toValue = trimmedValue.replace(/^\s*-+\s*/, "").trim();
+                            }
+                            // Fallback: try to split by any dash pattern
+                            else {
+                                const parts = trimmedValue.split(/\s*-\s*/);
+                                fromValue = (parts[0] || "").trim();
+                                toValue = (parts[1] || "").trim();
+                            }
+                            
+                            // Always update with server values when available
+                            newAgeRangeInputs[field.fieldId] = {
+                                from: fromValue,
+                                to: toValue,
+                            };
+                        } else {
+                            // Server value is empty/NaN - preserve existing user-entered values
+                            // Only initialize empty if this is a new field we haven't seen before
+                            if (!prev[field.fieldId] || (!prev[field.fieldId].from && !prev[field.fieldId].to)) {
+                                // No existing value - set to empty (but don't overwrite if there was a value)
+                                if (!prev[field.fieldId]) {
+                                    newAgeRangeInputs[field.fieldId] = {
+                                        from: "",
+                                        to: "",
+                                    };
+                                }
+                                // If prev[field.fieldId] exists with values, keep it (already in newAgeRangeInputs from spread)
+                            }
+                            // If prev has values (from or to), they are preserved via the spread operator above
+                        }
                     }
-                }
+                });
             });
+            return newAgeRangeInputs;
         });
-        setAgeRangeInputs((prev) => ({ ...prev, ...newAgeRangeInputs }));
     }, [matchdata]);
 
     useEffect(() => {
@@ -751,16 +797,51 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                             )}
 
                                                             {profileField === "date" && (() => {
-                                                                const ageRange = fieldValue?.split(" - ") || ["", ""];
-                                                                const currentFrom = ageRangeInputs[field.fieldId]?.from ?? ageRange[0] ?? "";
-                                                                const currentTo = ageRangeInputs[field.fieldId]?.to ?? ageRange[1] ?? "";
+                                                                // Parse fieldValue to extract from/to values
+                                                                // Handle formats like "12 -" (from only), " - 30" (to only), or "12 - 30" (both)
+                                                                let parsedFrom = "";
+                                                                let parsedTo = "";
+                                                                
+                                                                if (fieldValue && fieldValue !== "NaN" && fieldValue.trim() !== "") {
+                                                                    const trimmedValue = fieldValue.trim();
+                                                                    
+                                                                    // Split by " - " pattern (with spaces) - handles "12 - 30"
+                                                                    if (trimmedValue.includes(" - ")) {
+                                                                        const parts = trimmedValue.split(" - ");
+                                                                        parsedFrom = (parts[0] || "").trim();
+                                                                        parsedTo = (parts[1] || "").trim();
+                                                                    }
+                                                                    // Handle "12 -" or "12 - " format (from only) - dash at the end without "to" value
+                                                                    else if (trimmedValue.match(/^\d+\s*-/)) {
+                                                                        // Extract number before dash - match pattern like "12 -" or "12 - "
+                                                                        const match = trimmedValue.match(/^(\d+)\s*-/);
+                                                                        parsedFrom = match ? match[1] : trimmedValue.replace(/\s*-+\s*.*$/, "").trim();
+                                                                        parsedTo = "";
+                                                                    }
+                                                                    // Handle " - 30" or " -30" format (to only)
+                                                                    else if (trimmedValue.match(/^\s*-/)) {
+                                                                        parsedFrom = "";
+                                                                        // Extract number after dash
+                                                                        parsedTo = trimmedValue.replace(/^\s*-+\s*/, "").trim();
+                                                                    }
+                                                                    // Fallback: try to split by any dash pattern
+                                                                    else {
+                                                                        const parts = trimmedValue.split(/\s*-\s*/);
+                                                                        parsedFrom = (parts[0] || "").trim();
+                                                                        parsedTo = (parts[1] || "").trim();
+                                                                    }
+                                                                }
+                                                                
+                                                                // Use ageRangeInputs if available, otherwise fallback to parsed values
+                                                                const currentFrom = ageRangeInputs[field.fieldId]?.from ?? parsedFrom ?? "";
+                                                                const currentTo = ageRangeInputs[field.fieldId]?.to ?? parsedTo ?? "";
 
                                                                 const handleAgeChange = (type: "from" | "to", value: string) => {
                                                                     setAgeRangeInputs((prev) => ({
                                                                         ...prev,
                                                                         [field.fieldId]: {
-                                                                            from: type === "from" ? value : (prev[field.fieldId]?.from ?? ageRange[0] ?? ""),
-                                                                            to: type === "to" ? value : (prev[field.fieldId]?.to ?? ageRange[1] ?? ""),
+                                                                            from: type === "from" ? value : (prev[field.fieldId]?.from ?? parsedFrom ?? ""),
+                                                                            to: type === "to" ? value : (prev[field.fieldId]?.to ?? parsedTo ?? ""),
                                                                         },
                                                                     }));
                                                                 };
@@ -785,7 +866,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                         const fromValue = fromInput?.value.trim() || "";
                                                                         const toValue = toInput?.value.trim() || "";
                                                                         
-                                                                        // Update state with current values
+                                                                        // Update state with current values FIRST to persist them
                                                                         setAgeRangeInputs((prev) => ({
                                                                             ...prev,
                                                                             [field.fieldId]: {
@@ -796,12 +877,14 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                         
                                                                         // Save if at least one value is present
                                                                         if (fromValue || toValue) {
-                                                                            // Format: "from - to" or just the value if one is empty
+                                                                            // Format: "from - to" or "from - " or " - to"
+                                                                            // This format matches what the server expects and how it's parsed
                                                                             const formattedValue = fromValue && toValue 
                                                                                 ? `${fromValue} - ${toValue}`
                                                                                 : fromValue 
-                                                                                    ? `${fromValue} - ${toValue || ""}`
+                                                                                    ? `${fromValue} - `  // Keep format consistent for parsing
                                                                                     : ` - ${toValue}`;
+                                                                            
                                                                             handleUpdate(field.fieldId, formattedValue);
                                                                         }
                                                                         

@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import MembershipForm from "./Form";
@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 const AddClient = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [customerId, setCustomerId] = useState<string>(""); // initialize as empty string
 
   const stateCustomerId = location.state?.customerId;
@@ -13,14 +14,29 @@ const AddClient = () => {
 
 
   useEffect(() => {
-
+    // Get customerId from state, query params, or localStorage (in priority order)
     const finalId = stateCustomerId || queryCustomerId || localStorage.getItem("clientId");
 
     if (finalId) {
       localStorage.setItem("clientId", finalId);
-      setCustomerId(finalId); // ⬅️ use state to prevent fallback loops
+      setCustomerId(finalId);
+
+      // Ensure customerId is always in the URL when available
+      // Update URL if customerId exists but is not in the query params
+      // This ensures the URL always has customerId for sharing/bookmarking
+      if (!queryCustomerId && finalId) {
+        const currentPath = location.pathname;
+        const currentSearch = new URLSearchParams(location.search);
+        
+        // Only update if customerId is not already in the URL
+        if (currentSearch.get("customerId") !== finalId) {
+          currentSearch.set("customerId", finalId);
+          // Update URL with replace to avoid adding to history
+          navigate(`${currentPath}?${currentSearch.toString()}`, { replace: true });
+        }
+      }
     }
-  }, [stateCustomerId, queryCustomerId]);
+  }, [stateCustomerId, queryCustomerId, location.pathname, navigate]);
 
   const showMembershipForm = location.pathname === "/dashboard/add-client";
 
