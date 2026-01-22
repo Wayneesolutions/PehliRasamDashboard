@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useNavigate } from "react-router-dom";
 import debounce from "lodash.debounce";
 import { message } from "antd";
 import {
@@ -31,6 +31,7 @@ const ExpandableSection = ({ title, children }: { title: string; children: React
 
 const MatchesPage = () => {
   const { customerId } = useOutletContext<{ customerId: string }>();
+  const navigate = useNavigate();
   const [matchSuggestions, setMatchSuggestions] = useState<any[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
@@ -247,7 +248,13 @@ const MatchesPage = () => {
                           <img
                             src={value.imagePath}
                             alt={`${value.firstName} ${value.lastName}`}
-                            className="w-28 h-28 rounded-xl object-cover border"
+                            className="w-28 h-28 rounded-xl object-cover border cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => {
+                              if (value.matchCustomerId) {
+                                navigate(`/dashboard/add-client?customerId=${value.matchCustomerId}`);
+                              }
+                            }}
+                            title="Click to view profile"
                           />
                           <div className="flex flex-col justify-center text-sm text-gray-700">
                             <div className="mb-1">
