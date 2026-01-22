@@ -49,6 +49,43 @@ apiClient.interceptors.response.use(
   }
 );
 
+// Notes API
+export const createNote = async (data: { customerId: string; noteDate: string; content: string }) => {
+  try {
+    const response = await apiClient.post('admin/notes', data)
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
+export const getNotes = async (customerId: string) => {
+  try {
+    const response = await apiClient.get(`admin/notes?customerId=${customerId}`)
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
+export const updateNote = async (noteId: string, data: { noteDate?: string; content?: string }) => {
+  try {
+    const response = await apiClient.put(`admin/notes/${noteId}`, data)
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
+export const deleteNote = async (noteId: string) => {
+  try {
+    const response = await apiClient.delete(`admin/notes/${noteId}`)
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
 export default apiClient;
 
 

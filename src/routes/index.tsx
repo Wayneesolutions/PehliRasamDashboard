@@ -17,6 +17,7 @@ const Form = lazy(() => import("../pages/clients/Form"));
 const Timeline = lazy(() => import("../pages/clients/timeline"));
 const Matches = lazy(() => import("../pages/clients/matches"));
 const Photos = lazy(() => import("../pages/clients/photos"));
+const Notes = lazy(() => import("../pages/clients/notes"));
 const Events = lazy(() => import("../pages/clients/events"));
 const Communication = lazy(() => import("../pages/clients/communication"));
 
@@ -57,6 +58,7 @@ const AppRoutes = () => {
                             <Route path="timeline" element={<Timeline />} />
                             <Route path="matching" element={<Matches />} />
                             <Route path="photos" element={<Photos />} />
+                            <Route path="notes" element={<Notes />} />
                             <Route path="events" element={<Events />} />
                             <Route path="communication" element={<Communication />} />
                         </Route>
