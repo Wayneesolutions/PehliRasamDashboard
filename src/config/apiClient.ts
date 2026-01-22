@@ -91,6 +91,14 @@ export const allActiveCustomer = async () => {
     return (error as Error).response?.data;
   }
 }
+export const advancedSearchCustomers = async (searchCriteria: any[]) => {
+  try {
+    const response = await apiClient.post('admin/advancedSearchCustomers', { searchCriteria })
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
 export const getCustomerBasicDetail = async (customerId: string) => {
   try {
     const response = await apiClient.post('admin/getCustomerBasicDetail', { customerId: customerId })

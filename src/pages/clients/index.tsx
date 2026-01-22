@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input, Button, Modal, Form, Menu, Dropdown, message, Checkbox, Tabs, Select, DatePicker } from "antd";
-import { SearchOutlined, UserAddOutlined, InfoCircleOutlined, EllipsisOutlined, DownOutlined, CloseOutlined, EnvironmentOutlined } from "@ant-design/icons";
-import { addCustomerByAdmin, allActiveCustomer, deleteCustomer, getCustomerBasicDetail, getAllClientLists } from "../../config/apiClient";
+import { SearchOutlined, UserAddOutlined, InfoCircleOutlined, EllipsisOutlined, DownOutlined, CloseOutlined } from "@ant-design/icons";
+import { addCustomerByAdmin, allActiveCustomer, deleteCustomer, getCustomerBasicDetail, getAllClientLists, advancedSearchCustomers } from "../../config/apiClient";
 import { ActiveClientDetails } from "../../schema/customernew";
 
 const { TabPane } = Tabs;
@@ -54,9 +54,8 @@ const Clients: React.FC = () => {
     { id: 4, field: "birthday", value: ["", ""] },
     { id: 5, field: "height", value: ["", ""] },
     { id: 6, field: "maritalStatus", value: "" },
-    { id: 7, field: "location", value: "", proximity: "", proximityUnit: "miles" },
-    { id: 8, field: "registeredOnDate", value: ["", ""] },
-    { id: 9, field: "registeredBy", value: "" },
+    { id: 7, field: "registeredOnDate", value: ["", ""] },
+    { id: 8, field: "registeredBy", value: "" },
   ]);
 
   const openClientModal = (client: ActiveClientDetails) => {
@@ -319,6 +318,19 @@ const Clients: React.FC = () => {
           >
             Advanced Search
           </Button>
+          {/* Reset/Show All button - only show if we have filtered results */}
+          {activeclients.length > 0 && (
+            <Button
+              type="default"
+              className="border-gray-300"
+              onClick={async () => {
+                await fetchingCustomers();
+                message.success("Showing all customers");
+              }}
+            >
+              Show All
+            </Button>
+          )}
           {/* Add Client button - top right */}
           <Button
             icon={<UserAddOutlined />}
@@ -549,7 +561,7 @@ const Clients: React.FC = () => {
                   type="link"
                   className="!p-0 !text-blue-600"
                   onClick={() => {
-                    setSearchCriteria(searchCriteria.map(c => ({ ...c, value: Array.isArray(c.value) ? ["", ""] : "", proximity: "" })));
+                    setSearchCriteria(searchCriteria.map(c => ({ ...c, value: Array.isArray(c.value) ? ["", ""] : "" })));
                   }}
                 >
                   Clear Values
@@ -567,7 +579,6 @@ const Clients: React.FC = () => {
                       birthday: "Birthday (Age)",
                       height: "Height (ft & in)",
                       maritalStatus: "Marital Status",
-                      location: "Location",
                       registeredOnDate: "Registered On Date",
                       registeredBy: "Registered By",
                     };
@@ -575,7 +586,6 @@ const Clients: React.FC = () => {
                   };
 
                   const isRangeField = criterion.field === "birthday" || criterion.field === "height" || criterion.field === "registeredOnDate";
-                  const isLocationField = criterion.field === "location";
 
                   // Get dropdown options based on field type
                   const getFieldOptions = (field: string) => {
@@ -630,51 +640,7 @@ const Clients: React.FC = () => {
                         </div>
 
                         {/* Value Input(s) */}
-                        {isLocationField ? (
-                          <div className="flex-1 flex flex-col gap-2">
-                            <div className="flex items-center gap-2">
-                              <EnvironmentOutlined className="text-red-500" />
-                              <Input
-                                placeholder="Enter location"
-                                value={criterion.value}
-                                onChange={(e) => {
-                                  const updated = [...searchCriteria];
-                                  updated[index].value = e.target.value;
-                                  setSearchCriteria(updated);
-                                }}
-                                className="flex-1"
-                              />
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                placeholder="Proximity"
-                                value={criterion.proximity}
-                                onChange={(e) => {
-                                  const updated = [...searchCriteria];
-                                  updated[index].proximity = e.target.value;
-                                  setSearchCriteria(updated);
-                                }}
-                                className="w-32"
-                              />
-                              <Select
-                                value={criterion.proximityUnit || "miles"}
-                                onChange={(value) => {
-                                  const updated = [...searchCriteria];
-                                  updated[index].proximityUnit = value;
-                                  setSearchCriteria(updated);
-                                }}
-                                className="w-24"
-                              >
-                                <Option value="miles">miles</Option>
-                                <Option value="km">km</Option>
-                              </Select>
-                            </div>
-                            {/* Map placeholder */}
-                            <div className="w-full h-48 bg-gray-200 rounded border border-gray-300 flex items-center justify-center text-gray-500">
-                              Map Component
-                            </div>
-                          </div>
-                        ) : isRangeField ? (
+                        {isRangeField ? (
                           <div className="flex items-center gap-2">
                             <Input
                               placeholder={criterion.field === "birthday" ? "Min Age" : criterion.field === "height" ? "Min Height" : "From Date"}
@@ -734,9 +700,65 @@ const Clients: React.FC = () => {
 
               {/* Search Button */}
               <div className="mt-6 flex justify-end">
-                <Button type="primary" onClick={() => {
-                  message.info("Search functionality will be implemented");
-                  setIsAdvancedSearchOpen(false);
+                <Button type="primary" onClick={async () => {
+                  try {
+                    // Filter out empty criteria
+                    const validCriteria = searchCriteria.filter(c => {
+                      if (c.field === "registeredOnDate" || c.field === "birthday" || c.field === "height") {
+                        return Array.isArray(c.value) && (c.value[0] || c.value[1]);
+                      }
+                      return c.value && c.value.trim();
+                    });
+
+                    if (validCriteria.length === 0) {
+                      message.warning("Please fill at least one search criterion");
+                      return;
+                    }
+
+                    // Show loading
+                    const hideLoading = message.loading("Searching customers...", 0);
+
+                    // Call advanced search API
+                    const res = await advancedSearchCustomers(validCriteria);
+                    hideLoading();
+
+                    if (res.success) {
+                      const sorted = [...res.data].sort((a, b) => {
+                        return (
+                          new Date(parseInt(b._id.substring(0, 8), 16) * 1000).getTime() -
+                          new Date(parseInt(a._id.substring(0, 8), 16) * 1000).getTime()
+                        );
+                      });
+                      setActiveClients(sorted);
+                      
+                      // Fetch client lists for filtered customers
+                      const listsMap: Record<string, ClientList[]> = {};
+                      await Promise.all(
+                        sorted.map(async (client) => {
+                          try {
+                            const detailRes = await getCustomerBasicDetail(client._id);
+                            if (detailRes.success && detailRes.data?.clientLists) {
+                              listsMap[client._id] = detailRes.data.clientLists;
+                            } else {
+                              listsMap[client._id] = [];
+                            }
+                          } catch (error) {
+                            console.error(`Error fetching client lists for ${client._id}:`, error);
+                            listsMap[client._id] = [];
+                          }
+                        })
+                      );
+                      setClientListsMap(listsMap);
+
+                      message.success(`Found ${sorted.length} customer(s) matching your criteria`);
+                      setIsAdvancedSearchOpen(false);
+                    } else {
+                      message.error(res.message || "Search failed");
+                    }
+                  } catch (error) {
+                    message.error("Error performing search");
+                    console.error("Advanced search error:", error);
+                  }
                 }}>
                   Search
                 </Button>
