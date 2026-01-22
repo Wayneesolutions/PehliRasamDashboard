@@ -1,9 +1,12 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Input, Button, Modal, Form, Menu, Dropdown, message } from "antd";
-import { SearchOutlined, UserAddOutlined, InfoCircleOutlined, EllipsisOutlined } from "@ant-design/icons";
-import { addCustomerByAdmin, allActiveCustomer, deleteCustomer, getCustomerBasicDetail } from "../../config/apiClient";
+import { Input, Button, Modal, Form, Menu, Dropdown, message, Checkbox, Tabs, Select, DatePicker } from "antd";
+import { SearchOutlined, UserAddOutlined, InfoCircleOutlined, EllipsisOutlined, DownOutlined, CloseOutlined, EnvironmentOutlined } from "@ant-design/icons";
+import { addCustomerByAdmin, allActiveCustomer, deleteCustomer, getCustomerBasicDetail, getAllClientLists } from "../../config/apiClient";
 import { ActiveClientDetails } from "../../schema/customernew";
+
+const { TabPane } = Tabs;
+const { Option } = Select;
 
 type ClientList = {
   _id: string;
@@ -34,6 +37,27 @@ const Clients: React.FC = () => {
   const [clientListsMap, setClientListsMap] = useState<Record<string, ClientList[]>>({});
   const [form] = Form.useForm();
   const navigate = useNavigate();
+  
+  // Lists dropdown states
+  const [isListsDropdownOpen, setIsListsDropdownOpen] = useState(false);
+  const [allClientLists, setAllClientLists] = useState<ClientList[]>([]);
+  const [selectedListIds, setSelectedListIds] = useState<string[]>([]);
+  const [listSearchTerm, setListSearchTerm] = useState("");
+  
+  // Advanced Search modal states
+  const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("fields");
+  const [searchCriteria, setSearchCriteria] = useState<any[]>([
+    { id: 1, field: "membershipType", value: "" },
+    { id: 2, field: "gender", value: "" },
+    { id: 3, field: "caste", value: "" },
+    { id: 4, field: "birthday", value: ["", ""] },
+    { id: 5, field: "height", value: ["", ""] },
+    { id: 6, field: "maritalStatus", value: "" },
+    { id: 7, field: "location", value: "", proximity: "", proximityUnit: "miles" },
+    { id: 8, field: "registeredOnDate", value: ["", ""] },
+    { id: 9, field: "registeredBy", value: "" },
+  ]);
 
   const openClientModal = (client: ActiveClientDetails) => {
     setSelectedClient(client);
@@ -125,7 +149,19 @@ const Clients: React.FC = () => {
   };
   useEffect(() => {
     fetchingCustomers();
+    fetchAllClientLists();
   }, []);
+
+  const fetchAllClientLists = async () => {
+    try {
+      const res = await getAllClientLists();
+      if (res.success && res.data) {
+        setAllClientLists(res.data);
+      }
+    } catch (error) {
+      console.error("Error fetching all client lists:", error);
+    }
+  };
   const handleDeleteCustomer = (customerId: string) => {
     Modal.confirm({
       title: "Are you sure?",
@@ -157,23 +193,158 @@ const Clients: React.FC = () => {
     );
   }, [searchTerm, activeclients]);
 
+  // Filter lists based on search term (including "No List" option)
+  const filteredLists = useMemo(() => {
+    const noListOption = { _id: "no-list", listName: "No List", color: "#e5e7eb", status: "" };
+    const allListsWithNoList = [noListOption, ...allClientLists];
+    
+    if (!listSearchTerm) return allListsWithNoList;
+    return allListsWithNoList.filter((list) =>
+      list.listName.toLowerCase().includes(listSearchTerm.toLowerCase())
+    );
+  }, [listSearchTerm, allClientLists]);
+
+  // Handle select all lists (only selects filtered/visible lists)
+  const handleSelectAllLists = () => {
+    const allFilteredIds = filteredLists.map((list) => list._id);
+    setSelectedListIds((prev) => {
+      // Combine previous selections with filtered list IDs, removing duplicates
+      const combined = [...new Set([...prev, ...allFilteredIds])];
+      return combined;
+    });
+  };
+
+  // Handle deselect all lists (deselects only filtered/visible lists)
+  const handleDeselectAllLists = () => {
+    const filteredIds = filteredLists.map((list) => list._id);
+    setSelectedListIds((prev) => prev.filter((id) => !filteredIds.includes(id)));
+  };
+
+  // Handle individual list selection
+  const handleListToggle = (listId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedListIds((prev) => 
+        prev.includes(listId) ? prev : [...prev, listId]
+      );
+    } else {
+      setSelectedListIds((prev) => prev.filter((id) => id !== listId));
+    }
+  };
+
+  // Lists dropdown menu
+  const listsDropdownMenu = (
+    <div className="bg-white rounded-lg shadow-lg border border-gray-200 min-w-[280px] max-w-[320px]">
+      {/* Search input inside dropdown */}
+      <div className="p-3 border-b border-gray-200">
+        <Input
+          placeholder="Search lists..."
+          value={listSearchTerm}
+          onChange={(e) => setListSearchTerm(e.target.value)}
+          prefix={<SearchOutlined />}
+          className="w-full"
+        />
+      </div>
+
+      {/* Select All / Deselect All */}
+      <div className="p-2 border-b border-gray-200 flex gap-2">
+        <button
+          onClick={handleSelectAllLists}
+          className="text-blue-600 hover:text-blue-700 text-sm font-medium px-2 py-1"
+        >
+          Select All
+        </button>
+        <button
+          onClick={handleDeselectAllLists}
+          className="text-blue-600 hover:text-blue-700 text-sm font-medium px-2 py-1"
+        >
+          Deselect All
+        </button>
+      </div>
+
+      {/* Lists with checkboxes */}
+      <div className="max-h-[300px] overflow-y-auto">
+        {filteredLists.length === 0 ? (
+          <div className="p-4 text-center text-gray-500 text-sm">No lists found</div>
+        ) : (
+          <div className="p-2">
+            {filteredLists.map((list) => {
+              const isChecked = selectedListIds.includes(list._id);
+              return (
+                <div
+                  key={list._id}
+                  className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                  onClick={(e) => {
+                    // Prevent double triggering if clicking directly on checkbox
+                    if (e.target instanceof HTMLInputElement) return;
+                    handleListToggle(list._id, !isChecked);
+                  }}
+                >
+                  <Checkbox
+                    checked={isChecked}
+                    onChange={(e) => handleListToggle(list._id, e.target.checked)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <span
+                    className="w-3 h-3 rounded-full border border-gray-300 flex-shrink-0"
+                    style={{ backgroundColor: list.color }}
+                  />
+                  <span className="text-sm text-gray-700 flex-1">{list.listName}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
-      {/* Header with search and button */}
-      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
-        {/* Left: Search input with fixed width */}
-        <div className="flex-1 min-w-[200px] max-w-[300px]">
-          <Input
-            prefix={<SearchOutlined />}
-            placeholder="Search by name"
-            onChange={handleSearch}
-          />
+      {/* Header with search, Advanced Search, and Add Client button */}
+      <div className="mb-4">
+        <div className="flex items-center gap-2 mb-3">
+          {/* Search input */}
+          <div className="flex-1 min-w-[200px]">
+            <Input
+              placeholder="Type name to search"
+              onChange={handleSearch}
+              className="w-full"
+            />
+          </div>
+          {/* Advanced Search button */}
+          <Button
+            type="default"
+            className="border-gray-300"
+            onClick={() => setIsAdvancedSearchOpen(true)}
+          >
+            Advanced Search
+          </Button>
+          {/* Add Client button - top right */}
+          <Button
+            icon={<UserAddOutlined />}
+            type="primary"
+            onClick={openAddClientModal}
+          >
+            + Client
+          </Button>
         </div>
 
-        {/* Right: Add Client button */}
-        <Button icon={<UserAddOutlined />} type="primary" onClick={openAddClientModal}>
-          + Client
-        </Button>
+        {/* Filter buttons row */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Lists dropdown */}
+          <Dropdown
+            overlay={listsDropdownMenu}
+            trigger={["click"]}
+            open={isListsDropdownOpen}
+            onOpenChange={setIsListsDropdownOpen}
+            placement="bottomLeft"
+          >
+            <Button className="flex items-center gap-1 border-gray-300">
+              Lists
+              <DownOutlined className="text-xs" />
+            </Button>
+          </Dropdown>
+        </div>
       </div>
 
 
@@ -357,6 +528,227 @@ const Clients: React.FC = () => {
             <Input placeholder="Enter email" />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Advanced Search Modal */}
+      <Modal
+        title={null}
+        open={isAdvancedSearchOpen}
+        onCancel={() => setIsAdvancedSearchOpen(false)}
+        footer={null}
+        width={900}
+        className="advanced-search-modal"
+        closable={true}
+      >
+        <Tabs activeKey={activeTab} onChange={setActiveTab}>
+          <TabPane tab="Fields" key="fields">
+            <div className="mt-4">
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3 mb-4">
+                <Button
+                  type="link"
+                  className="!p-0 !text-blue-600"
+                  onClick={() => {
+                    setSearchCriteria(searchCriteria.map(c => ({ ...c, value: Array.isArray(c.value) ? ["", ""] : "", proximity: "" })));
+                  }}
+                >
+                  Clear Values
+                </Button>
+              </div>
+
+              {/* Search Criteria Rows */}
+              <div className="space-y-3">
+                {searchCriteria.map((criterion, index) => {
+                  const getFieldLabel = (field: string) => {
+                    const labels: Record<string, string> = {
+                      membershipType: "Membership Type",
+                      gender: "Gender",
+                      caste: "Caste",
+                      birthday: "Birthday (Age)",
+                      height: "Height (ft & in)",
+                      maritalStatus: "Marital Status",
+                      location: "Location",
+                      registeredOnDate: "Registered On Date",
+                      registeredBy: "Registered By",
+                    };
+                    return labels[field] || field;
+                  };
+
+                  const isRangeField = criterion.field === "birthday" || criterion.field === "height" || criterion.field === "registeredOnDate";
+                  const isLocationField = criterion.field === "location";
+
+                  // Get dropdown options based on field type
+                  const getFieldOptions = (field: string) => {
+                    switch (field) {
+                      case "membershipType":
+                        return [
+                          { value: "paid", label: "Paid Member" },
+                          { value: "free", label: "Free Member" },
+                          { value: "premium", label: "Premium Member" },
+                          { value: "trial", label: "Trial Member" },
+                        ];
+                      case "gender":
+                        return [
+                          { value: "male", label: "Male" },
+                          { value: "female", label: "Female" },
+                          { value: "other", label: "Other" },
+                        ];
+                      case "caste":
+                        return [
+                          { value: "jatt", label: "Jatt" },
+                          { value: "khatri", label: "Khatri" },
+                          { value: "arora", label: "Arora" },
+                          { value: "saini", label: "Saini" },
+                          { value: "other", label: "Other" },
+                        ];
+                      case "maritalStatus":
+                        return [
+                          { value: "single", label: "Single" },
+                          { value: "divorced", label: "Divorced" },
+                          { value: "widowed", label: "Widowed" },
+                          { value: "separated", label: "Separated" },
+                        ];
+                      case "registeredBy":
+                        return [
+                          { value: "admin", label: "Admin" },
+                          { value: "self", label: "Self Registration" },
+                          { value: "referral", label: "Referral" },
+                        ];
+                      default:
+                        return [];
+                    }
+                  };
+
+                  const fieldDropdownOptions = getFieldOptions(criterion.field);
+
+                  return (
+                    <div key={criterion.id} className="border border-gray-200 rounded p-3 bg-gray-50">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Field Label - Fixed */}
+                        <div className="w-48 text-sm font-medium text-gray-700">
+                          {getFieldLabel(criterion.field)}
+                        </div>
+
+                        {/* Value Input(s) */}
+                        {isLocationField ? (
+                          <div className="flex-1 flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                              <EnvironmentOutlined className="text-red-500" />
+                              <Input
+                                placeholder="Enter location"
+                                value={criterion.value}
+                                onChange={(e) => {
+                                  const updated = [...searchCriteria];
+                                  updated[index].value = e.target.value;
+                                  setSearchCriteria(updated);
+                                }}
+                                className="flex-1"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                placeholder="Proximity"
+                                value={criterion.proximity}
+                                onChange={(e) => {
+                                  const updated = [...searchCriteria];
+                                  updated[index].proximity = e.target.value;
+                                  setSearchCriteria(updated);
+                                }}
+                                className="w-32"
+                              />
+                              <Select
+                                value={criterion.proximityUnit || "miles"}
+                                onChange={(value) => {
+                                  const updated = [...searchCriteria];
+                                  updated[index].proximityUnit = value;
+                                  setSearchCriteria(updated);
+                                }}
+                                className="w-24"
+                              >
+                                <Option value="miles">miles</Option>
+                                <Option value="km">km</Option>
+                              </Select>
+                            </div>
+                            {/* Map placeholder */}
+                            <div className="w-full h-48 bg-gray-200 rounded border border-gray-300 flex items-center justify-center text-gray-500">
+                              Map Component
+                            </div>
+                          </div>
+                        ) : isRangeField ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              placeholder={criterion.field === "birthday" ? "Min Age" : criterion.field === "height" ? "Min Height" : "From Date"}
+                              value={Array.isArray(criterion.value) ? criterion.value[0] : ""}
+                              onChange={(e) => {
+                                const updated = [...searchCriteria];
+                                updated[index].value = [e.target.value, Array.isArray(criterion.value) ? criterion.value[1] : ""];
+                                setSearchCriteria(updated);
+                              }}
+                              className="w-32"
+                            />
+                            <Input
+                              placeholder={criterion.field === "birthday" ? "Max Age" : criterion.field === "height" ? "Max Height" : "To Date"}
+                              value={Array.isArray(criterion.value) ? criterion.value[1] : ""}
+                              onChange={(e) => {
+                                const updated = [...searchCriteria];
+                                updated[index].value = [Array.isArray(criterion.value) ? criterion.value[0] : "", e.target.value];
+                                setSearchCriteria(updated);
+                              }}
+                              className="w-32"
+                            />
+                          </div>
+                        ) : (
+                          <Select
+                            placeholder="Select value"
+                            value={criterion.value || undefined}
+                            onChange={(value) => {
+                              const updated = [...searchCriteria];
+                              updated[index].value = value;
+                              setSearchCriteria(updated);
+                            }}
+                            className="w-48"
+                            allowClear
+                            showSearch
+                          >
+                            {fieldDropdownOptions.map(opt => (
+                              <Option key={opt.value} value={opt.value}>{opt.label}</Option>
+                            ))}
+                          </Select>
+                        )}
+
+                        {/* Remove Button */}
+                        <Button
+                          type="text"
+                          danger
+                          icon={<CloseOutlined />}
+                          onClick={() => {
+                            setSearchCriteria(searchCriteria.filter(c => c.id !== criterion.id));
+                          }}
+                          className="!p-1"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Search Button */}
+              <div className="mt-6 flex justify-end">
+                <Button type="primary" onClick={() => {
+                  message.info("Search functionality will be implemented");
+                  setIsAdvancedSearchOpen(false);
+                }}>
+                  Search
+                </Button>
+              </div>
+            </div>
+          </TabPane>
+          <TabPane tab="Schedule" key="schedule">
+            <div className="mt-4 p-4 text-center text-gray-500">
+              Schedule search functionality coming soon
+            </div>
+          </TabPane>
+        </Tabs>
       </Modal>
     </div>
   );
