@@ -24,7 +24,7 @@ type TimelineEvent = {
   icon: ReactElement;
   date: string;
   isIntroAction?: boolean;
-  customerId?: string;
+  introId?: string;
 };
 
 type ChartDataItem = {
@@ -46,10 +46,23 @@ const TimelineMain: React.FC = () => {
   const paginatedData = timelineData.slice(startIndex, endIndex);
   const totalPages = Math.ceil(timelineData.length / itemsPerPage);
 
-  // Function to extract customer ID from changeSummary URL
-  const extractCustomerIdFromUrl = (changeSummary: string): string | null => {
+  // Function to extract intro ID from changeSummary URL
+  const extractIntroIdFromUrl = (changeSummary: string): string | null => {
+    if (!changeSummary) return null;
+    
+    // Try to match /client/ followed by digits (could be in a URL like http://... or just /client/12345)
     const urlMatch = changeSummary.match(/\/client\/(\d+)/);
-    return urlMatch ? urlMatch[1] : null;
+    if (urlMatch && urlMatch[1]) {
+      return urlMatch[1];
+    }
+    
+    // Also try to match just digits if the format is different
+    const digitMatch = changeSummary.match(/\b(\d{5})\b/);
+    if (digitMatch && digitMatch[1]) {
+      return digitMatch[1];
+    }
+    
+    return null;
   };
 
   const fetchTimelineLogs = async () => {
@@ -63,14 +76,14 @@ const TimelineMain: React.FC = () => {
 
       const formatted: TimelineEvent[] = sortedLogs.map((log: any) => {
         const isIntroAction = log.action.toLowerCase().includes("intro");
-        const customerIdFromUrl = isIntroAction ? extractCustomerIdFromUrl(log.changeSummary) : null;
+        const introIdFromUrl = isIntroAction ? extractIntroIdFromUrl(log.changeSummary) : null;
         
-        // Debug log to check detection
+        // Debug logging for intro actions
         if (isIntroAction) {
           console.log('Intro action detected:', {
             action: log.action,
             changeSummary: log.changeSummary,
-            customerId: customerIdFromUrl
+            introId: introIdFromUrl
           });
         }
         
@@ -85,7 +98,7 @@ const TimelineMain: React.FC = () => {
           ),
           date: moment(log.createdAt).format("YYYY-MM-DD"),
           isIntroAction,
-          customerId: customerIdFromUrl,
+          introId: introIdFromUrl,
         };
       });
 
@@ -117,28 +130,30 @@ const TimelineMain: React.FC = () => {
 
   // Function to render the timeline event text with clickable link for intro actions
   const renderEventText = (event: TimelineEvent) => {
-    if (event.isIntroAction && event.customerId) {
-      const paddedId = event.customerId.padStart(5, '0');
-      
-      // For intro actions, create a special formatted message
-      const customerName = event.link.trim();
+    if (event.isIntroAction && event.introId) {
+      // Ensure intro ID is padded to 5 digits
+      const paddedId = event.introId.padStart(5, '0');
+      const targetPath = `/dashboard/client-intro/${paddedId}`;
+      // Get token from localStorage to pass in URL (for new tab authentication)
+      const token = localStorage.getItem('token');
+      const fullUrl = token 
+        ? `${window.location.origin}${targetPath}#token=${encodeURIComponent(token)}`
+        : `${window.location.origin}${targetPath}`;
       
       return (
         <p className="text-gray-700 text-sm">
-          Intro generated for{" "}
-          <a 
-            href={`/dashboard/client-intro/${paddedId}`}
-            className="text-blue-500 font-medium hover:underline cursor-pointer"
+          <span
             onClick={(e) => {
               e.preventDefault();
-              console.log('Navigating to:', `/dashboard/client-intro/${paddedId}`);
-              // You can use your router navigation here instead
-              window.location.href = `/dashboard/client-intro/${paddedId}`;
+              e.stopPropagation();
+              console.log('Opening intro page in new browser tab:', fullUrl);
+              window.open(fullUrl, '_blank', 'noopener,noreferrer');
             }}
+            className="text-blue-500 font-medium hover:underline cursor-pointer"
           >
-            {customerName} ({paddedId})
-          </a>
-          {" "}by Admin user
+            Intro
+          </span>
+          {" "}generated for {event.link.trim()}
         </p>
       );
     } else {
@@ -202,13 +217,54 @@ const TimelineMain: React.FC = () => {
             <h4 className="text-md font-semibold text-gray-800 mt-4 mb-2">
               {moment(date).format("D MMMM")}
             </h4>
-            {logs.map((event, index) => (
-              <div key={index} className="flex items-start gap-4 mb-2">
-                {event.icon}
-                {renderEventText(event)}
-                <span className="text-gray-500 text-xs">{event.time}</span>
-              </div>
-            ))}
+            {logs.map((event, index) => {
+              const isIntroRow = event.isIntroAction && event.introId;
+              const paddedId = isIntroRow ? event.introId!.padStart(5, '0') : null;
+              const targetPath = isIntroRow ? `/dashboard/client-intro/${paddedId}` : null;
+              // Get token from localStorage to pass in URL (for new tab authentication)
+              const token = localStorage.getItem('token');
+              const fullUrl = isIntroRow && targetPath
+                ? token
+                  ? `${window.location.origin}${targetPath}#token=${encodeURIComponent(token)}`
+                  : `${window.location.origin}${targetPath}`
+                : null;
+              
+              const handleRowClick = (e: React.MouseEvent) => {
+                if (isIntroRow && fullUrl) {
+                  // Only handle if clicking on the row itself, not on the Intro link
+                  if ((e.target as HTMLElement).tagName !== 'SPAN' || !(e.target as HTMLElement).classList.contains('text-blue-500')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Opening intro page in new browser tab from row click:', fullUrl);
+                    window.open(fullUrl, '_blank', 'noopener,noreferrer');
+                  }
+                }
+              };
+              
+              return (
+                <div
+                  key={index}
+                  onClick={handleRowClick}
+                  className={`flex items-start gap-4 mb-2 ${
+                    isIntroRow
+                      ? 'cursor-pointer hover:bg-gray-50 rounded-md p-2 -m-2 transition-colors'
+                      : ''
+                  }`}
+                  role={isIntroRow ? 'button' : undefined}
+                  tabIndex={isIntroRow ? 0 : undefined}
+                  onKeyDown={(e) => {
+                    if (isIntroRow && (e.key === 'Enter' || e.key === ' ') && fullUrl) {
+                      e.preventDefault();
+                      window.open(fullUrl, '_blank', 'noopener,noreferrer');
+                    }
+                  }}
+                >
+                  {event.icon}
+                  {renderEventText(event)}
+                  <span className="text-gray-500 text-xs">{event.time}</span>
+                </div>
+              );
+            })}
           </div>
         ))
       ) : (
