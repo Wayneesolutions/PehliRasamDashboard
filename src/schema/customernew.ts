@@ -86,11 +86,13 @@ export interface ActiveClientDetails {
   email: string;
   imagePath: string;
   activeStatus: boolean;
+  isPinned?: boolean;
   address: Address;
 }
 
 export interface Customer {
   _id: string;
+  entryName?: string;
   firstName: string;
   middelName: string;
   lastName: string;

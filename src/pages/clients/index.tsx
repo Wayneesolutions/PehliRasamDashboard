@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input, Button, Modal, Form, Menu, Dropdown, message, Checkbox, Tabs, Select, DatePicker } from "antd";
-import { SearchOutlined, UserAddOutlined, InfoCircleOutlined, EllipsisOutlined, DownOutlined, CloseOutlined } from "@ant-design/icons";
-import { addCustomerByAdmin, allActiveCustomer, deleteCustomer, getCustomerBasicDetail, getAllClientLists, advancedSearchCustomers } from "../../config/apiClient";
+import { SearchOutlined, UserAddOutlined, InfoCircleOutlined, EllipsisOutlined, DownOutlined, CloseOutlined, PushpinOutlined } from "@ant-design/icons";
+import { addCustomerByAdmin, allActiveCustomer, deleteCustomer, getCustomerBasicDetail, getAllClientLists, advancedSearchCustomers, togglePinCustomer } from "../../config/apiClient";
 import { ActiveClientDetails } from "../../schema/customernew";
 
 const { TabPane } = Tabs;
@@ -161,6 +161,41 @@ const Clients: React.FC = () => {
       console.error("Error fetching all client lists:", error);
     }
   };
+  const handleTogglePin = async (customerId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent opening client modal when clicking pin icon
+    try {
+      const res = await togglePinCustomer(customerId);
+      if (res.success) {
+        // Update the client's pin status in the local state
+        setActiveClients((prevClients) =>
+          prevClients.map((client) =>
+            client._id === customerId
+              ? { ...client, isPinned: res.data.isPinned }
+              : client
+          )
+        );
+        // Re-sort clients (pinned first)
+        setActiveClients((prevClients) => {
+          const sorted = [...prevClients].sort((a, b) => {
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            return (
+              new Date(parseInt(b._id.substring(0, 8), 16) * 1000).getTime() -
+              new Date(parseInt(a._id.substring(0, 8), 16) * 1000).getTime()
+            );
+          });
+          return sorted;
+        });
+        message.success(res.message || `Client ${res.data.isPinned ? 'pinned' : 'unpinned'} successfully`);
+      } else {
+        message.error(res.message || "Failed to toggle pin status");
+      }
+    } catch (error) {
+      console.error("Error toggling pin:", error);
+      message.error("An error occurred while toggling pin status");
+    }
+  };
+
   const handleDeleteCustomer = (customerId: string) => {
     Modal.confirm({
       title: "Are you sure?",
@@ -187,9 +222,18 @@ const Clients: React.FC = () => {
   };
 
   const filteredClients = useMemo(() => {
-    return activeclients.filter((client) =>
+    const filtered = activeclients.filter((client) =>
       `${client.firstName} ${client.lastName}`.toLowerCase().includes(searchTerm)
     );
+    // Sort: pinned clients first, then by creation date
+    return filtered.sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return (
+        new Date(parseInt(b._id.substring(0, 8), 16) * 1000).getTime() -
+        new Date(parseInt(a._id.substring(0, 8), 16) * 1000).getTime()
+      );
+    });
   }, [searchTerm, activeclients]);
 
   // Filter lists based on search term (including "No List" option)
@@ -368,7 +412,25 @@ const Clients: React.FC = () => {
           const bgColor = bgColors[index % bgColors.length]; // cycle through colors
 
           return (
-            <div key={client._id} className="flex flex-col items-center text-center group relative">
+            <div 
+              key={client._id} 
+              className={`flex flex-col items-center text-center group relative ${
+                client.isPinned ? 'ring-2 ring-yellow-400 ring-offset-2 bg-yellow-50 rounded-lg p-2' : ''
+              }`}
+            >
+              {/* Pin Icon */}
+              <button
+                onClick={(e) => handleTogglePin(client._id, e)}
+                className={`absolute top-2 right-2 z-10 p-1.5 rounded-full transition-all ${
+                  client.isPinned 
+                    ? 'bg-yellow-400 text-yellow-900 hover:bg-yellow-500' 
+                    : 'bg-white text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                } shadow-md`}
+                title={client.isPinned ? 'Unpin client' : 'Pin client'}
+              >
+                <PushpinOutlined className={client.isPinned ? 'text-base' : 'text-sm'} />
+              </button>
+
               {client.imagePath ? (
                 <img
                   src={client.imagePath}
@@ -381,7 +443,7 @@ const Clients: React.FC = () => {
                 </div>
               )}
 
-              <h3 className="!mt-3 text-sm font-semibold text-blue-600 truncate w-full">
+              <h3 className={`!mt-3 text-sm font-semibold truncate w-full ${client.isPinned ? 'text-yellow-700 font-bold' : 'text-blue-600'}`}>
                 {`${client.firstName} ${client.lastName}`}
               </h3>
               

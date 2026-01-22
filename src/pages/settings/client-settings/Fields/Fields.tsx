@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Table, Button, Collapse, Space, Typography, Modal, message } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import { PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, HolderOutlined } from "@ant-design/icons";
 import apiClient from "../../../../config/apiClient";
 import GroupModal from "./GroupModal";
 import FieldModal from "./FieldModal";
@@ -76,6 +76,157 @@ const Fields = () => {
         }
     };
 
+    const [draggedGroupId, setDraggedGroupId] = useState<string | null>(null);
+    const [draggedFieldId, setDraggedFieldId] = useState<{ groupId: string; fieldId: string } | null>(null);
+    const [draggedOverGroupIndex, setDraggedOverGroupIndex] = useState<number | null>(null);
+    const [draggedOverFieldIndex, setDraggedOverFieldIndex] = useState<number | null>(null);
+    const [originalGroupIndex, setOriginalGroupIndex] = useState<number | null>(null);
+    const [originalFieldIndex, setOriginalFieldIndex] = useState<number | null>(null);
+
+    const handleGroupDragStart = (groupId: string, e: React.DragEvent) => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', groupId);
+        const currentIndex = groups.findIndex(g => g._id === groupId);
+        setDraggedGroupId(groupId);
+        setOriginalGroupIndex(currentIndex);
+        setDraggedOverGroupIndex(currentIndex);
+    };
+
+    const handleGroupDragOver = (index: number, e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'move';
+        
+        if (draggedGroupId && originalGroupIndex !== null && index !== draggedOverGroupIndex) {
+            // Update UI immediately
+            const newGroups = [...groups];
+            const draggedItem = newGroups[originalGroupIndex];
+            newGroups.splice(originalGroupIndex, 1);
+            newGroups.splice(index, 0, draggedItem);
+            setGroups(newGroups);
+            setDraggedOverGroupIndex(index);
+        }
+    };
+
+    const handleGroupDrop = async (targetIndex: number, e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (draggedGroupId !== null && originalGroupIndex !== null && targetIndex !== null) {
+            // Only call API if position actually changed
+            if (originalGroupIndex !== targetIndex) {
+                // Calculate direction and moves needed
+                const direction = targetIndex < originalGroupIndex ? 'up' : 'down';
+                const moves = Math.abs(targetIndex - originalGroupIndex);
+                
+                // Move step by step
+                for (let i = 0; i < moves; i++) {
+                    try {
+                        await apiClient.post("/admin/updateGroupOrder", { 
+                            groupId: draggedGroupId, 
+                            direction 
+                        });
+                    } catch (error: any) {
+                        message.error("Failed to update group order.");
+                        // Revert UI on error
+                        fetchGroups();
+                        break;
+                    }
+                }
+                message.success("Group order updated!");
+            }
+        }
+        setDraggedGroupId(null);
+        setDraggedOverGroupIndex(null);
+        setOriginalGroupIndex(null);
+    };
+
+    const handleGroupDragEnd = () => {
+        // If drag ended without drop, revert to original order
+        if (originalGroupIndex !== null && draggedOverGroupIndex !== null && originalGroupIndex !== draggedOverGroupIndex) {
+            fetchGroups();
+        }
+        setDraggedGroupId(null);
+        setDraggedOverGroupIndex(null);
+        setOriginalGroupIndex(null);
+    };
+
+    const handleFieldDragStart = (groupId: string, fieldId: string, e: React.DragEvent) => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', fieldId);
+        const group = groups.find(g => g._id === groupId);
+        if (group) {
+            const currentIndex = group.formFields.findIndex(f => f._id === fieldId);
+            setDraggedFieldId({ groupId, fieldId });
+            setOriginalFieldIndex(currentIndex);
+            setDraggedOverFieldIndex(currentIndex);
+        }
+    };
+
+    const handleFieldDragOver = (index: number, groupId: string, e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'move';
+        
+        if (draggedFieldId && draggedFieldId.groupId === groupId && originalFieldIndex !== null && index !== draggedOverFieldIndex) {
+            // Update UI immediately
+            const newGroups = [...groups];
+            const group = newGroups.find(g => g._id === groupId);
+            if (group) {
+                const newFields = [...group.formFields];
+                const draggedItem = newFields[originalFieldIndex];
+                newFields.splice(originalFieldIndex, 1);
+                newFields.splice(index, 0, draggedItem);
+                group.formFields = newFields;
+                setGroups(newGroups);
+                setDraggedOverFieldIndex(index);
+            }
+        }
+    };
+
+    const handleFieldDrop = async (targetIndex: number, groupId: string, e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (draggedFieldId && targetIndex !== null && draggedFieldId.groupId === groupId && originalFieldIndex !== null) {
+            // Only call API if position actually changed
+            if (originalFieldIndex !== targetIndex) {
+                // Calculate direction and moves needed
+                const direction = targetIndex < originalFieldIndex ? 'up' : 'down';
+                const moves = Math.abs(targetIndex - originalFieldIndex);
+                
+                // Move step by step
+                for (let i = 0; i < moves; i++) {
+                    try {
+                        await apiClient.post("/admin/updateFieldOrder", { 
+                            fieldId: draggedFieldId.fieldId, 
+                            direction 
+                        });
+                    } catch (error: any) {
+                        message.error("Failed to update field order.");
+                        // Revert UI on error
+                        fetchGroups();
+                        break;
+                    }
+                }
+                message.success("Field order updated!");
+            }
+        }
+        setDraggedFieldId(null);
+        setDraggedOverFieldIndex(null);
+        setOriginalFieldIndex(null);
+    };
+
+    const handleFieldDragEnd = () => {
+        // If drag ended without drop, revert to original order
+        if (originalFieldIndex !== null && draggedOverFieldIndex !== null && originalFieldIndex !== draggedOverFieldIndex) {
+            fetchGroups();
+        }
+        setDraggedFieldId(null);
+        setDraggedOverFieldIndex(null);
+        setOriginalFieldIndex(null);
+    };
+
     return (
         <div style={{ padding: 20 }}>
             <Space style={{ width: "100%", justifyContent: "space-between", marginBottom: 16 }}>
@@ -99,23 +250,114 @@ const Fields = () => {
             <Collapse accordion style={{
                 background:"white"
             }}>
-                {groups.map(group => (
+                {groups.map((group, groupIndex) => (
                     <Panel
                         header={
-                            <Space>
-                                {group.name}
-                                <EditOutlined onClick={() => {
-                                    setEditingGroup(group);
-                                    setGroupModalVisible(true);
-                                }} />
-                                <DeleteOutlined onClick={() => showDeleteConfirm(group._id, "group")} />
-                            </Space>
+                            <div 
+                                draggable
+                                onDragStart={(e) => handleGroupDragStart(group._id, e)}
+                                onDragOver={(e) => handleGroupDragOver(groupIndex, e)}
+                                onDrop={(e) => handleGroupDrop(groupIndex, e)}
+                                onDragEnd={handleGroupDragEnd}
+                                style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: 8,
+                                    cursor: 'move',
+                                    opacity: draggedGroupId === group._id ? 0.3 : 1,
+                                    backgroundColor: draggedOverGroupIndex === groupIndex && draggedGroupId !== group._id ? '#f0f0f0' : 'transparent',
+                                    minHeight: draggedOverGroupIndex === groupIndex && draggedGroupId !== group._id ? '50px' : 'auto',
+                                    border: draggedOverGroupIndex === groupIndex && draggedGroupId !== group._id ? '2px dashed #d9d9d9' : 'none',
+                                    borderRadius: draggedOverGroupIndex === groupIndex && draggedGroupId !== group._id ? '4px' : '0'
+                                }}
+                            >
+                                <HolderOutlined style={{ color: '#999', cursor: 'grab' }} />
+                                <span style={{ flex: 1 }}>{group.name}</span>
+                                <Space>
+                                    <EditOutlined 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingGroup(group);
+                                            setGroupModalVisible(true);
+                                        }} 
+                                        style={{ cursor: 'pointer' }}
+                                    />
+                                    <DeleteOutlined 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            showDeleteConfirm(group._id, "group");
+                                        }} 
+                                        style={{ cursor: 'pointer' }}
+                                    />
+                                </Space>
+                            </div>
                         }
                         key={group._id}
                     >
                         <Table
+                            components={{
+                                body: {
+                                    row: (props: any) => {
+                                        const index = group.formFields.findIndex((f: Field) => f._id === props['data-row-key']);
+                                        const record = group.formFields[index];
+                                        if (!record) return <tr {...props} />;
+                                        
+                                        // Show blank placeholder at drop position
+                                        const isDropTarget = draggedFieldId?.groupId === group._id && 
+                                                           draggedOverFieldIndex === index && 
+                                                           draggedFieldId?.fieldId !== record._id;
+                                        
+                                        if (isDropTarget) {
+                                            return (
+                                                <tr
+                                                    {...props}
+                                                    onDragOver={(e) => {
+                                                        handleFieldDragOver(index, group._id, e);
+                                                    }}
+                                                    onDrop={(e) => handleFieldDrop(index, group._id, e)}
+                                                    style={{
+                                                        height: '50px',
+                                                        backgroundColor: '#f0f0f0',
+                                                        border: '2px dashed #d9d9d9'
+                                                    }}
+                                                >
+                                                    <td colSpan={6} style={{ textAlign: 'center', color: '#999' }}></td>
+                                                </tr>
+                                            );
+                                        }
+                                        
+                                        return (
+                                            <tr
+                                                {...props}
+                                                draggable
+                                                onDragStart={(e) => handleFieldDragStart(group._id, record._id, e)}
+                                                onDragOver={(e) => {
+                                                    handleFieldDragOver(index, group._id, e);
+                                                }}
+                                                onDrop={(e) => handleFieldDrop(index, group._id, e)}
+                                                onDragEnd={handleFieldDragEnd}
+                                                style={{
+                                                    cursor: 'move',
+                                                    opacity: draggedFieldId?.fieldId === record._id ? 0.3 : 1,
+                                                    backgroundColor: 'transparent'
+                                                }}
+                                            />
+                                        );
+                                    }
+                                }
+                            }}
                             columns={[
-                                { title: "Name", dataIndex: "attributeName", key: "attributeName" },
+                                { 
+                                    title: "Name", 
+                                    dataIndex: "attributeName", 
+                                    key: "attributeName",
+                                    render: (text: string, record: Field) => (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <HolderOutlined style={{ color: '#999' }} />
+                                            <span>{text}</span>
+                                        </div>
+                                    )
+                                },
                                 { title: "Type", dataIndex: "attributeType", key: "attributeType" },
                                 { title: "Options", dataIndex: "attributeOption", key: "attributeOption", render: (options) => options.join(", ") },
                                 { title: "Visibility", dataIndex: "visibility", key: "visibility", render: (visible) => (visible ? "Yes" : "No") },
@@ -124,11 +366,17 @@ const Fields = () => {
                                     title: "Actions",
                                     render: (_, record) => (
                                         <Space>
-                                            <EditOutlined onClick={() => {
-                                                setEditingField(record);
-                                                setFieldModalVisible(true);
-                                            }} />
-                                            <DeleteOutlined onClick={() => showDeleteConfirm(record._id, "field")} />
+                                            <EditOutlined 
+                                                onClick={() => {
+                                                    setEditingField(record);
+                                                    setFieldModalVisible(true);
+                                                }}
+                                                style={{ cursor: 'pointer' }}
+                                            />
+                                            <DeleteOutlined 
+                                                onClick={() => showDeleteConfirm(record._id, "field")}
+                                                style={{ cursor: 'pointer' }}
+                                            />
                                         </Space>
                                     ),
                                 },

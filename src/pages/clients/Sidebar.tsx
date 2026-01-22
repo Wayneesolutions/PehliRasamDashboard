@@ -151,7 +151,12 @@ const Sidebar = ({ customerId }: SidebarProps) => {
       }
 
       if (editMode && editMode !== "address") {
-        (updateData as any)[editMode] = editValue;
+        // Handle entryName - allow empty string to clear it
+        if (editMode === "entryName") {
+          (updateData as any)[editMode] = editValue.trim() || null;
+        } else {
+          (updateData as any)[editMode] = editValue;
+        }
       }
 
       const res = await updateCustomerBasicDetail(updateData);
@@ -159,6 +164,22 @@ const Sidebar = ({ customerId }: SidebarProps) => {
       if (res.success) {
         if (res.customer) {
           setCustomer(res.customer);
+          // Update browser tab title and URL if entryName was updated
+          if (editMode === "entryName") {
+            const entryName = res.customer.entryName;
+            if (entryName && entryName.trim()) {
+              document.title = `${entryName} - Pehli Rasam`;
+            } else {
+              // Fallback to firstName + lastName
+              const name = `${res.customer.firstName || ''} ${res.customer.lastName || ''}`.trim();
+              document.title = name ? `${name} - Pehli Rasam` : 'Pehli Rasam';
+            }
+            
+            // Dispatch custom event to update URL in AddClient component
+            window.dispatchEvent(new CustomEvent('entryNameUpdated', { 
+              detail: { entryName: entryName || null } 
+            }));
+          }
         } else {
           await fetchCustomerDetails();
         }
@@ -293,6 +314,54 @@ const Sidebar = ({ customerId }: SidebarProps) => {
 
       {/* Fields Section */}
       <div className="flex-grow overflow-y-auto">
+
+        {/* Entry Name */}
+        <div className="my-4 w-full">
+          <h2 className="text-sm font-semibold mb-2">Entry Name</h2>
+          {editMode === "entryName" ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                  if (e.key === "Enter") {
+                    handleSave();
+                  } else if (e.key === "Escape") {
+                    handleCancel();
+                  }
+                }}
+                className="flex-1 px-2 py-1 border rounded text-sm"
+                autoFocus
+              />
+              <button
+                onClick={handleSave}
+                disabled={isUpdating}
+                className="p-1 text-green-600 hover:bg-green-50 rounded"
+              >
+                <Check size={18} />
+              </button>
+              <button
+                onClick={handleCancel}
+                className="p-1 text-red-600 hover:bg-red-50 rounded"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-700 flex-1">
+                {customer?.entryName || "Not set"}
+              </p>
+              <button
+                onClick={() => handleEdit("entryName", customer?.entryName || "")}
+                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+              >
+                <Pencil size={16} />
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* First Name */}
         <div className="my-4 w-full">

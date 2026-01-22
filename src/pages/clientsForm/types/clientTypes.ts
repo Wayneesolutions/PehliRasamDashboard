@@ -220,6 +220,7 @@ export interface ClientList {
 
 export interface CustomerUpdate {
   customerId: string;
+  entryName?: string | null;
   firstName?: string;
   lastName?: string;
   email?: string;

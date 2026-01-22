@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
 import debounce from "lodash.debounce";
 import { message } from "antd";
+import moment from "moment";
 import {
   getMatchGroupDetails,
   searchCustomerByName,
@@ -256,7 +257,7 @@ const MatchesPage = () => {
                             }}
                             title="Click to view profile"
                           />
-                          <div className="flex flex-col justify-center text-sm text-gray-700">
+                          <div className="flex flex-col justify-center text-sm text-gray-700 flex-1">
                             <div className="mb-1">
                               <span className="font-semibold">Name:</span>{" "}
                               {value.firstName} {value.middleName} {value.lastName}
@@ -267,10 +268,20 @@ const MatchesPage = () => {
                             <div className="mb-1">
                               <span className="font-semibold">Description:</span> {value.matchingDescription || "N/A"}
                             </div>
-                            <div>
+                            <div className="mb-1">
                               <span className="font-semibold">Address:</span>{" "}
                               {value.address?.street}, {value.address?.city}, {value.address?.state}, {value.address?.country} - {value.address?.postalCode}
                             </div>
+                            {value.createdAt && (
+                              <div className="mb-1 text-xs text-gray-500">
+                                <span className="font-semibold">Added on:</span> {moment(value.createdAt).format('MMM DD, YYYY HH:mm')}
+                              </div>
+                            )}
+                            {value.createdBy && (
+                              <div className="text-xs text-gray-500">
+                                <span className="font-semibold">Added by:</span> {value.createdBy.firstName} {value.createdBy.lastName}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );

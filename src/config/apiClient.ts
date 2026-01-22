@@ -86,6 +86,16 @@ export const deleteNote = async (noteId: string) => {
   }
 }
 
+// Pin/Unpin customer
+export const togglePinCustomer = async (customerId: string) => {
+  try {
+    const response = await apiClient.post('admin/togglePinCustomer', { customerId })
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
+
 export default apiClient;
 
 
