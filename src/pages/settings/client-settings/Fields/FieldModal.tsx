@@ -59,10 +59,32 @@ const FieldModal: React.FC<FieldModalProps> = ({ visible, onClose, editingField 
 
     const fetchGroups = async () => {
         try {
+            setLoading(true);
             const response = await apiClient.get("/admin/allFromGroupList");
-            setGroups(response.data.formGroup || []);
+            // API returns { success: true, message: "...", data: [...] }
+            if (response.data && response.data.success && response.data.data) {
+                // Filter only active, non-deleted groups and sort by order
+                const filteredGroups = response.data.data
+                    .filter((group: any) => group.isActive && !group.isDeleted)
+                    .sort((a: any, b: any) => {
+                        const orderA = a.order !== undefined ? a.order : 999;
+                        const orderB = b.order !== undefined ? b.order : 999;
+                        return orderA - orderB;
+                    })
+                    .map((group: any) => ({
+                        _id: group._id,
+                        name: group.name
+                    }));
+                setGroups(filteredGroups);
+            } else {
+                setGroups([]);
+            }
         } catch (error) {
+            console.error("Error fetching groups:", error);
             message.error("Failed to fetch groups.");
+            setGroups([]);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -106,14 +128,15 @@ const FieldModal: React.FC<FieldModalProps> = ({ visible, onClose, editingField 
         <Modal title={editingField ? "Edit Field" : "Create Field"} open={visible} onCancel={onClose} footer={null}>
             <Form form={form} onFinish={handleFinish} layout="vertical">
                 <Form.Item name="form_group_id" label="Group" rules={[{ required: true, message: "Please select a group" }]}>
-                    <Select placeholder="Select a group" disabled={!!editingField} loading={groups.length === 0}>
-                        {groups.length > 0 ? (
-                            groups.map((group) => (
-                                <Option key={group._id} value={group._id}>{group.name}</Option>
-                            ))
-                        ) : (
-                            <Option disabled value="">No Groups Available</Option>
-                        )}
+                    <Select 
+                        placeholder="Select a group" 
+                        disabled={!!editingField} 
+                        loading={loading}
+                        notFoundContent={loading ? "Loading groups..." : "No groups available"}
+                    >
+                        {groups.map((group) => (
+                            <Option key={group._id} value={group._id}>{group.name}</Option>
+                        ))}
                     </Select>
                 </Form.Item>
                 <Form.Item name="attributeName" label="Field Name" rules={[{ required: true, message: "Please enter a field name" }]}>

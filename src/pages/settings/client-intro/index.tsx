@@ -51,7 +51,29 @@ const Index = () => {
             title: 'Introducing Clients',
             dataIndex: 'customerName',
             key: 'customerName',
-            render: (text: string) => <Space>{text}</Space>,
+            render: (text: string, record: any) => {
+                const customerId = record.customerId;
+                if (customerId) {
+                    const profileUrl = `/dashboard/add-client?customerId=${customerId}`;
+                    return (
+                        <Space>
+                            <a
+                                href={profileUrl}
+                                className="font-medium hover:underline cursor-pointer"
+                                style={{ color: '#2C7BE5' }}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    window.open(profileUrl, '_blank', 'noopener,noreferrer');
+                                }}
+                            >
+                                {text}
+                            </a>
+                        </Space>
+                    );
+                }
+                return <Space>{text}</Space>;
+            },
         },
         {
             title: 'Stats',

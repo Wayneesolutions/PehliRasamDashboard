@@ -65,7 +65,11 @@ const TimelineMain: React.FC = () => {
         const isIntroAction = actionLower.includes("intro");
         const isEmailAction = actionLower.includes("mail") || actionLower.includes("email") || log.changeSummary.toLowerCase().includes("→");
         const isUpdateAction = actionLower.includes("update") || actionLower.includes("changed");
-        const customerId = isIntroAction ? extractCustomerIdFromUrl(log.changeSummary) : null;
+        
+        // Extract customer ID from log data (available for all events)
+        const customerId = log.customerData?._id 
+          ? log.customerData._id.toString() 
+          : (isIntroAction ? extractCustomerIdFromUrl(log.changeSummary) : null);
         
         // Determine icon based on action type with specific color codes
         let icon;
@@ -123,7 +127,55 @@ const TimelineMain: React.FC = () => {
     fetchChartLogs();
   }, []);
 
-  // Function to render the timeline event text with clickable link for intro actions
+  // Function to extract customer name from changeSummary text
+  const extractCustomerName = (text: string): string | null => {
+    // Pattern: "Customer [Name] [action]" or "Customer [Name] by"
+    // Handles names with asterisks (e.g., "Dil*****t Kaur")
+    const patterns = [
+      /Customer\s+([A-Za-z\s*]+?)\s+(?:pinned|unpinned|created|updated|deleted)/i,
+      /Customer\s+([A-Za-z\s*]+?)\s+by/i,
+      /Customer\s+([A-Za-z\s*]+?)\s+(?:has|was|is)/i,
+      /Customer\s+([A-Za-z\s*]+?)(?:\s|$)/i, // Fallback: just "Customer [Name]"
+    ];
+    
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        const name = match[1].trim();
+        // Only return if name is not empty and has at least one letter
+        if (name && /[A-Za-z]/.test(name)) {
+          return name;
+        }
+      }
+    }
+    return null;
+  };
+
+  // Function to render customer name as clickable link
+  const renderCustomerName = (name: string, customerId: string | null | undefined) => {
+    if (!customerId) {
+      return <span>{name}</span>;
+    }
+
+    const profileUrl = `/dashboard/add-client?customerId=${customerId}`;
+    
+    return (
+      <a
+        href={profileUrl}
+        className="font-medium hover:underline cursor-pointer"
+        style={{ color: '#2C7BE5' }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          window.open(profileUrl, '_blank', 'noopener,noreferrer');
+        }}
+      >
+        {name}
+      </a>
+    );
+  };
+
+  // Function to render the timeline event text with clickable customer names
   const renderEventText = (event: TimelineEvent) => {
     if (event.isIntroAction && event.customerId) {
       const paddedId = event.customerId.padStart(5, '0');
@@ -177,7 +229,43 @@ const TimelineMain: React.FC = () => {
         </div>
       );
     } else {
-      // Regular update/edit action
+      // Regular update/edit action - make customer names clickable
+      const customerName = extractCustomerName(event.text);
+      
+      if (customerName && event.customerId) {
+        // Split text to insert clickable customer name
+        const namePattern = new RegExp(`(Customer\\s+)${customerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s+)`, 'i');
+        const parts = event.text.split(namePattern);
+        
+        if (parts.length >= 3) {
+          // Found customer name pattern
+          return (
+            <p className="text-sm leading-relaxed" style={{ color: '#333333' }}>
+              <span className="font-medium" style={{ color: '#2C7BE5' }}>Pehli Rasam.com</span> {parts[0]}
+              {parts[1]} {/* "Customer " */}
+              {renderCustomerName(customerName, event.customerId)}
+              {parts[2]} {/* space after name */}
+              {parts.slice(3).join('')} {/* rest of text */}
+            </p>
+          );
+        } else {
+          // Fallback: try simpler pattern
+          const simplePattern = new RegExp(`Customer\\s+${customerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
+          const simpleParts = event.text.split(simplePattern);
+          
+          if (simpleParts.length === 2) {
+            return (
+              <p className="text-sm leading-relaxed" style={{ color: '#333333' }}>
+                <span className="font-medium" style={{ color: '#2C7BE5' }}>Pehli Rasam.com</span> {simpleParts[0]}
+                Customer {renderCustomerName(customerName, event.customerId)}
+                {simpleParts[1]}
+              </p>
+            );
+          }
+        }
+      }
+      
+      // Default: no customer name found or no customerId
       return (
         <p className="text-sm leading-relaxed" style={{ color: '#333333' }}>
           <span className="font-medium" style={{ color: '#2C7BE5' }}>Pehli Rasam.com</span> {event.text}

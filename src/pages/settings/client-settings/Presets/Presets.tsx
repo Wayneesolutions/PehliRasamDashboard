@@ -28,6 +28,7 @@ const Presets = () => {
     const [groups, setGroups] = useState<Group[]>([]);
     const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
     const [, setMatchGroups] = useState<any[]>([]);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; type: "presets" | "field" } | null>(null);
@@ -61,7 +62,10 @@ const Presets = () => {
                     allowEdit: field.AllowEdit,
                 })),
             }));
-            setGroups(formatted);
+            // Force state update by creating a new array reference
+            setGroups([...formatted]);
+            // Increment refresh key to force table re-render
+            setRefreshKey(prev => prev + 1);
             setMatchGroups([]);
         } catch (error) {
             message.error("Failed to load group fields.");
@@ -113,14 +117,19 @@ const Presets = () => {
         e.stopPropagation();
         e.dataTransfer.dropEffect = 'move';
         
-        if (draggedGroupId && originalGroupIndex !== null && index !== draggedOverGroupIndex) {
-            // Update UI immediately
-            const newGroups = [...groups];
-            const draggedItem = newGroups[originalGroupIndex];
-            newGroups.splice(originalGroupIndex, 1);
-            newGroups.splice(index, 0, draggedItem);
-            setGroups(newGroups);
-            setDraggedOverGroupIndex(index);
+        if (draggedGroupId && index !== draggedOverGroupIndex) {
+            // Update UI immediately - find current position of dragged item
+            const currentIndex = groups.findIndex(g => g._id === draggedGroupId);
+            
+            if (currentIndex !== -1 && currentIndex !== index) {
+                // Create new array with reordered groups
+                const reorderedGroups = [...groups];
+                const draggedItem = reorderedGroups[currentIndex];
+                reorderedGroups.splice(currentIndex, 1);
+                reorderedGroups.splice(index, 0, draggedItem);
+                setGroups(reorderedGroups);
+                setDraggedOverGroupIndex(index);
+            }
         }
     };
 
@@ -131,45 +140,82 @@ const Presets = () => {
         if (draggedGroupId !== null && originalGroupIndex !== null && targetIndex !== null) {
             // Only call API if position actually changed
             if (originalGroupIndex !== targetIndex) {
-                // Calculate direction and moves needed
-                const direction = targetIndex < originalGroupIndex ? 'up' : 'down';
-                const moves = Math.abs(targetIndex - originalGroupIndex);
-                
-                // Move step by step
-                let success = true;
-                for (let i = 0; i < moves; i++) {
-                    try {
-                        const res = await apiClient.post("/admin/updatePresetGroupOrder", { 
-                            presetId: draggedGroupId, 
-                            direction 
-                        });
-                        // Check if the response indicates it's already at the boundary
-                        if (!res.data.success && res.data.message && 
-                            (res.data.message.includes("already at") || res.data.message.includes("Cannot move"))) {
-                            // Skip this move, it's already at the boundary
-                            break;
-                        }
-                    } catch (error: any) {
-                        // Only show error if it's not a boundary case
-                        if (error.response?.data?.message && 
-                            !error.response.data.message.includes("already at")) {
-                            message.error(error.response?.data?.message || "Failed to update preset order.");
-                            success = false;
-                        }
-                        // Revert UI on error
-                        fetchAll();
-                        break;
+                try {
+                    // Get the current groups with updated order from state
+                    const currentGroups = groups;
+                    if (!currentGroups || currentGroups.length === 0) {
+                        // Reset drag state first
+                        setDraggedGroupId(null);
+                        setDraggedOverGroupIndex(null);
+                        setOriginalGroupIndex(null);
+                        await fetchAll();
+                        return;
                     }
+
+                    // Prepare bulk update payload: array of {id, position}
+                    // Use 0-based positions to match backend default order = 0
+                    const presetsOrder = currentGroups.map((group, index) => ({
+                        id: group._id,
+                        position: index // 0-based position
+                    }));
+
+                    // Single API call with all preset positions - returns updated data
+                    const response = await apiClient.post("/admin/updatePresetsOrder", { 
+                        presets: presetsOrder
+                    });
+                    
+                    // Reset drag state immediately to clear UI drag indicators
+                    setDraggedGroupId(null);
+                    setDraggedOverGroupIndex(null);
+                    setOriginalGroupIndex(null);
+                    
+                    // Use the updated data returned from the API
+                    if (response.data && response.data.success && response.data.data) {
+                        const formatted = response.data.data.map((group: any) => ({
+                            _id: group._id,
+                            name: group.name,
+                            formFields: (group.fields || []).map((field: any) => ({
+                                _id: field.presetFieldId || field.id,
+                                presetFieldId: field.presetFieldId,
+                                fieldsId: field.id,
+                                label: field.Label || "",
+                                kind: field.Kind || "",
+                                fieldType: field.Field || "",
+                                required: field.Required,
+                                allowEdit: field.AllowEdit,
+                            })),
+                        }));
+                        // Force state update by creating a new array reference
+                        setGroups([...formatted]);
+                        // Increment refresh key to force table re-render
+                        setRefreshKey(prev => prev + 1);
+                        message.success("Preset order updated!");
+                    } else {
+                        // Fallback to fetchAll if response format is unexpected
+                        await fetchAll();
+                        message.success("Preset order updated!");
+                    }
+                } catch (error: any) {
+                    // Reset drag state on error
+                    setDraggedGroupId(null);
+                    setDraggedOverGroupIndex(null);
+                    setOriginalGroupIndex(null);
+                    message.error("Failed to update preset order.");
+                    // Revert UI on error
+                    await fetchAll();
                 }
-                if (success) {
-                    message.success("Preset order updated!");
-                    fetchAll();
-                }
+            } else {
+                // No change, just reset drag state
+                setDraggedGroupId(null);
+                setDraggedOverGroupIndex(null);
+                setOriginalGroupIndex(null);
             }
+        } else {
+            // Reset drag state if conditions not met
+            setDraggedGroupId(null);
+            setDraggedOverGroupIndex(null);
+            setOriginalGroupIndex(null);
         }
-        setDraggedGroupId(null);
-        setDraggedOverGroupIndex(null);
-        setOriginalGroupIndex(null);
     };
 
     const handleGroupDragEnd = () => {
@@ -199,19 +245,27 @@ const Presets = () => {
         e.stopPropagation();
         e.dataTransfer.dropEffect = 'move';
         
-        if (draggedFieldId && draggedFieldId.groupId === groupId && originalFieldIndex !== null && index !== draggedOverFieldIndex) {
-            // Update UI immediately
-            const newGroups = [...groups];
-            const group = newGroups.find(g => g._id === groupId);
-            if (group) {
-                const newFields = [...group.formFields];
-                const draggedItem = newFields[originalFieldIndex];
-                newFields.splice(originalFieldIndex, 1);
-                newFields.splice(index, 0, draggedItem);
-                group.formFields = newFields;
-                setGroups(newGroups);
-                setDraggedOverFieldIndex(index);
-            }
+        if (draggedFieldId && draggedFieldId.groupId === groupId && index !== draggedOverFieldIndex) {
+            // Update UI immediately - find current position of dragged item
+            const newGroups = groups.map(g => {
+                if (g._id === groupId) {
+                    const newFields = [...g.formFields];
+                    // Find current index of dragged field (may have changed from original)
+                    const currentIndex = newFields.findIndex(f => f._id === draggedFieldId.fieldId);
+                    
+                    if (currentIndex !== -1 && currentIndex !== index) {
+                        // Remove from current position and insert at new position
+                        const draggedItem = newFields[currentIndex];
+                        newFields.splice(currentIndex, 1);
+                        newFields.splice(index, 0, draggedItem);
+                        return { ...g, formFields: newFields };
+                    }
+                }
+                return g;
+            });
+            
+            setGroups(newGroups);
+            setDraggedOverFieldIndex(index);
         }
     };
 
@@ -222,45 +276,82 @@ const Presets = () => {
         if (draggedFieldId && targetIndex !== null && draggedFieldId.groupId === groupId && originalFieldIndex !== null) {
             // Only call API if position actually changed
             if (originalFieldIndex !== targetIndex) {
-                // Calculate direction and moves needed
-                const direction = targetIndex < originalFieldIndex ? 'up' : 'down';
-                const moves = Math.abs(targetIndex - originalFieldIndex);
-                
-                // Move step by step
-                let success = true;
-                for (let i = 0; i < moves; i++) {
-                    try {
-                        const res = await apiClient.post("/admin/updatePresetFieldOrder", { 
-                            presetFieldId: draggedFieldId.fieldId, 
-                            direction 
-                        });
-                        // Check if the response indicates it's already at the boundary
-                        if (!res.data.success && res.data.message && 
-                            (res.data.message.includes("already at") || res.data.message.includes("Cannot move"))) {
-                            // Skip this move, it's already at the boundary
-                            break;
-                        }
-                    } catch (error: any) {
-                        // Only show error if it's not a boundary case
-                        if (error.response?.data?.message && 
-                            !error.response.data.message.includes("already at")) {
-                            message.error(error.response?.data?.message || "Failed to update preset field order.");
-                            success = false;
-                        }
-                        // Revert UI on error
-                        fetchAll();
-                        break;
+                try {
+                    // Get the current group with updated order from state
+                    const currentGroup = groups.find(g => g._id === groupId);
+                    if (!currentGroup) {
+                        // Reset drag state first
+                        setDraggedFieldId(null);
+                        setDraggedOverFieldIndex(null);
+                        setOriginalFieldIndex(null);
+                        await fetchAll();
+                        return;
                     }
+
+                    // Prepare bulk update payload: array of {id, position}
+                    // Use 0-based positions to match backend default order = 0
+                    const fieldsOrder = currentGroup.formFields.map((field, index) => ({
+                        id: field._id, // This is the presetFieldId
+                        position: index // 0-based position
+                    }));
+
+                    // Single API call with all field positions - returns updated data
+                    const response = await apiClient.post("/admin/updatePresetFieldsOrder", { 
+                        fields: fieldsOrder
+                    });
+                    
+                    // Reset drag state immediately to clear UI drag indicators
+                    setDraggedFieldId(null);
+                    setDraggedOverFieldIndex(null);
+                    setOriginalFieldIndex(null);
+                    
+                    // Use the updated data returned from the API
+                    if (response.data && response.data.success && response.data.data) {
+                        const formatted = response.data.data.map((group: any) => ({
+                            _id: group._id,
+                            name: group.name,
+                            formFields: (group.fields || []).map((field: any) => ({
+                                _id: field.presetFieldId || field.id,
+                                presetFieldId: field.presetFieldId,
+                                fieldsId: field.id,
+                                label: field.Label || "",
+                                kind: field.Kind || "",
+                                fieldType: field.Field || "",
+                                required: field.Required,
+                                allowEdit: field.AllowEdit,
+                            })),
+                        }));
+                        // Force state update by creating a new array reference
+                        setGroups([...formatted]);
+                        // Increment refresh key to force table re-render
+                        setRefreshKey(prev => prev + 1);
+                        message.success("Preset field order updated!");
+                    } else {
+                        // Fallback to fetchAll if response format is unexpected
+                        await fetchAll();
+                        message.success("Preset field order updated!");
+                    }
+                } catch (error: any) {
+                    // Reset drag state on error
+                    setDraggedFieldId(null);
+                    setDraggedOverFieldIndex(null);
+                    setOriginalFieldIndex(null);
+                    message.error("Failed to update preset field order.");
+                    // Revert UI on error
+                    await fetchAll();
                 }
-                if (success) {
-                    message.success("Preset field order updated!");
-                    fetchAll();
-                }
+            } else {
+                // No change, just reset drag state
+                setDraggedFieldId(null);
+                setDraggedOverFieldIndex(null);
+                setOriginalFieldIndex(null);
             }
+        } else {
+            // Reset drag state if conditions not met
+            setDraggedFieldId(null);
+            setDraggedOverFieldIndex(null);
+            setOriginalFieldIndex(null);
         }
-        setDraggedFieldId(null);
-        setDraggedOverFieldIndex(null);
-        setOriginalFieldIndex(null);
     };
 
     const handleFieldDragEnd = () => {
@@ -389,6 +480,7 @@ const Presets = () => {
                         key={group._id}
                     >
                         <Table
+                            key={`table-${group._id}-${refreshKey}`}
                             components={{
                                 body: {
                                     row: (props: any) => {
