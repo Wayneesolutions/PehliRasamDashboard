@@ -74,7 +74,10 @@ const ClientIntroduction = () => {
         
         if (isAgeRange || isHeightRange) {
             // Handle formats like "12 -" (from only), " - 30" (to only), or "12 - 30" (both)
-            const trimmedValue = value.trim();
+            let trimmedValue = value.trim();
+            
+            // Remove any double hyphens or extra dashes
+            trimmedValue = trimmedValue.replace(/\s*-\s*-\s*/g, ' - ').replace(/\s*-\s*-/g, ' - ');
             
             // Split by " - " pattern (with spaces)
             if (trimmedValue.includes(" - ")) {
@@ -90,16 +93,19 @@ const ClientIntroduction = () => {
                     return `${from} - ${to}`;
                 }
             }
-            // Handle "12 -" or "12 - " format (from only)
-            else if (trimmedValue.match(/^\d+[\s'-]/) || trimmedValue.match(/^[4-7]'[\d"]+\s*-/)) {
-                const match = trimmedValue.match(/^([^-\s]+)\s*-/);
-                const from = match ? match[1].trim() : trimmedValue.replace(/\s*-+\s*.*$/, "").trim();
-                return `${from} - any`;
+            // Handle "12 -" or "12 - " format (from only) - single hyphen at end
+            else if (trimmedValue.match(/^[^-\s]+\s*-+\s*$/)) {
+                const from = trimmedValue.replace(/\s*-+\s*$/, "").trim();
+                if (from) {
+                    return `${from} - any`;
+                }
             }
-            // Handle " - 30" or " -30" format (to only)
-            else if (trimmedValue.match(/^\s*-/)) {
+            // Handle " - 30" or " -30" format (to only) - single hyphen at start
+            else if (trimmedValue.match(/^\s*-+\s*[^-\s]+/)) {
                 const to = trimmedValue.replace(/^\s*-+\s*/, "").trim();
-                return `any - ${to}`;
+                if (to) {
+                    return `any - ${to}`;
+                }
             }
         }
         
