@@ -130,9 +130,13 @@ export const addCustomerByAdmin = async (data: AddClientFormData) => {
     return (error as Error).response?.data;
   }
 }
-export const allActiveCustomer = async () => {
+export const allActiveCustomer = async (listIds?: string[]) => {
   try {
-    const response = await apiClient.get('admin/allActiveCustomer',)
+    const params: any = {};
+    if (listIds && listIds.length > 0) {
+      params.listIds = listIds.join(',');
+    }
+    const response = await apiClient.get('admin/allActiveCustomer', { params })
     return response?.data
   } catch (error) {
     return (error as Error).response?.data;

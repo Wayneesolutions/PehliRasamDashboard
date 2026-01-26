@@ -112,8 +112,8 @@ const Clients: React.FC = () => {
     }
   };
 
-  const fetchingCustomers = async () => {
-    const res = await allActiveCustomer();
+  const fetchingCustomers = async (listIds?: string[]) => {
+    const res = await allActiveCustomer(listIds);
     if (res.success) {
       const sorted = [...res.data].sort((a, b) => {
         return (
@@ -146,10 +146,23 @@ const Clients: React.FC = () => {
       setClientListsMap({});
     }
   };
+  
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
   useEffect(() => {
     fetchingCustomers();
     fetchAllClientLists();
+    setIsInitialLoad(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Refetch customers when list filter changes (but not on initial load)
+  useEffect(() => {
+    if (!isInitialLoad) {
+      fetchingCustomers(selectedListIds.length > 0 ? selectedListIds : undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedListIds]);
 
   const fetchAllClientLists = async () => {
     try {
@@ -222,9 +235,11 @@ const Clients: React.FC = () => {
   };
 
   const filteredClients = useMemo(() => {
+    // Only filter by search term - list filtering is done on backend
     const filtered = activeclients.filter((client) =>
       `${client.firstName} ${client.lastName}`.toLowerCase().includes(searchTerm)
     );
+    
     // Sort: pinned clients first, then by creation date
     return filtered.sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
@@ -363,12 +378,14 @@ const Clients: React.FC = () => {
             Advanced Search
           </Button>
           {/* Reset/Show All button - only show if we have filtered results */}
-          {activeclients.length > 0 && (
+          {(activeclients.length > 0 || selectedListIds.length > 0 || searchTerm) && (
             <Button
               type="default"
               className="border-gray-300"
               onClick={async () => {
-                await fetchingCustomers();
+                setSelectedListIds([]);
+                setSearchTerm("");
+                await fetchingCustomers(undefined);
                 message.success("Showing all customers");
               }}
             >
@@ -397,9 +414,28 @@ const Clients: React.FC = () => {
           >
             <Button className="flex items-center gap-1 border-gray-300">
               Lists
+              {selectedListIds.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-blue-500 text-white text-xs rounded-full min-w-[20px] text-center">
+                  {selectedListIds.length}
+                </span>
+              )}
               <DownOutlined className="text-xs" />
             </Button>
           </Dropdown>
+          {/* Clear list filter button - show when lists are selected */}
+          {selectedListIds.length > 0 && (
+            <Button
+              type="default"
+              className="border-gray-300"
+              icon={<CloseOutlined />}
+              onClick={() => {
+                setSelectedListIds([]);
+                message.info("List filter cleared");
+              }}
+            >
+              Clear Lists
+            </Button>
+          )}
         </div>
       </div>
 
