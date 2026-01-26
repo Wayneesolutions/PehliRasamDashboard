@@ -1,4 +1,4 @@
-import { Table, Button, Dropdown, Modal, Menu, Form, Input, message } from "antd";
+import { Button, Dropdown, Modal, Menu, Form, Input, message } from "antd";
 import { PlusOutlined, MoreOutlined, MenuOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { createClientList, editClientList, getAllClientLists } from "../../../config/apiClient";
@@ -40,46 +40,6 @@ const List = () => {
         getAllClientColor();
     }, [val]);
 
-    const columns = [
-        {
-            title: "List name",
-            dataIndex: "listName",
-            key: "listName",
-            render: (text: string) => (
-                <div className="flex items-center">
-                    <MenuOutlined className="mr-2 text-gray-400 cursor-pointer" />
-                    {text}
-                </div>
-            ),
-        },
-        {
-            title: "Color",
-            dataIndex: "color",
-            key: "color",
-            render: (color: string) => (
-                <div className="flex items-center">
-                    <span className="w-4 h-4 rounded-full" style={{ backgroundColor: color }}></span>
-                    <span className="ml-2">{color}</span>
-                </div>
-            ),
-        },
-        {
-            render: (_: any, record: ClientList) => (
-                <Dropdown
-                    overlay={
-                        <Menu>
-                            <Menu.Item key="edit" onClick={() => handleEditClick(record)}>
-                                Edit
-                            </Menu.Item>
-                        </Menu>
-                    }
-                    trigger={["click"]}
-                >
-                    <MoreOutlined className="cursor-pointer text-gray-500" />
-                </Dropdown>
-            ),
-        },
-    ];
 
     const handleEditClick = (record: ClientList) => {
         setEditingItem(record);
@@ -135,26 +95,88 @@ const List = () => {
     };
 
     return (
-        <div className="p-6 bg-white shadow-md rounded-md">
-            <div className="flex justify-between items-center mb-4">
+        <div className="p-6 bg-white">
+            <div className="flex justify-between items-start mb-6">
                 <div>
-                    <h2 className="text-xl font-semibold">Client Lists</h2>
-                    <p className="text-gray-500 text-sm">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Client Lists</h2>
+                    <p className="text-sm text-gray-600">
                         Use lists to divide clients by different groups. A client can be added to multiple lists.
                     </p>
                 </div>
-                <Button type="primary" icon={<PlusOutlined />} onClick={showModal}>
+                <Button 
+                    icon={<PlusOutlined />} 
+                    onClick={showModal}
+                    className="bg-blue-600  !text-black border-0 shadow-sm"
+                >
                     List
                 </Button>
             </div>
 
-            <Table<ClientList>
-                columns={columns}
-                dataSource={colorList}
-                pagination={false}
-                rowKey={(record) => record._id}
-                className="shadow-sm rounded-md"
-            />
+            {/* Custom Table */}
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+                {/* Table Header */}
+                <div className="bg-gray-50 border-b border-gray-200 grid grid-cols-12 gap-4 px-4 py-3">
+                    <div className="col-span-1"></div>
+                    <div className="col-span-5">
+                        <span className="text-sm font-semibold text-gray-700">List name</span>
+                    </div>
+                    <div className="col-span-6">
+                        <span className="text-sm font-semibold text-gray-700">Color</span>
+                    </div>
+                </div>
+
+                {/* Table Body */}
+                <div className="bg-white">
+                    {colorList.length > 0 ? (
+                        colorList.map((list, index) => (
+                            <div 
+                                key={list._id} 
+                                className="grid grid-cols-12 gap-4 px-4 py-3 border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors items-center"
+                            >
+                                {/* Drag Handle */}
+                                <div className="col-span-1 flex items-center">
+                                    <MenuOutlined className="text-gray-400 cursor-move" style={{ fontSize: '16px' }} />
+                                </div>
+
+                                {/* List Name */}
+                                <div className="col-span-5">
+                                    <span className="text-sm text-gray-900">{list.listName}</span>
+                                </div>
+
+                                {/* Color */}
+                                <div className="col-span-5 flex items-center gap-2">
+                                    <span 
+                                        className="w-4 h-4 rounded-full border border-gray-300 flex-shrink-0" 
+                                        style={{ backgroundColor: list.color }}
+                                    ></span>
+                                    <span className="text-sm text-gray-600">{list.color}</span>
+                                </div>
+
+                                {/* Actions Menu */}
+                                <div className="col-span-1 flex justify-end">
+                                    <Dropdown
+                                        overlay={
+                                            <Menu>
+                                                <Menu.Item key="edit" onClick={() => handleEditClick(list)}>
+                                                    Edit
+                                                </Menu.Item>
+                                            </Menu>
+                                        }
+                                        trigger={["click"]}
+                                        placement="bottomRight"
+                                    >
+                                        <MoreOutlined className="cursor-pointer text-gray-500 hover:text-gray-700 transition-colors" style={{ fontSize: '18px' }} />
+                                    </Dropdown>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="px-4 py-8 text-center text-gray-500">
+                            No lists found. Create your first list to get started.
+                        </div>
+                    )}
+                </div>
+            </div>
 
             <Modal title="Add New List" open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>
                 <Form form={form} layout="vertical">

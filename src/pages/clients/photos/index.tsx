@@ -247,48 +247,66 @@ const Index: React.FC = () => {
   };
 
   return (
-    <div className="p-4 bg-white rounded shadow">
-      <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 transition text-white px-5 py-2 rounded font-medium inline-block">
+    <div className="p-6 bg-white">
+      <label className="cursor-pointer bg-gray-900 hover:bg-gray-800 transition text-white px-5 py-2.5 rounded-lg font-medium inline-block shadow-sm">
         Select Images
         <input type="file" multiple accept="image/*" onChange={handleFileChange} className="hidden" />
       </label>
 
       {previews.length > 0 && (
         <div className="mt-6">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Selected Image Previews</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <h3 className="text-base font-semibold mb-4 text-gray-700">Selected Image Previews</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {previews.map((src, idx) => (
-              <div key={idx} className="relative rounded-md overflow-hidden shadow border bg-white group">
-                <Image
-                  src={src}
-                  alt={`preview-${idx}`}
-                  className="w-full h-48 object-cover cursor-pointer"
-                  rootClassName="w-full"
-                  preview={{
-                    src: src,
-                  }}
-                />
-                <button onClick={(e) => { e.stopPropagation(); handleRemovePreview(idx); }} className="absolute top-2 right-2 bg-red-600 !text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10" title="Remove image">
-                  <DeleteOutlined style={{ fontSize: "16px" }} />
-                </button>
+              <div key={idx} className="relative group">
+                <div className="relative w-full overflow-hidden rounded-lg bg-gray-100">
+                  <Image
+                    src={src}
+                    alt={`preview-${idx}`}
+                    className="w-full cursor-pointer"
+                    rootClassName="w-full"
+                    style={{ display: 'block', width: '100%', height: 'auto' }}
+                    preview={{
+                      src: src,
+                    }}
+                  />
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleRemovePreview(idx); }} 
+                    className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 !text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-md" 
+                    title="Remove image"
+                  >
+                    <DeleteOutlined style={{ fontSize: "16px" }} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
 
           <div className="flex justify-end mt-6">
-            <button onClick={handleUpload} className="bg-green-600 hover:bg-green-700 transition !text-white px-6 py-2 rounded-md font-medium">Upload Images</button>
+            <button onClick={handleUpload} className="bg-gray-900 hover:bg-gray-800 transition !text-white px-6 py-2.5 rounded-lg font-medium shadow-sm">Upload Images</button>
           </div>
         </div>
       )}
 
       {Array.isArray(customer?.photos) && customer.photos.length > 0 && (
         <div className="mt-8">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-lg">Uploaded Photos</h3>
+          <div className="flex justify-between items-center mb-5">
+            <h3 className="font-semibold text-base text-gray-800">Uploaded Photos</h3>
             <div className="flex items-center gap-4">
-              <Checkbox checked={selectedPhotos.length === customer.photos.length && customer.photos.length > 0} indeterminate={selectedPhotos.length > 0 && selectedPhotos.length < customer.photos.length} onChange={(e) => handleSelectAll(e.target.checked)}>Select All</Checkbox>
+              <Checkbox 
+                checked={selectedPhotos.length === customer.photos.length && customer.photos.length > 0} 
+                indeterminate={selectedPhotos.length > 0 && selectedPhotos.length < customer.photos.length} 
+                onChange={(e) => handleSelectAll(e.target.checked)}
+                className="text-gray-700"
+              >
+                Select All
+              </Checkbox>
               {selectedPhotos.length > 0 && (
-                <button onClick={handleDownloadSelected} disabled={downloading} className="bg-blue-600 hover:bg-blue-700 transition !text-white px-4 py-2 rounded-md font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <button 
+                  onClick={handleDownloadSelected} 
+                  disabled={downloading} 
+                  className="bg-gray-900 hover:bg-gray-800 transition !text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                >
                   <DownloadOutlined />
                   {downloading ? "Downloading..." : `Download ${selectedPhotos.length} ${selectedPhotos.length === 1 ? "Photo" : "Photos"}`}
                 </button>
@@ -296,31 +314,58 @@ const Index: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {customer.photos.map((photo) => (
-              <div key={photo._id} className="relative rounded overflow-hidden shadow hover:shadow-lg transition-shadow">
-                <Image
-                  src={resolvePhotoUrl(photo.url)}
-                  alt="Customer Uploaded"
-                  className="w-full h-48 object-cover cursor-pointer"
-                  rootClassName="w-full"
-                  preview={{
-                    src: resolvePhotoUrl(photo.url),
-                  }}
-                />
-                <div className="absolute top-2 left-2 z-10" onClick={(e) => e.stopPropagation()}>
-                  <Checkbox checked={selectedPhotos.includes(photo._id)} onChange={(e) => handlePhotoSelection(photo._id, e.target.checked)} className="bg-white rounded shadow-md p-1" />
-                </div>
+              <div key={photo._id} className="relative group">
+                <div className="relative w-full overflow-hidden rounded-lg bg-gray-100">
+                  <Image
+                    src={resolvePhotoUrl(photo.url)}
+                    alt="Customer Uploaded"
+                    className="w-full cursor-pointer"
+                    rootClassName="w-full"
+                    style={{ display: 'block', width: '100%', height: 'auto' }}
+                    preview={{
+                      src: resolvePhotoUrl(photo.url),
+                    }}
+                  />
+                  
+                  {/* Checkbox */}
+                  <div className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox 
+                      checked={selectedPhotos.includes(photo._id)} 
+                      onChange={(e) => handlePhotoSelection(photo._id, e.target.checked)} 
+                      className="!bg-white !border-gray-300"
+                    />
+                  </div>
 
-                <div onClick={(e) => e.stopPropagation()}>
-                  <Dropdown overlay={<Menu>
-                    <Menu.Item key="setCover" onClick={() => handleSetCoverPhoto(photo.url)}>Set as Cover Photo</Menu.Item>
-                    <Menu.Item key="deletePhoto" onClick={() => handleDeletePhoto(photo._id, customerId)} danger>Delete Photo</Menu.Item>
-                  </Menu>} trigger={["click"]} placement="bottomRight">
-                    <div className="absolute top-2 right-2 bg-white p-1 rounded shadow cursor-pointer">
-                      <MoreOutlined style={{ fontSize: "16px", color: "black" }} />
+                  {/* Three dot menu */}
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <Dropdown 
+                      overlay={
+                        <Menu>
+                          <Menu.Item key="setCover" onClick={() => handleSetCoverPhoto(photo.url)}>Set as Cover Photo</Menu.Item>
+                          <Menu.Item key="deletePhoto" onClick={() => handleDeletePhoto(photo._id, customerId)} danger>Delete Photo</Menu.Item>
+                        </Menu>
+                      } 
+                      trigger={["click"]} 
+                      placement="bottomRight"
+                    >
+                      <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-md shadow-sm cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-white">
+                        <MoreOutlined style={{ fontSize: "16px", color: "#374151" }} />
+                      </div>
+                    </Dropdown>
+                  </div>
+
+                  {/* Show checkbox if selected */}
+                  {selectedPhotos.includes(photo._id) && (
+                    <div className="absolute top-2 left-2 z-10" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox 
+                        checked={true} 
+                        onChange={(e) => handlePhotoSelection(photo._id, e.target.checked)} 
+                        className="!bg-white !border-gray-300"
+                      />
                     </div>
-                  </Dropdown>
+                  )}
                 </div>
               </div>
             ))}

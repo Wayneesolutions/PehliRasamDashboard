@@ -12,6 +12,7 @@ interface Client {
   time: string;
   initials: string;
   avatar?: string;
+  createdAt?: string;
 }
 const bgColors = [
   "bg-amber-300",     // soft gold
@@ -35,10 +36,17 @@ const RecentlySubmittedClients = () => {
       try {
         const res = await recentlySubmittedClients();
         if (res.success && Array.isArray(res.data)) {
-          const formattedClients: Client[] = res.data.map((item: any) => {
+          // Sort by createdAt in descending order (newest first) before formatting
+          const sortedData = [...res.data].sort((a: any, b: any) => {
+            const dateA = new Date(a.createdAt || a.created_at || 0).getTime();
+            const dateB = new Date(b.createdAt || b.created_at || 0).getTime();
+            return dateB - dateA; // Descending order (newest first)
+          });
+
+          const formattedClients: Client[] = sortedData.map((item: any) => {
             const fullName = [item.firstName, item.middelName, item.lastName].filter(Boolean).join(" ");
             const location = item.address?.city || "Not specified";
-            const time = dayjs(item.createdAt).fromNow(true); // e.g. "3 days ago" -> "3 days"
+            const time = dayjs(item.createdAt || item.created_at).fromNow(true); // e.g. "3 days ago" -> "3 days"
             const initials = fullName
               .split(" ")
               .map((part: string) => part.charAt(0))
@@ -51,6 +59,7 @@ const RecentlySubmittedClients = () => {
               time,
               initials,
               avatar: item.imagePath || undefined,
+              createdAt: item.createdAt || item.created_at, // Keep original date for sorting
             };
           });
           setClients(formattedClients);

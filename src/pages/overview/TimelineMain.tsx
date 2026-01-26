@@ -315,13 +315,38 @@ const TimelineMain: React.FC = () => {
             acc[log.date].push(log);
             return acc;
           }, {} as Record<string, TimelineEvent[]>)
-        ).map(([date, logs]) => (
+        ).map(([date, logs]) => {
+          const dateObj = moment(date);
+          const isToday = dateObj.isSame(moment(), 'day');
+          const isYesterday = dateObj.isSame(moment().subtract(1, 'day'), 'day');
+          
+          return (
           <div key={date} className="mb-6">
             {/* Date Header - Prominent with color */}
-            <div className="mb-4 pb-2 border-b border-gray-200">
-              <h3 className="text-2xl font-bold" style={{ color: '#1a1a1a' }}>
-                {moment(date).format("MMMM D YYYY")}
-              </h3>
+            <div className="mb-4">
+              <div className={`inline-flex px-4 py-2.5 rounded-lg ${
+                isToday 
+                  ? 'bg-blue-500 text-white' 
+                  : isYesterday 
+                    ? 'bg-gray-200 text-gray-700'
+                    : 'bg-gray-100 text-gray-700'
+              }`}>
+                <div className="flex flex-col">
+                  <div className="text-xs font-medium uppercase tracking-wide mb-0.5">
+                    {isToday ? 'Today' : isYesterday ? 'Yesterday' : dateObj.format('dddd')}
+                  </div>
+                  <div className={`text-xl font-bold ${
+                    isToday ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    {dateObj.format("D")}
+                  </div>
+                  <div className={`text-xs font-medium ${
+                    isToday ? 'text-blue-100' : 'text-gray-600'
+                  }`}>
+                    {dateObj.format("MMMM YYYY")}
+                  </div>
+                </div>
+              </div>
             </div>
             
             {/* Timeline Events */}
@@ -348,7 +373,8 @@ const TimelineMain: React.FC = () => {
               ))}
             </div>
           </div>
-        ))
+          );
+        })
       ) : (
         <p className="text-sm text-gray-500 mt-4">Loading activity logs...</p>
       )}

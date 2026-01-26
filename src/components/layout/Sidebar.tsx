@@ -3,6 +3,7 @@ import { Menu, Layout } from "antd";
 import { sidebarLinks } from "../../utils/SidebarLinks";
 import { useNavigate } from "react-router-dom";
 import { MdSettings } from "react-icons/md";
+import "./Sidebar.css"; // ✅ ADD THIS
 
 const { Sider } = Layout;
 const { SubMenu } = Menu;
@@ -13,9 +14,13 @@ type SidebarProps = {
 
 const Sidebar = ({ collapsed }: SidebarProps) => {
   const navigate = useNavigate();
-  const [openKeys, setOpenKeys] = useState<string[]>([]);
 
-  // Handle submenu toggle
+  const [openKeys, setOpenKeys] = useState<string[]>([
+    "dashboard",
+    "communication",
+    "settings",
+  ]);
+
   const handleOpenChange = (keys: string[]) => {
     setOpenKeys(keys);
   };
@@ -26,6 +31,7 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
       collapsible
       collapsed={collapsed}
       width={250}
+      className="customSidebar" // ✅ ADD THIS
       style={{
         height: "100vh",
         background: "rgb(238, 242, 250)",
@@ -34,32 +40,20 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
         left: 0,
         top: 64,
         zIndex: 900,
-        display: "flex",
-        flexDirection: "column",
       }}
     >
-      <div
+      <div className="sidebarScroll"
         style={{
-          flex: 1,
+          height: "calc(100vh - 64px)",
           overflowY: "auto",
-          maxHeight: "calc(100vh - 64px)", // 64px is your header height
         }}
       >
-
         <Menu
           mode="inline"
-          defaultSelectedKeys={["/dashboard"]}
           openKeys={openKeys}
           onOpenChange={handleOpenChange}
           onClick={(e) => navigate(e.key)}
-          style={{
-            fontSize: "16px",
-            fontWeight: 500,
-            padding: "12px 0",
-            background: "rgb(238, 242, 250)",
-            borderInlineEnd: "none",
-            borderRight: "none",
-          }}
+          className="customMenu" // ✅ ADD THIS
         >
           {sidebarLinks.map((link) =>
             link.children ? (
@@ -67,13 +61,18 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
                 key={link.key}
                 icon={link.icon || <MdSettings />}
                 title={link.label}
-                className="custom-submenu"
               >
                 {link.children.map((child) =>
                   child.children ? (
-                    <SubMenu key={child.key} title={child.label} icon={child.icon} className="custom-submenu">
+                    <SubMenu
+                      key={child.key}
+                      title={child.label}
+                      icon={child.icon}
+                    >
                       {child.children.map((subChild) => (
-                        <Menu.Item key={subChild.key}>{subChild.label}</Menu.Item>
+                        <Menu.Item key={subChild.key}>
+                          {subChild.label}
+                        </Menu.Item>
                       ))}
                     </SubMenu>
                   ) : (
@@ -90,8 +89,6 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
         </Menu>
       </div>
     </Sider>
-
-
   );
 };
 

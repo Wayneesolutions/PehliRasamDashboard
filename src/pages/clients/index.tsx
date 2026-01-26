@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input, Button, Modal, Form, Menu, Dropdown, message, Checkbox, Tabs, Select, DatePicker } from "antd";
-import { SearchOutlined, UserAddOutlined, InfoCircleOutlined, EllipsisOutlined, DownOutlined, CloseOutlined, PushpinOutlined } from "@ant-design/icons";
+import { SearchOutlined, UserAddOutlined, InfoCircleOutlined, EllipsisOutlined, DownOutlined, CloseOutlined, PushpinOutlined, PushpinFilled, MailOutlined, EnvironmentOutlined } from "@ant-design/icons";
 import { addCustomerByAdmin, allActiveCustomer, deleteCustomer, getCustomerBasicDetail, getAllClientLists, advancedSearchCustomers, togglePinCustomer } from "../../config/apiClient";
 import { ActiveClientDetails } from "../../schema/customernew";
 
@@ -174,8 +174,7 @@ const Clients: React.FC = () => {
       console.error("Error fetching all client lists:", error);
     }
   };
-  const handleTogglePin = async (customerId: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent opening client modal when clicking pin icon
+  const handleTogglePin = async (customerId: string) => {
     try {
       const res = await togglePinCustomer(customerId);
       if (res.success) {
@@ -450,41 +449,86 @@ const Clients: React.FC = () => {
           return (
             <div 
               key={client._id} 
-              className={`flex flex-col items-center text-center group relative ${
-                client.isPinned ? 'ring-2 ring-yellow-400 ring-offset-2 bg-yellow-50 rounded-lg p-2' : ''
-              }`}
+              className="flex flex-col items-center text-center group"
             >
-              {/* Pin Icon */}
-              <button
-                onClick={(e) => handleTogglePin(client._id, e)}
-                className={`absolute top-2 right-2 z-10 p-1.5 rounded-full transition-all ${
-                  client.isPinned 
-                    ? 'bg-yellow-400 text-yellow-900 hover:bg-yellow-500' 
-                    : 'bg-white text-gray-400 hover:bg-gray-100 hover:text-gray-600'
-                } shadow-md`}
-                title={client.isPinned ? 'Unpin client' : 'Pin client'}
-              >
-                <PushpinOutlined className={client.isPinned ? 'text-base' : 'text-sm'} />
-              </button>
+              {/* Image Container with Three-Dot Menu Inside */}
+              <div className="relative w-24 h-36 rounded-md shadow-md overflow-hidden">
+                {client.imagePath ? (
+                  <img
+                    src={client.imagePath}
+                    alt={`${client.firstName} ${client.lastName}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className={`w-full h-full flex items-center justify-center ${bgColor} text-3xl font-bold text-white`}>
+                    {initials}
+                  </div>
+                )}
 
-              {client.imagePath ? (
-                <img
-                  src={client.imagePath}
-                  alt={`${client.firstName} ${client.lastName}`}
-                  className="w-24 h-36 object-cover rounded-md shadow-md"
-                />
-              ) : (
-                <div className={`w-24 h-36 flex items-center justify-center ${bgColor} rounded-md text-3xl font-bold text-white shadow-md`}>
-                  {initials}
+                {/* Pin Icon Indicator - Top Left */}
+                {client.isPinned && (
+                  <div className="absolute top-2 left-2 z-10">
+                    <div className="bg-yellow-400 rounded-full p-1.5 shadow-lg">
+                      <PushpinFilled className="text-yellow-900 text-sm" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Three dot menu inside image box */}
+                <div className="absolute top-2 right-2 z-10">
+                  <Dropdown
+                    overlay={
+                      <Menu>
+                        <Menu.Item 
+                          key="togglePin"
+                          icon={client.isPinned ? <PushpinFilled /> : <PushpinOutlined />}
+                          onClick={() => handleTogglePin(client._id)}
+                        >
+                          {client.isPinned ? 'Unpin Client' : 'Pin Client'}
+                        </Menu.Item>
+
+                        <Menu.Item key="openProfile">
+                          <button
+                            className="w-full text-left"
+                            onClick={() => {
+                              const url = `/dashboard/add-client?customerId=${client._id}`;
+                              window.open(url, "_blank");
+                            }}
+                          >
+                            🔗 Open Profile in New Tab
+                          </button>
+                        </Menu.Item>
+
+                        <Menu.Item
+                          key="deleteCustomer"
+                          danger
+                          onClick={() => handleDeleteCustomer(client._id)}
+                        >
+                          🗑️ Delete Customer
+                        </Menu.Item>
+                      </Menu>
+                    }
+                    trigger={["click"]}
+                  >
+                    <Button
+                      type="text"
+                      className="!bg-white/90 hover:!bg-white rounded-full p-1.5 shadow-md backdrop-blur-sm border-0"
+                      icon={
+                        <EllipsisOutlined
+                          style={{ transform: "rotate(90deg)", fontSize: 14, color: "#374151" }}
+                        />
+                      }
+                    />
+                  </Dropdown>
                 </div>
-              )}
+              </div>
 
-              <h3 className={`!mt-3 text-sm font-semibold truncate w-full ${client.isPinned ? 'text-yellow-700 font-bold' : 'text-blue-600'}`}>
+              <h3 className="!mt-2 !mb-0 text-sm font-semibold truncate w-full text-blue-600">
                 {`${client.firstName} ${client.lastName}`}
               </h3>
               
               {/* Client List Colors and Info Icon Container */}
-              <div className="flex items-center justify-center gap-2 mt-1.5 min-h-[20px] w-full">
+              <div className="flex items-center justify-center gap-2 mt-0 min-h-[20px] w-full">
                 {/* Client List Colors */}
                 {clientListsMap[client._id] && clientListsMap[client._id].length > 0 ? (
                   <div className="flex items-center justify-center gap-1.5 flex-wrap max-w-[80px]">
@@ -519,50 +563,6 @@ const Clients: React.FC = () => {
                 </button>
               </div>
 
-              {/* Top-right three dot menu */}
-              <div className="absolute top-1 !right-[28px] z-10">
-                <Dropdown
-                  overlay={
-                    <Menu>
-
-
-                      <Menu.Item key="openProfile">
-                        <button
-                          className="w-full text-left"
-                          onClick={() => {
-                            const url = `/dashboard/add-client?customerId=${client._id}`;
-                            window.open(url, "_blank");
-                          }}
-                        >
-                          🔗 Open Profile in New Tab
-                        </button>
-                      </Menu.Item>
-
-
-
-                      <Menu.Item
-                        key="deleteCustomer"
-                        danger
-                        onClick={() => handleDeleteCustomer(client._id)}
-                      >
-                        🗑️ Delete Customer
-                      </Menu.Item>
-                    </Menu>
-                  }
-                  trigger={["click"]}
-                >
-                  <Button
-                    type="text"
-                    className="!bg-gray-100 hover:bg-gray-200 rounded-full p-1"
-                    icon={
-                      <EllipsisOutlined
-                        style={{ transform: "rotate(90deg)", fontSize: 18 }}
-                      />
-                    }
-                  />
-                </Dropdown>
-              </div>
-
 
 
 
@@ -575,45 +575,149 @@ const Clients: React.FC = () => {
 
       {/* Client Details Modal */}
       <Modal
-        title={<h2 className="text-lg font-semibold text-center">{selectedClient ? `${selectedClient.firstName} ${selectedClient.lastName}` : "Client Details"}</h2>}
+        title={null}
         open={isClientModalOpen}
         onCancel={() => setIsClientModalOpen(false)}
         footer={null}
         centered
-        width={350}
+        width={650}
+        className="client-details-modal"
+        styles={{
+          body: { padding: 0 }
+        }}
       >
         {selectedClient && (
-          <div className="flex flex-col items-center text-center p-4">
-            {selectedClient.imagePath ? (
-              <img src={selectedClient.imagePath} alt={`${selectedClient.firstName} ${selectedClient.lastName}`} className="w-24 h-24 object-cover rounded-full shadow-md" />
-            ) : (
-              <div className="w-24 h-24 flex items-center justify-center bg-gray-200 rounded-full text-3xl font-semibold shadow-md">
-                {`${selectedClient.firstName[0]}${selectedClient.lastName[0]}`}
+          <div className="flex">
+            {/* Left Side - Image */}
+            <div className="flex-shrink-0 w-56 h-80">
+              <div className="w-full h-full rounded-l-lg overflow-hidden">
+                {selectedClient.imagePath ? (
+                  <img 
+                    src={selectedClient.imagePath} 
+                    alt={`${selectedClient.firstName} ${selectedClient.lastName}`} 
+                    className="w-full h-full object-cover" 
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-400 to-purple-500 text-5xl font-bold text-white">
+                    {`${selectedClient.firstName[0]}${selectedClient.lastName[0]}`}
+                  </div>
+                )}
               </div>
-            )}
-            <div className="mt-4 w-full space-y-2">
-              <p className="text-gray-600 text-sm">
-                <strong>📍 Location:</strong> {`${selectedClient.address.city}, ${selectedClient.address.state}, ${selectedClient.address.country}`}
-              </p>
-              <p className="text-gray-600 text-sm"><strong>📧 Email:</strong> {selectedClient.email}</p>
-              {selectedClient.registrationDate && (
-                <p className="text-gray-600 text-sm">
-                  <strong>📅 Registered:</strong> {new Date(selectedClient.registrationDate).toLocaleDateString()}
-                </p>
-              )}
             </div>
-            <Button
-              type="link"
-              className="mt-4 text-blue-600 hover:underline text-sm"
-              onClick={() =>
-                navigate("/dashboard/add-client", {
-                  state: { customerId: selectedClient._id },
-                })
-              }
-            >
-              🔗 View Full Profile
-            </Button>
 
+            {/* Right Side - Content */}
+            <div className="flex-1 flex flex-col p-6 bg-white rounded-r-lg">
+              {/* Name and Status */}
+              <div className="mb-6">
+                <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+                  {`${selectedClient.firstName} ${selectedClient.lastName}`}
+                </h2>
+                <div className="flex items-center gap-2">
+                  {selectedClient.activeStatus && (
+                    <span className="inline-flex items-center px-3 py-1 bg-green-500 text-white text-xs font-medium rounded-full">
+                      Active
+                    </span>
+                  )}
+                  {selectedClient.isPinned && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-medium rounded-full">
+                      <PushpinFilled className="text-xs" />
+                      Pinned
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Details */}
+              <div className="space-y-4 flex-1">
+                {/* Email */}
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
+                    <MailOutlined className="text-red-500 text-sm" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-semibold">EMAIL</p>
+                    <p className="text-sm text-gray-800 font-medium break-words break-all">{selectedClient.email || "Not provided"}</p>
+                  </div>
+                </div>
+
+                {/* Location */}
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
+                    <EnvironmentOutlined className="text-red-500 text-sm" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-semibold">LOCATION</p>
+                    <p className="text-sm text-gray-800 font-medium">
+                      {selectedClient.address?.city || "N/A"}
+                      {selectedClient.address?.state && `, ${selectedClient.address.state}`}
+                      {selectedClient.address?.country && `, ${selectedClient.address.country}`}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Street Address */}
+                {selectedClient.address?.street && (
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center">
+                      <EnvironmentOutlined className="text-gray-500 text-sm" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-semibold">ADDRESS</p>
+                      <p className="text-sm text-gray-800 font-medium">{selectedClient.address.street}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Postal Code */}
+                {selectedClient.address?.postalCode && (
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center">
+                      <span className="text-gray-500 text-xs">📮</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-semibold">POSTAL CODE</p>
+                      <p className="text-sm text-gray-800 font-medium">{selectedClient.address.postalCode}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Registration Date */}
+                {selectedClient.registrationDate && (
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center">
+                      <span className="text-gray-500 text-xs">📅</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-semibold">REGISTERED ON</p>
+                      <p className="text-sm text-gray-800 font-medium">
+                        {new Date(selectedClient.registrationDate).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Button */}
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <Button
+                  type="primary"
+                  size="large"
+                  className="w-full h-10 font-medium"
+                  onClick={() => {
+                    setIsClientModalOpen(false);
+                    navigate("/dashboard/add-client", {
+                      state: { customerId: selectedClient._id },
+                    });
+                  }}
+                >
+                  View Full Profile
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </Modal>

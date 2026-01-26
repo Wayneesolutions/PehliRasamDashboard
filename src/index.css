@@ -1,8 +1,16 @@
 @import "tailwindcss";
 
-/* index.css */
-* {
-  font-family: 'Exo 2', sans-serif;
+/* Force same font everywhere */
+html, body, * {
+  font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif !important;
+}
+
+input, textarea, select, button {
+  font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif !important;
+}
+
+.tox, .tox * {
+  font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif !important;
 }
 
 body {

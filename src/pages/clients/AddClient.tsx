@@ -127,7 +127,7 @@ const AddClient = () => {
   }, [customerId, location.pathname, navigate]);
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen">
       <Sidebar customerId={customerId} />
       <div className="flex-1 flex flex-col overflow-y-auto overflow-hidden p-6 pt-0">
         <Header customerId={customerId} />

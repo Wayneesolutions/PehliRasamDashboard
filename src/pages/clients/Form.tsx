@@ -837,13 +837,40 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                 const currentTo = ageRangeInputs[field.fieldId]?.to ?? parsedTo ?? "";
 
                                                                 const handleAgeChange = (type: "from" | "to", value: string) => {
-                                                                    setAgeRangeInputs((prev) => ({
-                                                                        ...prev,
-                                                                        [field.fieldId]: {
-                                                                            from: type === "from" ? value : (prev[field.fieldId]?.from ?? parsedFrom ?? ""),
-                                                                            to: type === "to" ? value : (prev[field.fieldId]?.to ?? parsedTo ?? ""),
-                                                                        },
-                                                                    }));
+                                                                    setAgeRangeInputs((prev) => {
+                                                                        const currentFrom = prev[field.fieldId]?.from ?? parsedFrom ?? "";
+                                                                        const currentTo = prev[field.fieldId]?.to ?? parsedTo ?? "";
+                                                                        
+                                                                        // If one field is being filled and the other is empty, set the other to empty (any)
+                                                                        if (type === "from" && value && !currentTo) {
+                                                                            // From is being filled, ensure To is empty
+                                                                            return {
+                                                                                ...prev,
+                                                                                [field.fieldId]: {
+                                                                                    from: value,
+                                                                                    to: "",
+                                                                                },
+                                                                            };
+                                                                        } else if (type === "to" && value && !currentFrom) {
+                                                                            // To is being filled, ensure From is empty
+                                                                            return {
+                                                                                ...prev,
+                                                                                [field.fieldId]: {
+                                                                                    from: "",
+                                                                                    to: value,
+                                                                                },
+                                                                            };
+                                                                        }
+                                                                        
+                                                                        // Normal update
+                                                                        return {
+                                                                            ...prev,
+                                                                            [field.fieldId]: {
+                                                                                from: type === "from" ? value : currentFrom,
+                                                                                to: type === "to" ? value : currentTo,
+                                                                            },
+                                                                        };
+                                                                    });
                                                                 };
 
                                                                 const handleAgeSave = (e: React.FocusEvent<HTMLInputElement> | React.KeyboardEvent<HTMLInputElement>) => {
@@ -898,14 +925,27 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                         <input
                                                                             type="number"
                                                                             className="w-1/2 border p-2 rounded"
-                                                                            placeholder="From"
+                                                                            placeholder={currentTo ? "From (Any)" : "From"}
                                                                             value={currentFrom}
-                                                                            onChange={(e) => handleAgeChange("from", e.target.value)}
+                                                                            onChange={(e) => {
+                                                                                const newValue = e.target.value;
+                                                                                handleAgeChange("from", newValue);
+                                                                                // If from is being filled and to is empty, ensure to stays empty
+                                                                                if (newValue && !currentTo) {
+                                                                                    // Clear to field when from is entered
+                                                                                    setAgeRangeInputs((prev) => ({
+                                                                                        ...prev,
+                                                                                        [field.fieldId]: {
+                                                                                            from: newValue,
+                                                                                            to: "",
+                                                                                        },
+                                                                                    }));
+                                                                                }
+                                                                            }}
                                                                             onBlur={handleAgeSave}
                                                                             onKeyDown={(e) => {
                                                                                 if (e.key === "Enter") {
                                                                                     handleAgeSave(e);
-                                                                                    // Optionally blur to trigger visual feedback
                                                                                     e.currentTarget.blur();
                                                                                 }
                                                                             }}
@@ -913,14 +953,27 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                         <input
                                                                             type="number"
                                                                             className="w-1/2 border p-2 rounded"
-                                                                            placeholder="To"
+                                                                            placeholder={currentFrom ? "To (Any)" : "To"}
                                                                             value={currentTo}
-                                                                            onChange={(e) => handleAgeChange("to", e.target.value)}
+                                                                            onChange={(e) => {
+                                                                                const newValue = e.target.value;
+                                                                                handleAgeChange("to", newValue);
+                                                                                // If to is being filled and from is empty, ensure from stays empty
+                                                                                if (newValue && !currentFrom) {
+                                                                                    // Clear from field when to is entered
+                                                                                    setAgeRangeInputs((prev) => ({
+                                                                                        ...prev,
+                                                                                        [field.fieldId]: {
+                                                                                            from: "",
+                                                                                            to: newValue,
+                                                                                        },
+                                                                                    }));
+                                                                                }
+                                                                            }}
                                                                             onBlur={handleAgeSave}
                                                                             onKeyDown={(e) => {
                                                                                 if (e.key === "Enter") {
                                                                                     handleAgeSave(e);
-                                                                                    // Optionally blur to trigger visual feedback
                                                                                     e.currentTarget.blur();
                                                                                 }
                                                                             }}
@@ -929,41 +982,51 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                 );
                                                             })()}
 
-                                                            {profileField === "height" && (
-                                                                <div className="flex gap-2">
-                                                                    <select
-                                                                        className="w-1/2 border p-2 rounded"
-                                                                        value={fieldValue?.split(" - ")[0] || ""}
-                                                                        onChange={(e) => {
-                                                                            const max = fieldValue?.split(" - ")[1] || "";
-                                                                            handleUpdate(field.fieldId, `${e.target.value} - ${max}`);
-                                                                        }}
-                                                                    >
-                                                                        <option value="">Min Height</option>
-                                                                        {heightOptions.map((height) => (
-                                                                            <option key={height} value={height}>
-                                                                                {height}
-                                                                            </option>
-                                                                        ))}
-                                                                    </select>
+                                                            {profileField === "height" && (() => {
+                                                                const heightParts = fieldValue?.split(" - ") || [];
+                                                                const minHeight = heightParts[0] || "";
+                                                                const maxHeight = heightParts[1] || "";
+                                                                
+                                                                return (
+                                                                    <div className="flex gap-2">
+                                                                        <select
+                                                                            className="w-1/2 border p-2 rounded"
+                                                                            value={minHeight}
+                                                                            onChange={(e) => {
+                                                                                const newMin = e.target.value;
+                                                                                // If min is selected and max is empty, set max to empty (any)
+                                                                                const newMax = newMin && !maxHeight ? "" : maxHeight;
+                                                                                handleUpdate(field.fieldId, newMin && newMax ? `${newMin} - ${newMax}` : newMin ? `${newMin} - ` : newMax ? ` - ${newMax}` : "");
+                                                                            }}
+                                                                        >
+                                                                            <option value="">Min Height (Any)</option>
+                                                                            {heightOptions.map((height) => (
+                                                                                <option key={height} value={height}>
+                                                                                    {height}
+                                                                                </option>
+                                                                            ))}
+                                                                        </select>
 
-                                                                    <select
-                                                                        className="w-1/2 border p-2 rounded"
-                                                                        value={fieldValue?.split(" - ")[1] || ""}
-                                                                        onChange={(e) => {
-                                                                            const min = fieldValue?.split(" - ")[0] || "";
-                                                                            handleUpdate(field.fieldId, `${min} - ${e.target.value}`);
-                                                                        }}
-                                                                    >
-                                                                        <option value="">Max Height</option>
-                                                                        {heightOptions.map((height) => (
-                                                                            <option key={height} value={height}>
-                                                                                {height}
-                                                                            </option>
-                                                                        ))}
-                                                                    </select>
-                                                                </div>
-                                                            )}
+                                                                        <select
+                                                                            className="w-1/2 border p-2 rounded"
+                                                                            value={maxHeight}
+                                                                            onChange={(e) => {
+                                                                                const newMax = e.target.value;
+                                                                                // If max is selected and min is empty, set min to empty (any)
+                                                                                const newMin = newMax && !minHeight ? "" : minHeight;
+                                                                                handleUpdate(field.fieldId, newMin && newMax ? `${newMin} - ${newMax}` : newMin ? `${newMin} - ` : newMax ? ` - ${newMax}` : "");
+                                                                            }}
+                                                                        >
+                                                                            <option value="">Max Height (Any)</option>
+                                                                            {heightOptions.map((height) => (
+                                                                                <option key={height} value={height}>
+                                                                                    {height}
+                                                                                </option>
+                                                                            ))}
+                                                                        </select>
+                                                                    </div>
+                                                                );
+                                                            })()}
 
                                                             {profileField === "select" && (() => {
                                                                 // Exclude fields that should be single select

@@ -26,6 +26,48 @@ const ClientIntro = () => {
         return urlPattern.test(value);
     };
 
+    // Helper function to format age and height ranges to show "any" when opposite field is empty
+    const formatRangeValue = (fieldName: string, value: any): string => {
+        if (!value || typeof value !== 'string') return value || '';
+        
+        const normalizedFieldName = (fieldName || '').trim().toLowerCase();
+        const isAgeRange = normalizedFieldName.includes('age') && normalizedFieldName.includes('range');
+        const isHeightRange = normalizedFieldName.includes('height');
+        
+        if (isAgeRange || isHeightRange) {
+            // Handle formats like "12 -" (from only), " - 30" (to only), or "12 - 30" (both)
+            const trimmedValue = value.trim();
+            
+            // Split by " - " pattern (with spaces)
+            if (trimmedValue.includes(" - ")) {
+                const parts = trimmedValue.split(" - ");
+                const from = (parts[0] || "").trim();
+                const to = (parts[1] || "").trim();
+                
+                if (from && !to) {
+                    return `${from} - any`;
+                } else if (!from && to) {
+                    return `any - ${to}`;
+                } else if (from && to) {
+                    return `${from} - ${to}`;
+                }
+            }
+            // Handle "12 -" or "12 - " format (from only)
+            else if (trimmedValue.match(/^\d+[\s'-]/) || trimmedValue.match(/^[4-7]'[\d"]+\s*-/)) {
+                const match = trimmedValue.match(/^([^-\s]+)\s*-/);
+                const from = match ? match[1].trim() : trimmedValue.replace(/\s*-+\s*.*$/, "").trim();
+                return `${from} - any`;
+            }
+            // Handle " - 30" or " -30" format (to only)
+            else if (trimmedValue.match(/^\s*-/)) {
+                const to = trimmedValue.replace(/^\s*-+\s*/, "").trim();
+                return `any - ${to}`;
+            }
+        }
+        
+        return value;
+    };
+
     const handleCopy = () => {
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(intro.link)
@@ -595,7 +637,7 @@ const ClientIntro = () => {
                                                                         </div>
                                                                     ) : (
                                                                         <>
-                                                                            <div className="flex-1">{field.value}</div>
+                                                                            <div className="flex-1">{formatRangeValue(field.fieldName, field.value)}</div>
                                                                             {field.fieldId && field.AllowEdit !== false && !isBasicInfoField(field.fieldName) && (
                                                                                 <EditOutlined
                                                                                     className="text-blue-500 cursor-pointer hover:text-blue-700"

@@ -39,18 +39,13 @@ const NavHeader = ({ onClick, collapsed }: Props) => {
     navigate("/login");
   };
 
-  const profileMenu = (
-    <Menu>
-      <Menu.Item key="profile" onClick={() => navigate("/dashboard/profile-setting-info")}>
-        Profile Settings
-      </Menu.Item>
-      <Menu.Item key="logout" onClick={handleLogout}>Logout</Menu.Item>
-    </Menu>
-  );
 
 
   return (
-    <div className="fixed top-0 left-0 w-full h-16 flex items-center justify-between px-6 z-50" style={{ background:"rgb(238, 242, 250)"}}>
+    <div
+      className="fixed top-0 left-0 w-full h-16 flex items-center justify-between px-6 z-50"
+      style={{ background: "rgb(238, 242, 250)" }}
+    >
       <div className="flex items-center gap-3">
         <Button
           type="text"
@@ -58,26 +53,36 @@ const NavHeader = ({ onClick, collapsed }: Props) => {
           onClick={onClick}
           className="text-gray-600 !text-2xl cursor-pointer"
         />
-        <h1 className="pt-2 text-2xl font-medium">Pehli Rasam</h1>
+        <h1 className="pt-2 text-3xl font-normal" style={{ fontFamily: '"Inter", "Segoe UI", Roboto, Arial, sans-serif', fontWeight: 400 }}>Pehli Rasam</h1>
       </div>
-
+  
+      {/* ✅ RIGHT SIDE */}
       <div className="flex items-center gap-4">
-        <div className="w-64">
-          <Input
-            placeholder="Search..."
-            prefix={<RiSearchLine className="text-gray-400" />}
-            className="rounded-full w-full"
-          />
-        </div>
-
-        <Dropdown overlay={profileMenu} trigger={["hover"]}>
-          <Space className="cursor-pointer">
-            <RiUserLine className="text-xl text-blue-500" />
-            <span>{adminName}</span>
-          </Space>
-        </Dropdown>
+        <Space className="cursor-pointer">
+          <RiUserLine className="text-xl text-blue-500" />
+          <span className="text-gray-700" style={{ fontFamily: '"Inter", "Segoe UI", Roboto, Arial, sans-serif', fontWeight: 400 }}>{adminName}</span>
+        </Space>
+  
+        <Button
+          type="default"
+          onClick={() => navigate("/dashboard/profile-setting-info")}
+          className="rounded-lg"
+          style={{ fontFamily: '"Inter", "Segoe UI", Roboto, Arial, sans-serif', fontWeight: 400 }}
+        >
+          Profile Settings
+        </Button>
+  
+        <Button
+          danger
+          type="primary"
+          onClick={handleLogout}
+          className="rounded-lg"
+          style={{ fontFamily: '"Inter", "Segoe UI", Roboto, Arial, sans-serif', fontWeight: 400 }}
+        >
+          Logout
+        </Button>
       </div>
-
+  
       <Modal
         title="Confirm Logout"
         isModalOpen={isModalOpen}
@@ -93,6 +98,7 @@ const NavHeader = ({ onClick, collapsed }: Props) => {
       </Modal>
     </div>
   );
+  
 };
 
 export default NavHeader;
