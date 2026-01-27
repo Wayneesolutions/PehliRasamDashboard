@@ -11,6 +11,7 @@ import {
 } from "../../../config/apiClient";
 import { Dropdown, Menu, Modal, Button, Input } from "antd";
 import { EllipsisOutlined, ExclamationCircleOutlined, MailOutlined, EnvironmentOutlined, InfoCircleOutlined, PushpinFilled, FileTextOutlined, UserAddOutlined } from "@ant-design/icons";
+import SendIntro from "../SendIntro";
 
 const ExpandableSection = ({ title, children }: { title: string; children: React.ReactNode }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -49,12 +50,29 @@ const MatchesPage = () => {
   const [activeCardTab, setActiveCardTab] = useState<Record<string, "info" | "notes">>({});
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
   const [inlineNotesText, setInlineNotesText] = useState<string>("");
+  const [isCreateIntroModalOpen, setIsCreateIntroModalOpen] = useState(false);
+  const [selectedMatchCustomerId, setSelectedMatchCustomerId] = useState<string | null>(null);
 
 
   const fetchGroups = async () => {
     try {
       const res = await getMatchGroupDetails(customerId);
       setGroupList(res || []);
+      
+      // Extract notes from the response and populate notes state
+      const notesMap: Record<string, string> = {};
+      if (res && Array.isArray(res)) {
+        res.forEach((group: any) => {
+          if (group.values && Array.isArray(group.values)) {
+            group.values.forEach((value: any) => {
+              if (value.valueId && value.notes) {
+                notesMap[value.valueId] = value.notes;
+              }
+            });
+          }
+        });
+      }
+      setNotes(notesMap);
     } catch (err) {
       console.error("Failed to fetch group list", err);
     }
@@ -147,9 +165,14 @@ const MatchesPage = () => {
 
 
   const handleCreateIntro = (value: any) => {
-    // For now, just show a message. This can be connected to an API later
-    message.info(`Create intro functionality for ${value.firstName} ${value.lastName}`);
-    // TODO: Implement create intro API call
+    // Set the matched customer ID (the customer being introduced)
+    const matchCustomerId = value.matchCustomerId || value._id;
+    if (!matchCustomerId) {
+      message.error("Customer ID not found");
+      return;
+    }
+    setSelectedMatchCustomerId(matchCustomerId);
+    setIsCreateIntroModalOpen(true);
   };
 
   const setCardTab = (valueId: string, tab: "info" | "notes") => {
@@ -383,14 +406,24 @@ const MatchesPage = () => {
                                         Cancel
                                       </button>
                                       <button
-                                        onClick={() => {
-                                          setNotes(prev => ({
-                                            ...prev,
-                                            [value.valueId]: inlineNotesText
-                                          }));
-                                          setEditingNotesId(null);
-                                          setInlineNotesText("");
-                                          message.success("Notes saved");
+                                        onClick={async () => {
+                                          try {
+                                            await updateMatchGroupValue({
+                                              id: value.valueId,
+                                              customerId: value.customerId || customerId,
+                                              notes: inlineNotesText
+                                            });
+                                            setNotes(prev => ({
+                                              ...prev,
+                                              [value.valueId]: inlineNotesText
+                                            }));
+                                            setEditingNotesId(null);
+                                            setInlineNotesText("");
+                                            message.success("Notes saved successfully");
+                                          } catch (error) {
+                                            console.error("Failed to save notes:", error);
+                                            message.error("Failed to save notes");
+                                          }
                                         }}
                                         className="px-3 py-1.5 text-sm text-white bg-gray-900 hover:bg-gray-800 rounded-md transition-colors"
                                       >
@@ -760,6 +793,15 @@ const MatchesPage = () => {
         )}
       </Modal>
 
+      {/* Create Intro Modal */}
+      <SendIntro
+        customerId={selectedMatchCustomerId}
+        isOpen={isCreateIntroModalOpen}
+        onClose={() => {
+          setIsCreateIntroModalOpen(false);
+          setSelectedMatchCustomerId(null);
+        }}
+      />
 
     </div>
   );

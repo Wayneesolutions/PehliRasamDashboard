@@ -29,7 +29,7 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
   const [presetFields, setPresetFields] = useState<Field[]>([]);
   const [basicInfo, setBasicInfo] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [introData, setIntroData] = useState<{ introId: string; link: string } | null>(null);
+  const [introData, setIntroData] = useState<{ introId: string; link: string; customerId: string } | null>(null);
 
   const fetchGroups = async () => {
     try {
@@ -106,11 +106,16 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
     try {
       const response = await apiClient.post("/admin/createIntro", payload);
       if (response.data.success) {
+        if (!customerId) {
+          message.error("Customer ID is missing. Cannot proceed with sending intro email.");
+          return;
+        }
         setIntroData({
           introId: response.data.data.intro.introId,
           link: response.data.data.intro.link,
+          customerId: customerId, // Store customerId in introData
         });
-        onClose();
+        onClose(); // Close the SendIntro modal
       } else {
         message.error(response.data.message || "Failed to create intro.");
       }
@@ -163,11 +168,11 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
         </div>
       </Modal>
 
-      {introData && (
+      {introData && introData.customerId && (
         <SendMailForIntro
           link={introData.link}
-          customerId={customerId!}
-          isOpen={!!introData}
+          customerId={introData.customerId}
+          isOpen={!!introData && !!introData.customerId}
           onClose={() => setIntroData(null)}
         />
       )}

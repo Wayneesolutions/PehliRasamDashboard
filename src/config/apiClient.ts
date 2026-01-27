@@ -397,10 +397,11 @@ export const createMatchGroupValue = async (payload: {
 };
 
 export const updateMatchGroupValue = async (payload: {
-  matchGroupId: string;
+  matchGroupId?: string;
   id: string;
-  customerId: string;
-  matchingDescription: string;
+  customerId?: string;
+  matchingDescription?: string;
+  notes?: string;
 }) => {
   const res = await apiClient.post("/admin/updateMatchGroupValue", payload);
   return res.data;
@@ -582,5 +583,57 @@ export const deleteCustomer = async (id: string) => {
     return response?.data;
   } catch (error) {
     return (error as any)?.response?.data;
+  }
+};
+
+// Email Settings API
+export const getEmailSettings = async () => {
+  try {
+    const response = await apiClient.get('admin/emailSettings');
+    return response?.data;
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+};
+
+export const updateEmailSettings = async (data: {
+  sendingMethod?: 'default' | 'smtp';
+  smtpSettings?: {
+    host?: string;
+    port?: string;
+    username?: string;
+    password?: string;
+    connectionType?: string;
+    sender?: string;
+  };
+  replyToEmail?: string;
+  inboundEmail?: string;
+  contactEmail?: string;
+}) => {
+  try {
+    const response = await apiClient.post('admin/emailSettings', data);
+    return response?.data;
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+};
+
+export const sendTestEmail = async (data: {
+  sendingMethod: 'default' | 'smtp';
+  smtpSettings?: {
+    host?: string;
+    port?: string;
+    username?: string;
+    password?: string;
+    connectionType?: string;
+    sender?: string;
+  };
+  testEmail: string;
+}) => {
+  try {
+    const response = await apiClient.post('admin/sendTestEmail', data);
+    return response?.data;
+  } catch (error) {
+    return (error as Error).response?.data;
   }
 };

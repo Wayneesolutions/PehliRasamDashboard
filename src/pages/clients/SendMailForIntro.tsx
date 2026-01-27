@@ -135,6 +135,16 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
             return;
         }
 
+        if (!customerId) {
+            message.error('Customer ID is missing.');
+            return;
+        }
+
+        if (!link) {
+            message.error('Intro link is missing.');
+            return;
+        }
+
         setLoading(true);
         try {
             const response = await apiClient.post('/admin/sendMailForIntro', {
@@ -168,9 +178,19 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
 
     useEffect(() => {
         if (isOpen) {
+            if (!customerId) {
+                message.error('Customer ID is missing. Cannot send intro email.');
+                onClose();
+                return;
+            }
+            if (!link) {
+                message.error('Intro link is missing. Cannot send intro email.');
+                onClose();
+                return;
+            }
             fetchTemplates();
         }
-    }, [isOpen]);
+    }, [isOpen, customerId, link, onClose]);
 
     // Reset form when modal closes
     useEffect(() => {
