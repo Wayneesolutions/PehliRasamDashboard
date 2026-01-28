@@ -646,3 +646,149 @@ export const sendTestEmail = async (data: {
     return (error as Error).response?.data;
   }
 };
+
+// ============================================
+// INBOX API ENDPOINTS
+// ============================================
+
+export interface InboxMessage {
+  _id: string;
+  messageId: string;
+  from: string;
+  fromName: string;
+  to: string[];
+  cc: string[];
+  subject: string;
+  body: string;
+  textBody: string;
+  receivedAt: string;
+  emailDate: string;
+  customerId?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    profileImage?: string;
+  };
+  customerMatched: boolean;
+  inReplyTo?: string;
+  references: string[];
+  isRead: boolean;
+  readAt?: string;
+  readBy?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+  };
+  hasAutoReplied: boolean;
+  autoRepliedAt?: string;
+  attachments: Array<{
+    fileName: string;
+    fileSize: number;
+    mimeType: string;
+    contentId?: string;
+    fileUrl?: string;
+  }>;
+  rawHeaders: any;
+  isStarred: boolean;
+  isImportant: boolean;
+  isDeleted: boolean;
+  adminNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InboxMessagesResponse {
+  success: boolean;
+  message: string;
+  data: {
+    messages: InboxMessage[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      pages: number;
+    };
+    unreadCount: number;
+  };
+}
+
+export const getInboxMessages = async (params?: {
+  page?: number;
+  limit?: number;
+  isRead?: boolean;
+  customerId?: string;
+  search?: string;
+  startDate?: string;
+  endDate?: string;
+}): Promise<InboxMessagesResponse> => {
+  try {
+    const response = await apiClient.get('admin/inbox/messages', { params });
+    return response?.data;
+  } catch (error) {
+    return (error as any)?.response?.data;
+  }
+};
+
+export const getInboxMessage = async (id: string) => {
+  try {
+    const response = await apiClient.get(`admin/inbox/message/${id}`);
+    return response?.data;
+  } catch (error) {
+    return (error as any)?.response?.data;
+  }
+};
+
+export const markMessageAsRead = async (id: string) => {
+  try {
+    const response = await apiClient.post(`admin/inbox/message/${id}/read`);
+    return response?.data;
+  } catch (error) {
+    return (error as any)?.response?.data;
+  }
+};
+
+export const markMessageAsUnread = async (id: string) => {
+  try {
+    const response = await apiClient.post(`admin/inbox/message/${id}/unread`);
+    return response?.data;
+  } catch (error) {
+    return (error as any)?.response?.data;
+  }
+};
+
+export const deleteInboxMessage = async (id: string) => {
+  try {
+    const response = await apiClient.delete(`admin/inbox/message/${id}`);
+    return response?.data;
+  } catch (error) {
+    return (error as any)?.response?.data;
+  }
+};
+
+export const getUnreadCount = async () => {
+  try {
+    const response = await apiClient.get('admin/inbox/unread-count');
+    return response?.data;
+  } catch (error) {
+    return (error as any)?.response?.data;
+  }
+};
+
+export const getCustomerInbox = async (customerId: string) => {
+  try {
+    const response = await apiClient.get(`admin/inbox/customer/${customerId}`);
+    return response?.data;
+  } catch (error) {
+    return (error as any)?.response?.data;
+  }
+};
+
+export const toggleStarMessage = async (id: string) => {
+  try {
+    const response = await apiClient.post(`admin/inbox/message/${id}/star`);
+    return response?.data;
+  } catch (error) {
+    return (error as any)?.response?.data;
+  }
+};
