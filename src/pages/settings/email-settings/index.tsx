@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Button, Input, Radio, message, Card, Modal, Switch } from 'antd';
-import { MailOutlined, SendOutlined } from '@ant-design/icons';
-import { getEmailSettings, updateEmailSettings, sendTestEmail } from '../../../config/apiClient';
+import { Button, Input, Radio, message, Card, Modal, Switch, Table, Popconfirm } from 'antd';
+import { MailOutlined, SendOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { getEmailSettings, updateEmailSettings, sendTestEmail, getAllEmailTemplates, deleteEmailTemplate } from '../../../config/apiClient';
+import AddEmailTemplateModal from './AddEmailTemplateModal';
 
 const EmailSettings = () => {
   const [loading, setLoading] = useState(false);
@@ -31,11 +32,24 @@ const EmailSettings = () => {
   const [sendingTest, setSendingTest] = useState(false);
   const [testEmailModalVisible, setTestEmailModalVisible] = useState(false);
   const [testEmailAddress, setTestEmailAddress] = useState('');
+  
+  // Email Templates state
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templateModalVisible, setTemplateModalVisible] = useState(false);
+  const [editTemplateId, setEditTemplateId] = useState<string | null>(null);
+  const [refreshTemplates, setRefreshTemplates] = useState(false);
 
-  // Fetch email settings on component mount
+  // Fetch email settings and templates on component mount
   useEffect(() => {
     fetchEmailSettings();
+    fetchTemplates();
   }, []);
+
+  // Refresh templates when refreshTemplates changes
+  useEffect(() => {
+    fetchTemplates();
+  }, [refreshTemplates]);
 
   const fetchEmailSettings = async () => {
     setLoading(true);
@@ -155,6 +169,103 @@ const EmailSettings = () => {
       setSendingTest(false);
     }
   };
+
+  // Fetch email templates
+  const fetchTemplates = async () => {
+    setTemplatesLoading(true);
+    try {
+      const res = await getAllEmailTemplates();
+      if (res.success && Array.isArray(res.data)) {
+        setTemplates(res.data);
+      }
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      message.error('Failed to load email templates');
+    } finally {
+      setTemplatesLoading(false);
+    }
+  };
+
+  // Handle add template
+  const handleAddTemplate = () => {
+    setEditTemplateId(null);
+    setTemplateModalVisible(true);
+  };
+
+  // Handle edit template
+  const handleEditTemplate = (templateId: string) => {
+    setEditTemplateId(templateId);
+    setTemplateModalVisible(true);
+  };
+
+  // Handle delete template
+  const handleDeleteTemplate = async (templateId: string) => {
+    try {
+      const res = await deleteEmailTemplate(templateId);
+      if (res.success) {
+        message.success('Template deleted successfully');
+        fetchTemplates();
+      } else {
+        message.error(res.message || 'Failed to delete template');
+      }
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      message.error('Failed to delete template');
+    }
+  };
+
+  // Decode HTML entities
+  const decodeHtml = (html: string) => {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = html;
+    return txt.value;
+  };
+
+  // Template columns
+  const templateColumns = [
+    {
+      title: 'Subject',
+      dataIndex: 'subject',
+      key: 'subject',
+      width: '40%',
+    },
+    {
+      title: 'Preview',
+      dataIndex: 'body',
+      key: 'body',
+      render: (body: string) => {
+        const decoded = decodeHtml(body);
+        const plainText = decoded.replace(/<[^>]*>/g, '');
+        return plainText.slice(0, 100) + (plainText.length > 100 ? '...' : '');
+      },
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: '20%',
+      render: (_: any, record: any) => (
+        <div className="flex gap-2">
+          <Button
+            type="default"
+            icon={<EditOutlined />}
+            onClick={() => handleEditTemplate(record._id)}
+          >
+            Edit
+          </Button>
+          <Popconfirm
+            title="Are you sure you want to delete this template?"
+            onConfirm={() => handleDeleteTemplate(record._id)}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Button type="primary" danger icon={<DeleteOutlined />}>
+              Delete
+            </Button>
+          </Popconfirm>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -502,6 +613,39 @@ const EmailSettings = () => {
           </div>
         </Card>
 
+        {/* Email Templates Section */}
+        <Card className="mb-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800">Email Templates</h3>
+              <p className="text-sm text-gray-600">
+                Create and manage email templates for quick messaging
+              </p>
+            </div>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleAddTemplate}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Add Template
+            </Button>
+          </div>
+          <Table
+            columns={templateColumns}
+            dataSource={templates}
+            loading={templatesLoading}
+            rowKey="_id"
+            pagination={{
+              pageSize: 5,
+              showSizeChanger: false,
+            }}
+            locale={{
+              emptyText: 'No templates found. Click "Add Template" to create one.',
+            }}
+          />
+        </Card>
+
         {/* Save Button */}
         <div className="flex justify-end mt-6">
           <Button
@@ -515,6 +659,18 @@ const EmailSettings = () => {
           </Button>
         </div>
       </div>
+
+      {/* Add/Edit Template Modal */}
+      <AddEmailTemplateModal
+        isOpen={templateModalVisible}
+        onClose={() => {
+          setTemplateModalVisible(false);
+          setEditTemplateId(null);
+        }}
+        func={setRefreshTemplates}
+        val={refreshTemplates}
+        editId={editTemplateId}
+      />
 
       {/* Test Email Modal */}
       <Modal
