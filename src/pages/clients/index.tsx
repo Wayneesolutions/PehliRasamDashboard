@@ -794,31 +794,85 @@ const Clients: React.FC = () => {
                     switch (field) {
                       case "membershipType":
                         return [
-                          { value: "paid", label: "Paid Member" },
-                          { value: "free", label: "Free Member" },
-                          { value: "premium", label: "Premium Member" },
-                          { value: "trial", label: "Trial Member" },
+                          { value: "Active Client", label: "Active Client" },
+                          { value: "Free Member", label: "Free Member" },
+                          { value: "Inactive", label: "Inactive" },
+                          { value: "Deactivated", label: "Deactivated" },
+                          { value: "Refund", label: "Refund" },
+                          { value: "Old Paid Member", label: "Old Paid Member" },
+                          { value: "Profile On Hold", label: "Profile On Hold" },
                         ];
                       case "gender":
                         return [
                           { value: "male", label: "Male" },
                           { value: "female", label: "Female" },
-                          { value: "other", label: "Other" },
                         ];
                       case "caste":
                         return [
-                          { value: "jatt", label: "Jatt" },
-                          { value: "khatri", label: "Khatri" },
-                          { value: "arora", label: "Arora" },
-                          { value: "saini", label: "Saini" },
-                          { value: "other", label: "Other" },
+                          { value: "Ad Dharmi", label: "Ad Dharmi" },
+                          { value: "Ahluwalia", label: "Ahluwalia" },
+                          { value: "Arora", label: "Arora" },
+                          { value: "Baazigar", label: "Baazigar" },
+                          { value: "Bhatia", label: "Bhatia" },
+                          { value: "Bhatra", label: "Bhatra" },
+                          { value: "Brahmin", label: "Brahmin" },
+                          { value: "Baniya", label: "Baniya" },
+                          { value: "Chimba", label: "Chimba" },
+                          { value: "Ghumar", label: "Ghumar" },
+                          { value: "Gujjar", label: "Gujjar" },
+                          { value: "Sunyar (Gold Smith)", label: "Sunyar (Gold Smith)" },
+                          { value: "Hindu Punjabi", label: "Hindu Punjabi" },
+                          { value: "Intercaste", label: "Intercaste" },
+                          { value: "Jatt (Sikh)", label: "Jatt (Sikh)" },
+                          { value: "Julahe", label: "Julahe" },
+                          { value: "Jain", label: "Jain" },
+                          { value: "Jaat (Hindu)", label: "Jaat (Hindu)" },
+                          { value: "Kabir Panthi", label: "Kabir Panthi" },
+                          { value: "Kamboj", label: "Kamboj" },
+                          { value: "Kashyap Rajput", label: "Kashyap Rajput" },
+                          { value: "Khatri", label: "Khatri" },
+                          { value: "Kshatriya", label: "Kshatriya" },
+                          { value: "Other", label: "Other" },
+                          { value: "Lubana", label: "Lubana" },
+                          { value: "Mahajan", label: "Mahajan" },
+                          { value: "Maid Rajput", label: "Maid Rajput" },
+                          { value: "Mair Rajput", label: "Mair Rajput" },
+                          { value: "Majabi", label: "Majabi" },
+                          { value: "Nai", label: "Nai" },
+                          { value: "Others", label: "Others" },
+                          { value: "Parjapat", label: "Parjapat" },
+                          { value: "Rai", label: "Rai" },
+                          { value: "Rajput", label: "Rajput" },
+                          { value: "Ramdasia", label: "Ramdasia" },
+                          { value: "Ramgharia", label: "Ramgharia" },
+                          { value: "Ravidasia", label: "Ravidasia" },
+                          { value: "Saini", label: "Saini" },
+                          { value: "Tonk Kshatriya", label: "Tonk Kshatriya" },
                         ];
+                      case "height":
+                        return (() => {
+                          const options: { value: string; label: string }[] = [];
+                          for (let ft = 4; ft <= 7; ft++) {
+                            for (let in_ = 0; in_ <= 11; in_++) {
+                              const label = `${ft}'${in_}"`;
+                              options.push({ value: label, label });
+                            }
+                          }
+                          return options;
+                        })();
                       case "maritalStatus":
                         return [
-                          { value: "single", label: "Single" },
-                          { value: "divorced", label: "Divorced" },
-                          { value: "widowed", label: "Widowed" },
-                          { value: "separated", label: "Separated" },
+                          { value: "Never Married", label: "Never Married" },
+                          { value: "Divorced", label: "Divorced" },
+                          { value: "Widowed", label: "Widowed" },
+                          { value: "Separated", label: "Separated" },
+                          { value: "Annulled", label: "Annulled" },
+                          { value: "Divorced (1child ; living together)", label: "Divorced (1child ; living together)" },
+                          { value: "Divorced (2 Children ; Living Together)", label: "Divorced (2 Children ; Living Together)" },
+                          { value: "Divorced (3 Children ; Living Together)", label: "Divorced (3 Children ; Living Together)" },
+                          { value: "Awaiting Divorce", label: "Awaiting Divorce" },
+                          { value: "Widowed (1 Child ; Living Together)", label: "Widowed (1 Child ; Living Together)" },
+                          { value: "Divorced (Without Child)", label: "Divorced (Without Child)" },
                         ];
                       case "registeredBy":
                         return [
@@ -844,26 +898,65 @@ const Clients: React.FC = () => {
                         {/* Value Input(s) */}
                         {isRangeField ? (
                           <div className="flex items-center gap-2">
-                            <Input
-                              placeholder={criterion.field === "birthday" ? "Min Age" : criterion.field === "height" ? "Min Height" : "From Date"}
-                              value={Array.isArray(criterion.value) ? criterion.value[0] : ""}
-                              onChange={(e) => {
-                                const updated = [...searchCriteria];
-                                updated[index].value = [e.target.value, Array.isArray(criterion.value) ? criterion.value[1] : ""];
-                                setSearchCriteria(updated);
-                              }}
-                              className="w-32"
-                            />
-                            <Input
-                              placeholder={criterion.field === "birthday" ? "Max Age" : criterion.field === "height" ? "Max Height" : "To Date"}
-                              value={Array.isArray(criterion.value) ? criterion.value[1] : ""}
-                              onChange={(e) => {
-                                const updated = [...searchCriteria];
-                                updated[index].value = [Array.isArray(criterion.value) ? criterion.value[0] : "", e.target.value];
-                                setSearchCriteria(updated);
-                              }}
-                              className="w-32"
-                            />
+                            {criterion.field === "height" ? (
+                              <>
+                                <Select
+                                  placeholder="Min Height"
+                                  value={Array.isArray(criterion.value) ? criterion.value[0] || undefined : undefined}
+                                  onChange={(value) => {
+                                    const updated = [...searchCriteria];
+                                    updated[index].value = [value || "", Array.isArray(criterion.value) ? criterion.value[1] : ""];
+                                    setSearchCriteria(updated);
+                                  }}
+                                  className="w-32"
+                                  allowClear
+                                  showSearch
+                                >
+                                  {fieldDropdownOptions.map(opt => (
+                                    <Option key={opt.value} value={opt.value}>{opt.label}</Option>
+                                  ))}
+                                </Select>
+                                <Select
+                                  placeholder="Max Height"
+                                  value={Array.isArray(criterion.value) ? criterion.value[1] || undefined : undefined}
+                                  onChange={(value) => {
+                                    const updated = [...searchCriteria];
+                                    updated[index].value = [Array.isArray(criterion.value) ? criterion.value[0] : "", value || ""];
+                                    setSearchCriteria(updated);
+                                  }}
+                                  className="w-32"
+                                  allowClear
+                                  showSearch
+                                >
+                                  {fieldDropdownOptions.map(opt => (
+                                    <Option key={opt.value} value={opt.value}>{opt.label}</Option>
+                                  ))}
+                                </Select>
+                              </>
+                            ) : (
+                              <>
+                                <Input
+                                  placeholder={criterion.field === "birthday" ? "Min Age" : "From Date"}
+                                  value={Array.isArray(criterion.value) ? criterion.value[0] : ""}
+                                  onChange={(e) => {
+                                    const updated = [...searchCriteria];
+                                    updated[index].value = [e.target.value, Array.isArray(criterion.value) ? criterion.value[1] : ""];
+                                    setSearchCriteria(updated);
+                                  }}
+                                  className="w-32"
+                                />
+                                <Input
+                                  placeholder={criterion.field === "birthday" ? "Max Age" : "To Date"}
+                                  value={Array.isArray(criterion.value) ? criterion.value[1] : ""}
+                                  onChange={(e) => {
+                                    const updated = [...searchCriteria];
+                                    updated[index].value = [Array.isArray(criterion.value) ? criterion.value[0] : "", e.target.value];
+                                    setSearchCriteria(updated);
+                                  }}
+                                  className="w-32"
+                                />
+                              </>
+                            )}
                           </div>
                         ) : (
                           <Select
