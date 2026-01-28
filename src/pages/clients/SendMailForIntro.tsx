@@ -35,6 +35,18 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
     };
 
     const handleTemplateSelect = (templateId: string) => {
+        if (!templateId) {
+            // Clear selection
+            setSelectedTemplateId(undefined);
+            setSubject('');
+            setContent('');
+            form.setFieldsValue({ subject: '' });
+            if (editorRef.current) {
+                editorRef.current.setContent('');
+            }
+            return;
+        }
+        
         const selected = templates.find((t) => t._id === templateId);
         if (selected) {
             setSelectedTemplateId(templateId);
@@ -42,12 +54,15 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
             form.setFieldsValue({ subject: selected.subject });
 
             const decodedBody = decodeHtml(selected.body);
-            const fullContentWithLink = `${decodedBody}<p><a href="${link}">Click here to view the introduction</a></p>`;
+            const fullContentWithLink = `${decodedBody}<br/><br/><p><a href="${link}" target="_blank">Click here to view the introduction</a></p>`;
             setContent(fullContentWithLink);
 
-            if (editorRef.current) {
-                editorRef.current.setContent(fullContentWithLink);
-            }
+            // Set content in editor after a small delay to ensure editor is ready
+            setTimeout(() => {
+                if (editorRef.current) {
+                    editorRef.current.setContent(fullContentWithLink);
+                }
+            }, 100);
         }
     };
 
@@ -209,7 +224,9 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
             title="Send Intro Email"
             open={isOpen}
             onCancel={onClose}
-            width={800}
+            width={900}
+            centered
+            destroyOnClose
             footer={[
                 <Button key="cancel" onClick={onClose}>
                     Cancel
@@ -293,17 +310,17 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
 
                 <Form.Item
                     label="Content"
-                    name="content"
                     required
                     validateStatus={!content ? 'error' : ''}
                     help={!content ? 'Please enter email content' : ''}
                 >
                     <TinyMCEEditor
+                        value={content}
                         onInit={(_, editor) => (editorRef.current = editor)}
                         onEditorChange={(newContent) => setContent(newContent)}
                         apiKey="1ya1d1zav4tgpip8exgsyyatkcy07funukfyfrnn93t7wslj"
                         init={{
-                            height: 500,
+                            height: 400,
                             menubar: true,
                             plugins: [
                                 'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
@@ -316,6 +333,8 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
                                 'alignright alignjustify | bullist numlist outdent indent | ' +
                                 'removeformat | help',
                             content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                            branding: false,
+                            promotion: false,
                         }}
                     />
                 </Form.Item>

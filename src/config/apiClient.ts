@@ -609,6 +609,15 @@ export const updateEmailSettings = async (data: {
   replyToEmail?: string;
   inboundEmail?: string;
   contactEmail?: string;
+  imapSettings?: {
+    host?: string;
+    port?: string;
+    username?: string;
+    password?: string;
+    secure?: boolean;
+  };
+  autoReplyEnabled?: boolean;
+  autoReplyMessage?: string;
 }) => {
   try {
     const response = await apiClient.post('admin/emailSettings', data);

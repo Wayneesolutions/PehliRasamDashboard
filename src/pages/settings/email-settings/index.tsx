@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Button, Input, Radio, message, Card, Modal } from 'antd';
+import { Button, Input, Radio, message, Card, Modal, Switch } from 'antd';
 import { MailOutlined, SendOutlined } from '@ant-design/icons';
 import { getEmailSettings, updateEmailSettings, sendTestEmail } from '../../../config/apiClient';
 
@@ -19,6 +19,15 @@ const EmailSettings = () => {
   const [replyToEmail, setReplyToEmail] = useState('');
   const [inboundEmail, setInboundEmail] = useState('');
   const [contactEmail, setContactEmail] = useState('');
+  const [imapSettings, setImapSettings] = useState({
+    host: '',
+    port: '993',
+    username: '',
+    password: '',
+    secure: true,
+  });
+  const [autoReplyEnabled, setAutoReplyEnabled] = useState(false);
+  const [autoReplyMessage, setAutoReplyMessage] = useState('Thank you for contacting us. We have received your email and our team will contact you soon.');
   const [sendingTest, setSendingTest] = useState(false);
   const [testEmailModalVisible, setTestEmailModalVisible] = useState(false);
   const [testEmailAddress, setTestEmailAddress] = useState('');
@@ -45,6 +54,15 @@ const EmailSettings = () => {
         setReplyToEmail(res.data.replyToEmail || '');
         setInboundEmail(res.data.inboundEmail || '');
         setContactEmail(res.data.contactEmail || '');
+        setImapSettings(res.data.imapSettings || {
+          host: '',
+          port: '993',
+          username: '',
+          password: '',
+          secure: true,
+        });
+        setAutoReplyEnabled(res.data.autoReplyEnabled || false);
+        setAutoReplyMessage(res.data.autoReplyMessage || 'Thank you for contacting us. We have received your email and our team will contact you soon.');
         setDefaultSender(res.data.defaultSender || 'info@pehlirasam.com');
       }
     } catch (error) {
@@ -62,6 +80,13 @@ const EmailSettings = () => {
     }));
   };
 
+  const handleImapChange = (field: string, value: string | boolean) => {
+    setImapSettings(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   const handleSaveSettings = async () => {
     setSaving(true);
     try {
@@ -70,7 +95,10 @@ const EmailSettings = () => {
         smtpSettings,
         replyToEmail,
         inboundEmail,
-        contactEmail
+        contactEmail,
+        imapSettings,
+        autoReplyEnabled,
+        autoReplyMessage
       });
       
       if (res.success) {
@@ -327,6 +355,129 @@ const EmailSettings = () => {
                 className="w-full"
               />
             </div>
+          </div>
+        </Card>
+
+        {/* IMAP Settings Section */}
+        <Card className="mb-6 shadow-sm">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              IMAP Settings (for receiving emails):
+            </label>
+            <p className="text-sm text-gray-600 mb-3">
+              Configure IMAP settings to receive emails for auto-reply functionality. Use the same email account as your SMTP settings.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  IMAP Host:
+                </label>
+                <Input
+                  placeholder="e.g., imap.gmail.com or mail.pehlirasam.com"
+                  value={imapSettings.host}
+                  onChange={(e) => handleImapChange('host', e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  IMAP Port:
+                </label>
+                <Input
+                  placeholder="993 (SSL) or 143 (TLS)"
+                  value={imapSettings.port}
+                  onChange={(e) => handleImapChange('port', e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  IMAP Username:
+                </label>
+                <Input
+                  placeholder="Your email address"
+                  value={imapSettings.username}
+                  onChange={(e) => handleImapChange('username', e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  IMAP Password:
+                </label>
+                <Input.Password
+                  placeholder="Your email password or app password"
+                  value={imapSettings.password}
+                  onChange={(e) => handleImapChange('password', e.target.value)}
+                  className="w-full"
+                />
+              </div>
+            </div>
+            <div className="mt-4">
+              <label className="flex items-center gap-2">
+                <Switch
+                  checked={imapSettings.secure}
+                  onChange={(checked) => handleImapChange('secure', checked)}
+                />
+                <span className="text-sm text-gray-700">Use SSL/TLS (recommended)</span>
+              </label>
+            </div>
+          </div>
+        </Card>
+
+        {/* Auto-Reply Settings Section */}
+        <Card className="mb-6 shadow-sm">
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Auto-Reply:
+                </label>
+                <p className="text-sm text-gray-600">
+                  Automatically reply to emails sent to your inbound email address
+                </p>
+              </div>
+              <Switch
+                checked={autoReplyEnabled}
+                onChange={setAutoReplyEnabled}
+              />
+            </div>
+            
+            {!autoReplyEnabled && (
+              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  <strong>⚠️ Auto-reply is currently disabled.</strong> Enable the toggle above to activate automatic replies.
+                </p>
+              </div>
+            )}
+            
+            {autoReplyEnabled && (!inboundEmail || !imapSettings.host || !imapSettings.username) && (
+              <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <p className="text-sm text-orange-800 font-medium mb-2">⚠️ Configuration Required:</p>
+                <ul className="text-sm text-orange-700 list-disc list-inside space-y-1">
+                  {!inboundEmail && <li>Set your Inbound Email Address above</li>}
+                  {!imapSettings.host && <li>Configure IMAP Host</li>}
+                  {!imapSettings.username && <li>Configure IMAP Username</li>}
+                </ul>
+              </div>
+            )}
+            {autoReplyEnabled && (
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Auto-Reply Message:
+                </label>
+                <Input.TextArea
+                  rows={4}
+                  value={autoReplyMessage}
+                  onChange={(e) => setAutoReplyMessage(e.target.value)}
+                  placeholder="Enter the message that will be sent as auto-reply"
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  This message will be sent automatically when someone sends an email to your inbound email address.
+                </p>
+              </div>
+            )}
           </div>
         </Card>
 
