@@ -476,27 +476,6 @@ const EmailSettings = () => {
             </div>
           </Card>
 
-          {/* Inbound Email Address Section */}
-          <Card className="shadow-sm !mb-4">
-            <div className="!mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Inbound Email Address:
-              </label>
-              <p className="text-sm text-gray-600 mb-3">
-                The email address of your agency in Pehli Rasam as default reply to address
-              </p>
-              <div className="flex items-center gap-2">
-                <MailOutlined className="text-gray-500" />
-                <Input
-                  value={inboundEmail}
-                  onChange={(e) => setInboundEmail(e.target.value)}
-                  placeholder="Enter inbound email address"
-                  className="w-full"
-                />
-              </div>
-            </div>
-          </Card>
-
           {/* Contact Email Section */}
           <Card className="shadow-sm !mb-4">
             <div className="mb-4">
@@ -615,6 +594,27 @@ const EmailSettings = () => {
       label: 'IMAP & Inbox',
       children: (
         <div className="space-y-6 p-4">
+          {/* Inbound Email Address Section */}
+          <Card className="shadow-sm !mb-4">
+            <div className="!mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Inbound Email Address:
+              </label>
+              <p className="text-sm text-gray-600 mb-3">
+                The email address of your agency in Pehli Rasam as default reply to address. This is the address where emails will be received and tracked in the inbox.
+              </p>
+              <div className="flex items-center gap-2">
+                <MailOutlined className="text-gray-500" />
+                <Input
+                  value={inboundEmail}
+                  onChange={(e) => setInboundEmail(e.target.value)}
+                  placeholder="Enter inbound email address"
+                  className="w-full"
+                />
+              </div>
+            </div>
+          </Card>
+
           {/* IMAP Settings Section */}
           <Card className="shadow-sm !mb-4">
             <div className="mb-4">
@@ -712,7 +712,7 @@ const EmailSettings = () => {
                 <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                   <p className="text-sm text-orange-800 font-medium mb-2">⚠️ Configuration Required:</p>
                   <ul className="text-sm text-orange-700 list-disc list-inside space-y-1">
-                    {!inboundEmail && <li>Set your Inbound Email Address in the "Email Addresses" tab</li>}
+                    {!inboundEmail && <li>Set your Inbound Email Address above</li>}
                     {!imapSettings.host && <li>Configure IMAP Host</li>}
                     {!imapSettings.username && <li>Configure IMAP Username</li>}
                   </ul>
