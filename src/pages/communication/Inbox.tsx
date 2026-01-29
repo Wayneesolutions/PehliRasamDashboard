@@ -212,30 +212,40 @@ const Inbox = () => {
       title: '',
       key: 'star',
       width: 50,
+      fixed: 'left' as const,
       render: (_: any, record: InboxMessageType) => (
-        <Button
-          type="text"
-          icon={record.isStarred ? <FaStar className="text-yellow-500" /> : <FaRegStar className="text-gray-400" />}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleToggleStar(record._id);
-          }}
-        />
+        <div className="flex items-center justify-center">
+          <Button
+            type="text"
+            size="small"
+            icon={record.isStarred ? <FaStar className="text-yellow-500" /> : <FaRegStar className="text-gray-400" />}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggleStar(record._id);
+            }}
+            className="flex items-center justify-center"
+          />
+        </div>
       ),
     },
     {
       title: '',
       key: 'read',
       width: 50,
+      fixed: 'left' as const,
       render: (_: any, record: InboxMessageType) => (
-        <Button
-          type="text"
-          icon={record.isRead ? <FaEnvelopeOpen className="text-gray-400" /> : <FaEnvelope className="text-blue-600" />}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleToggleRead(record._id, record.isRead);
-          }}
-        />
+        <div className="flex items-center justify-center">
+          <Button
+            type="text"
+            size="small"
+            icon={record.isRead ? <FaEnvelopeOpen className="text-gray-400" /> : <FaEnvelope className="text-blue-600" />}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggleRead(record._id, record.isRead);
+            }}
+            className="flex items-center justify-center"
+          />
+        </div>
       ),
     },
     {
@@ -307,9 +317,10 @@ const Inbox = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 100,
+      width: 80,
+      fixed: 'right' as const,
       render: (_: any, record: InboxMessageType) => (
-        <div className="flex gap-2">
+        <div className="flex items-center justify-center">
           <Popconfirm
             title="Are you sure you want to delete this message?"
             onConfirm={(e) => {
@@ -323,8 +334,10 @@ const Inbox = () => {
             <Button
               type="text"
               danger
+              size="small"
               icon={<FaTrash />}
               onClick={(e) => e.stopPropagation()}
+              className="flex items-center justify-center"
             />
           </Popconfirm>
         </div>
@@ -378,34 +391,37 @@ const Inbox = () => {
 
       {/* Table */}
       <Spin spinning={loading}>
-        <Table
-          columns={columns}
-          dataSource={messages}
-          rowKey="_id"
-          pagination={pagination}
-          onChange={handleTableChange}
-          onRow={(record) => ({
-            onClick: () => handleViewMessage(record._id),
-            className: 'cursor-pointer hover:bg-gray-50',
-          })}
-          locale={{
-            emptyText: (
-              <Empty
-                image={<FaInbox className="text-6xl text-gray-300 mx-auto mb-4" />}
-                description={
-                  <div>
-                    <p className="text-xl font-medium text-gray-500">No emails here</p>
-                    <p className="text-sm text-gray-400">
-                      {filterStatus === 'unread' ? 'No unread messages' :
-                       filterStatus === 'read' ? 'No read messages' :
-                       'Your inbox is currently empty'}
-                    </p>
-                  </div>
-                }
-              />
-            ),
-          }}
-        />
+        <div className="overflow-x-auto">
+          <Table
+            columns={columns}
+            dataSource={messages}
+            rowKey="_id"
+            pagination={pagination}
+            onChange={handleTableChange}
+            scroll={{ x: 'max-content' }}
+            onRow={(record) => ({
+              onClick: () => handleViewMessage(record._id),
+              className: 'cursor-pointer hover:bg-gray-50',
+            })}
+            locale={{
+              emptyText: (
+                <Empty
+                  image={<FaInbox className="text-6xl text-gray-300 mx-auto mb-4" />}
+                  description={
+                    <div>
+                      <p className="text-xl font-medium text-gray-500">No emails here</p>
+                      <p className="text-sm text-gray-400">
+                        {filterStatus === 'unread' ? 'No unread messages' :
+                         filterStatus === 'read' ? 'No read messages' :
+                         'Your inbox is currently empty'}
+                      </p>
+                    </div>
+                  }
+                />
+              ),
+            }}
+          />
+        </div>
       </Spin>
 
       {/* Message Detail Modal */}

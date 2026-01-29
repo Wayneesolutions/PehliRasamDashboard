@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Button, Input, Radio, message, Card, Modal, Switch, Table, Popconfirm } from 'antd';
+import { Button, Input, Radio, message, Card, Modal, Switch, Table, Popconfirm, Tabs } from 'antd';
 import { MailOutlined, SendOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { FaInbox } from 'react-icons/fa';
 import { getEmailSettings, updateEmailSettings, sendTestEmail, getAllEmailTemplates, deleteEmailTemplate } from '../../../config/apiClient';
@@ -290,263 +290,49 @@ const EmailSettings = () => {
     },
   ];
 
-  return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6">Email Settings</h1>
-
-        {/* Sending Emails Section */}
-        <Card className="mb-6 shadow-sm">
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Sending Emails:</label>
-            <Radio.Group 
-              value={sendingMethod} 
-              onChange={(e) => setSendingMethod(e.target.value)}
-              className="mb-4"
-            >
-              <Radio value="default">Default</Radio>
-              <Radio value="smtp">SMTP</Radio>
-            </Radio.Group>
-          </div>
-
-          {sendingMethod === 'default' ? (
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <div className="flex items-center gap-2 mb-2">
-                <MailOutlined className="text-blue-600" />
-                <span className="font-medium text-gray-800">
-                  Pehli Rasam {defaultSender || 'info@pehli-rasam.smartmatchapp.com'}
-                </span>
-              </div>
-              <p className="text-sm text-gray-600">
-                All automated messages from the system will be sent from this sender
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* SMTP Configuration Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    SMTP Host:
-                  </label>
-                  <Input
-                    placeholder="Click to add"
-                    value={smtpSettings.host}
-                    onChange={(e) => handleSmtpChange('host', e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    SMTP Port:
-                  </label>
-                  <Input
-                    placeholder="Click to add"
-                    value={smtpSettings.port}
-                    onChange={(e) => handleSmtpChange('port', e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    SMTP Username:
-                  </label>
-                  <Input
-                    placeholder="Click to add"
-                    value={smtpSettings.username}
-                    onChange={(e) => handleSmtpChange('username', e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    SMTP Password:
-                  </label>
-                  <Input.Password
-                    placeholder="Click to add"
-                    value={smtpSettings.password}
-                    onChange={(e) => handleSmtpChange('password', e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Connection Type:
-                  </label>
-                  <Input
-                    placeholder="Click to add"
-                    value={smtpSettings.connectionType}
-                    onChange={(e) => handleSmtpChange('connectionType', e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Sender:
-                  </label>
-                  <Input
-                    placeholder="Click to add"
-                    value={smtpSettings.sender}
-                    onChange={(e) => handleSmtpChange('sender', e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-
-              {/* Connected Account Options */}
-              <div className="mt-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Button 
-                    type="link" 
-                    className="p-0 text-blue-600 hover:text-blue-700"
-                    onClick={() => message.info('Gmail account connection feature coming soon')}
-                  >
-                    Use Connected Gmail Account
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    type="link" 
-                    className="p-0 text-blue-600 hover:text-blue-700"
-                    onClick={() => message.info('Outlook account connection feature coming soon')}
-                  >
-                    Use Connected Outlook Account
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    type="link" 
-                    className="p-0 text-blue-600 hover:text-blue-700"
-                    onClick={() => message.info('Yahoo Mail SMTP settings feature coming soon')}
-                  >
-                    SMTP server settings for Yahoo Mail
-                  </Button>
-                </div>
-              </div>
-
-              {/* Information Notes */}
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-gray-700 mb-2">
-                  For smtp.gmail.com - recommended to "Use Connected Gmail Account."
-                </p>
-                <p className="text-sm text-gray-700">
-                  After adding or updating SMTP settings, click Send Test Message to verify it works.
-                </p>
-                <p className="text-sm text-gray-600 mt-2 italic">
-                  (Gmail Connected Account) — If sending fails, reconnect your account in the Gmail Add-on and refresh your settings here, then try again.
-                </p>
-              </div>
-
-              {/* Send Test Message Button */}
-              <div className="mt-4">
-                <Button
-                  type="primary"
-                  icon={<SendOutlined />}
-                  loading={sendingTest}
-                  onClick={handleSendTestMessage}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Send Test Message
-                </Button>
-              </div>
-            </div>
-          )}
-        </Card>
-
-        {/* Reply To Email Section */}
-        <Card className="mb-6 shadow-sm">
-          <div className="mb-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Reply To Email:
-            </label>
-            <p className="text-sm text-gray-600 mb-3">
-              To set multiple email addresses, enter them separated by commas (e.g., <code className="bg-gray-100 px-1 rounded">email1@example.com, email2@example.com</code>). 
-              When customers click "Reply", they'll see all these addresses to reply to.
-            </p>
-            <Input
-              value={replyToEmail}
-              onChange={(e) => setReplyToEmail(e.target.value)}
-              placeholder="e.g., support@pehlirasam.com, contact@pehlirasam.com"
-              className="w-full"
-            />
-            {replyToEmail && replyToEmail.includes(',') && (
-              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
-                <p className="text-xs text-blue-700">
-                  <strong>✅ Multiple emails detected:</strong> {replyToEmail.split(',').map(e => e.trim()).join(' • ')}
-                </p>
-              </div>
-            )}
-            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded">
-              <p className="text-xs text-green-800 font-medium mb-1">ℹ️ How Reply-To Works:</p>
-              <ul className="text-xs text-green-700 space-y-1 list-disc list-inside">
-                <li>The system will include BOTH reply-to emails AND inbound email in every email sent</li>
-                <li>When customers reply, the email will go to ALL these addresses</li>
-                <li><strong>Note:</strong> If you send to yourself, some email clients may not show Reply-To (this is normal)</li>
-                <li><strong>Test properly:</strong> Send to a different email address to see all Reply-To addresses</li>
-              </ul>
-            </div>
-          </div>
-        </Card>
-
-        {/* Inbound Email Address Section */}
-        <Card className="mb-6 shadow-sm">
-          <div className="mb-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Inbound Email Address:
-            </label>
-            <p className="text-sm text-gray-600 mb-3">
-              The email address of your agency in Pehli Rasam as default reply to address
-            </p>
-            <div className="flex items-center gap-2">
-              <MailOutlined className="text-gray-500" />
-              <Input
-                value={inboundEmail}
-                onChange={(e) => setInboundEmail(e.target.value)}
-                placeholder="Enter inbound email address"
-                className="w-full"
-              />
-            </div>
-          </div>
-        </Card>
-
-        {/* Contact Email Section */}
-        <Card className="mb-6 shadow-sm">
-          <div className="mb-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Contact Email:
-            </label>
-            <p className="text-sm text-gray-600 mb-3">
-              This address will be used to send different kinds of notifications to the agency
-            </p>
-            <div className="flex items-center gap-2">
-              <MailOutlined className="text-gray-500" />
-              <Input
-                value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
-                placeholder="Enter contact email address"
-                className="w-full"
-              />
+  const tabItems = [
+    {
+      key: 'sending',
+      label: 'Sending Configuration',
+      children: (
+        <div className="space-y-6 p-4">
+          <Card className="shadow-sm">
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Sending Emails:</label>
+              <Radio.Group 
+                value={sendingMethod} 
+                onChange={(e) => setSendingMethod(e.target.value)}
+                className="mb-4"
+              >
+                <Radio value="default">Default</Radio>
+                <Radio value="smtp">SMTP</Radio>
+              </Radio.Group>
             </div>
 
-            {/* Contact Email SMTP Settings */}
-            {contactEmail && (
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                  📧 SMTP Settings for Contact Email (for Auto-Reply)
-                </h4>
-                <p className="text-xs text-gray-600 mb-4">
-                  Configure SMTP settings for the Contact Email to send auto-replies to customers
+            {sendingMethod === 'default' ? (
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <MailOutlined className="text-blue-600" />
+                  <span className="font-medium text-gray-800">
+                    Pehli Rasam {defaultSender || 'info@pehli-rasam.smartmatchapp.com'}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600">
+                  All automated messages from the system will be sent from this sender
                 </p>
-                
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* SMTP Configuration Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       SMTP Host:
                     </label>
                     <Input
-                      placeholder="e.g., smtp.gmail.com"
-                      value={contactEmailSmtp.host}
-                      onChange={(e) => handleContactEmailSmtpChange('host', e.target.value)}
+                      placeholder="Click to add"
+                      value={smtpSettings.host}
+                      onChange={(e) => handleSmtpChange('host', e.target.value)}
                       className="w-full"
                     />
                   </div>
@@ -555,9 +341,9 @@ const EmailSettings = () => {
                       SMTP Port:
                     </label>
                     <Input
-                      placeholder="e.g., 587 or 465"
-                      value={contactEmailSmtp.port}
-                      onChange={(e) => handleContactEmailSmtpChange('port', e.target.value)}
+                      placeholder="Click to add"
+                      value={smtpSettings.port}
+                      onChange={(e) => handleSmtpChange('port', e.target.value)}
                       className="w-full"
                     />
                   </div>
@@ -566,9 +352,9 @@ const EmailSettings = () => {
                       SMTP Username:
                     </label>
                     <Input
-                      placeholder="Usually your email address"
-                      value={contactEmailSmtp.username}
-                      onChange={(e) => handleContactEmailSmtpChange('username', e.target.value)}
+                      placeholder="Click to add"
+                      value={smtpSettings.username}
+                      onChange={(e) => handleSmtpChange('username', e.target.value)}
                       className="w-full"
                     />
                   </div>
@@ -577,238 +363,500 @@ const EmailSettings = () => {
                       SMTP Password:
                     </label>
                     <Input.Password
-                      placeholder="Your email password or app password"
-                      value={contactEmailSmtp.password}
-                      onChange={(e) => handleContactEmailSmtpChange('password', e.target.value)}
+                      placeholder="Click to add"
+                      value={smtpSettings.password}
+                      onChange={(e) => handleSmtpChange('password', e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Connection Type:
+                    </label>
+                    <Input
+                      placeholder="Click to add"
+                      value={smtpSettings.connectionType}
+                      onChange={(e) => handleSmtpChange('connectionType', e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Sender:
+                    </label>
+                    <Input
+                      placeholder="Click to add"
+                      value={smtpSettings.sender}
+                      onChange={(e) => handleSmtpChange('sender', e.target.value)}
                       className="w-full"
                     />
                   </div>
                 </div>
 
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Connection Type:
-                  </label>
-                  <Radio.Group
-                    value={contactEmailSmtp.connectionType}
-                    onChange={(e) => handleContactEmailSmtpChange('connectionType', e.target.value)}
-                  >
-                    <Radio value="ssl">SSL (Port 465)</Radio>
-                    <Radio value="tls">TLS/STARTTLS (Port 587)</Radio>
-                  </Radio.Group>
+                {/* Information Notes */}
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-gray-700 mb-2">
+                    For smtp.gmail.com - recommended to "Use Connected Gmail Account."
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    After adding or updating SMTP settings, click Send Test Message to verify it works.
+                  </p>
+                  <p className="text-sm text-gray-600 mt-2 italic">
+                    (Gmail Connected Account) — If sending fails, reconnect your account in the Gmail Add-on and refresh your settings here, then try again.
+                  </p>
                 </div>
 
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
-                  <p className="text-xs text-blue-800">
-                    💡 <strong>For Gmail:</strong> Use smtp.gmail.com, port 587, and create an App Password
+                {/* Send Test Message Button */}
+                <div className="mt-4">
+                  <Button
+                    type="primary"
+                    icon={<SendOutlined />}
+                    loading={sendingTest}
+                    onClick={handleSendTestMessage}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    Send Test Message
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
+          
+          <div className="flex justify-end !mt-2">
+            <Button
+              type="primary"
+              size="large"
+              className="bg-blue-600 hover:bg-blue-700"
+              loading={saving}
+              onClick={handleSaveSettings}
+            >
+              Save Settings
+            </Button>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'addresses',
+      label: 'Email Addresses',
+      children: (
+        <div className="space-y-6 p-4">
+          {/* Reply To Email Section */}
+          <Card className="shadow-sm !mb-4">
+            <div className="!mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Reply To Email:
+              </label>
+              <p className="text-sm text-gray-600 mb-3">
+                To set multiple email addresses, enter them separated by commas (e.g., <code className="bg-gray-100 px-1 rounded">email1@example.com, email2@example.com</code>). 
+                When customers click "Reply", they'll see all these addresses to reply to.
+              </p>
+              <Input
+                value={replyToEmail}
+                onChange={(e) => setReplyToEmail(e.target.value)}
+                placeholder="e.g., support@pehlirasam.com, contact@pehlirasam.com"
+                className="w-full"
+              />
+              {replyToEmail && replyToEmail.includes(',') && (
+                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                  <p className="text-xs text-blue-700">
+                    <strong>✅ Multiple emails detected:</strong> {replyToEmail.split(',').map(e => e.trim()).join(' • ')}
+                  </p>
+                </div>
+              )}
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded">
+                <p className="text-xs text-green-800 font-medium mb-1">ℹ️ How Reply-To Works:</p>
+                <ul className="text-xs text-green-700 space-y-1 list-disc list-inside">
+                  <li>The system will include BOTH reply-to emails AND inbound email in every email sent</li>
+                  <li>When customers reply, the email will go to ALL these addresses</li>
+                  <li><strong>Note:</strong> If you send to yourself, some email clients may not show Reply-To (this is normal)</li>
+                  <li><strong>Test properly:</strong> Send to a different email address to see all Reply-To addresses</li>
+                </ul>
+              </div>
+            </div>
+          </Card>
+
+          {/* Inbound Email Address Section */}
+          <Card className="shadow-sm !mb-4">
+            <div className="!mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Inbound Email Address:
+              </label>
+              <p className="text-sm text-gray-600 mb-3">
+                The email address of your agency in Pehli Rasam as default reply to address
+              </p>
+              <div className="flex items-center gap-2">
+                <MailOutlined className="text-gray-500" />
+                <Input
+                  value={inboundEmail}
+                  onChange={(e) => setInboundEmail(e.target.value)}
+                  placeholder="Enter inbound email address"
+                  className="w-full"
+                />
+              </div>
+            </div>
+          </Card>
+
+          {/* Contact Email Section */}
+          <Card className="shadow-sm !mb-4">
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Contact Email:
+              </label>
+              <p className="text-sm text-gray-600 mb-3">
+                This address will be used to send different kinds of notifications to the agency
+              </p>
+              <div className="flex items-center gap-2">
+                <MailOutlined className="text-gray-500" />
+                <Input
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  placeholder="Enter contact email address"
+                  className="w-full"
+                />
+              </div>
+
+              {/* Contact Email SMTP Settings */}
+              {contactEmail && (
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                    📧 SMTP Settings for Contact Email (for Auto-Reply)
+                  </h4>
+                  <p className="text-xs text-gray-600 mb-4">
+                    Configure SMTP settings for the Contact Email to send auto-replies to customers
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        SMTP Host:
+                      </label>
+                      <Input
+                        placeholder="e.g., smtp.gmail.com"
+                        value={contactEmailSmtp.host}
+                        onChange={(e) => handleContactEmailSmtpChange('host', e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        SMTP Port:
+                      </label>
+                      <Input
+                        placeholder="e.g., 587 or 465"
+                        value={contactEmailSmtp.port}
+                        onChange={(e) => handleContactEmailSmtpChange('port', e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        SMTP Username:
+                      </label>
+                      <Input
+                        placeholder="Usually your email address"
+                        value={contactEmailSmtp.username}
+                        onChange={(e) => handleContactEmailSmtpChange('username', e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        SMTP Password:
+                      </label>
+                      <Input.Password
+                        placeholder="Your email password or app password"
+                        value={contactEmailSmtp.password}
+                        onChange={(e) => handleContactEmailSmtpChange('password', e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Connection Type:
+                    </label>
+                    <Radio.Group
+                      value={contactEmailSmtp.connectionType}
+                      onChange={(e) => handleContactEmailSmtpChange('connectionType', e.target.value)}
+                    >
+                      <Radio value="ssl">SSL (Port 465)</Radio>
+                      <Radio value="tls">TLS/STARTTLS (Port 587)</Radio>
+                    </Radio.Group>
+                  </div>
+
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+                    <p className="text-xs text-blue-800">
+                      💡 <strong>For Gmail:</strong> Use smtp.gmail.com, port 587, and create an App Password
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          <div className="flex justify-end !mt-2">
+            <Button
+              type="primary"
+              size="large"
+              className="bg-blue-600 hover:bg-blue-700"
+              loading={saving}
+              onClick={handleSaveSettings}
+            >
+              Save Settings
+            </Button>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'imap',
+      label: 'IMAP & Inbox',
+      children: (
+        <div className="space-y-6 p-4">
+          {/* IMAP Settings Section */}
+          <Card className="shadow-sm !mb-4">
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                IMAP Settings (for receiving emails):
+              </label>
+              <p className="text-sm text-gray-600 mb-3">
+                Configure IMAP settings to receive emails for inbox tracking. Use the same email account as your SMTP settings.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    IMAP Host:
+                  </label>
+                  <Input
+                    placeholder="e.g., imap.gmail.com or mail.pehlirasam.com"
+                    value={imapSettings.host}
+                    onChange={(e) => handleImapChange('host', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    IMAP Port:
+                  </label>
+                  <Input
+                    placeholder="993 (SSL) or 143 (TLS)"
+                    value={imapSettings.port}
+                    onChange={(e) => handleImapChange('port', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    IMAP Username:
+                  </label>
+                  <Input
+                    placeholder="Your email address"
+                    value={imapSettings.username}
+                    onChange={(e) => handleImapChange('username', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    IMAP Password:
+                  </label>
+                  <Input.Password
+                    placeholder="Your email password or app password"
+                    value={imapSettings.password}
+                    onChange={(e) => handleImapChange('password', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+              <div className="mt-4">
+                <label className="flex items-center gap-2">
+                  <Switch
+                    checked={imapSettings.secure}
+                    onChange={(checked) => handleImapChange('secure', checked)}
+                  />
+                  <span className="text-sm text-gray-700">Use SSL/TLS (recommended)</span>
+                </label>
+              </div>
+            </div>
+          </Card>
+
+          {/* Inbox Tracking Info Section */}
+          <Card className="shadow-sm !mb-4">
+            <div className="mb-4">
+              <div className="flex items-center gap-3 mb-3">
+                <FaInbox className="text-2xl text-blue-600" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Inbox Message Tracking
+                  </label>
+                  <p className="text-sm text-gray-600">
+                    All emails sent to your inbound email address are tracked and stored
                   </p>
                 </div>
               </div>
-            )}
-          </div>
-        </Card>
-
-        {/* IMAP Settings Section */}
-        <Card className="mb-6 shadow-sm">
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              IMAP Settings (for receiving emails):
-            </label>
-            <p className="text-sm text-gray-600 mb-3">
-              Configure IMAP settings to receive emails for inbox tracking. Use the same email account as your SMTP settings.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  IMAP Host:
-                </label>
-                <Input
-                  placeholder="e.g., imap.gmail.com or mail.pehlirasam.com"
-                  value={imapSettings.host}
-                  onChange={(e) => handleImapChange('host', e.target.value)}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  IMAP Port:
-                </label>
-                <Input
-                  placeholder="993 (SSL) or 143 (TLS)"
-                  value={imapSettings.port}
-                  onChange={(e) => handleImapChange('port', e.target.value)}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  IMAP Username:
-                </label>
-                <Input
-                  placeholder="Your email address"
-                  value={imapSettings.username}
-                  onChange={(e) => handleImapChange('username', e.target.value)}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  IMAP Password:
-                </label>
-                <Input.Password
-                  placeholder="Your email password or app password"
-                  value={imapSettings.password}
-                  onChange={(e) => handleImapChange('password', e.target.value)}
-                  className="w-full"
-                />
-              </div>
-            </div>
-            <div className="mt-4">
-              <label className="flex items-center gap-2">
-                <Switch
-                  checked={imapSettings.secure}
-                  onChange={(checked) => handleImapChange('secure', checked)}
-                />
-                <span className="text-sm text-gray-700">Use SSL/TLS (recommended)</span>
-              </label>
-            </div>
-          </div>
-        </Card>
-
-        {/* Auto-Reply Settings Section */}
-        <Card className="mb-6 shadow-sm">
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Auto-Reply to Customer Messages:
-            </label>
-            <p className="text-sm text-gray-600 mb-3">
-              Automatically send a reply message to customers when they respond to your emails. The reply will be sent from your Contact Email.
-            </p>
-            
-            <div className="mb-4">
-              <label className="flex items-center gap-2">
-                <Switch
-                  checked={autoReplyEnabled}
-                  onChange={(checked) => setAutoReplyEnabled(checked)}
-                />
-                <span className="text-sm text-gray-700 font-medium">
-                  Enable Auto-Reply to Customer Messages
-                </span>
-              </label>
-            </div>
-
-            {autoReplyEnabled && (
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Auto-Reply Message:
-                </label>
-                <Input.TextArea
-                  placeholder="Enter the message to send to customers when they reply..."
-                  value={autoReplyMessage}
-                  onChange={(e) => setAutoReplyMessage(e.target.value)}
-                  rows={4}
-                  className="w-full"
-                />
-                <p className="text-xs text-gray-500 mt-2">
-                  💡 Tip: Keep it professional and friendly. Example: "Thank you for contacting us. We have received your email and our team will contact you soon."
-                </p>
-              </div>
-            )}
-
-            {autoReplyEnabled && !contactEmail && (
-              <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                <p className="text-sm text-orange-800 font-medium">
-                  ⚠️ Please configure Contact Email above to use auto-reply feature
-                </p>
-              </div>
-            )}
-          </div>
-        </Card>
-
-        {/* Inbox Tracking Info Section */}
-        <Card className="mb-6 shadow-sm">
-          <div className="mb-4">
-            <div className="flex items-center gap-3 mb-3">
-              <FaInbox className="text-2xl text-blue-600" />
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Inbox Message Tracking
-                </label>
-                <p className="text-sm text-gray-600">
-                  All emails sent to your inbound email address are tracked and stored
-                </p>
-              </div>
-            </div>
-            
-            <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800 font-medium mb-2">ℹ️ How Inbox Tracking Works:</p>
-              <ul className="text-sm text-blue-700 space-y-2 list-disc list-inside">
-                <li><strong>Emails to Inbound Address:</strong> Tracked and shown in Inbox page</li>
-                <li><strong>Emails to Reply-To Addresses:</strong> NOT tracked (for customer convenience only)</li>
-                <li><strong>Auto-Reply:</strong> {autoReplyEnabled ? 'Enabled - Customers will receive automatic replies' : 'Disabled - Only tracking customer messages'}</li>
-                <li><strong>IMAP Check:</strong> Every 1 minute for new messages</li>
-                <li><strong>Notifications:</strong> Sent to Contact Email when customer replies</li>
-              </ul>
-            </div>
-
-            {(!inboundEmail || !imapSettings.host || !imapSettings.username) && (
-              <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                <p className="text-sm text-orange-800 font-medium mb-2">⚠️ Configuration Required:</p>
-                <ul className="text-sm text-orange-700 list-disc list-inside space-y-1">
-                  {!inboundEmail && <li>Set your Inbound Email Address above</li>}
-                  {!imapSettings.host && <li>Configure IMAP Host</li>}
-                  {!imapSettings.username && <li>Configure IMAP Username</li>}
+              
+              <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800 font-medium mb-2">ℹ️ How Inbox Tracking Works:</p>
+                <ul className="text-sm text-blue-700 space-y-2 list-disc list-inside">
+                  <li><strong>Emails to Inbound Address:</strong> Tracked and shown in Inbox page</li>
+                  <li><strong>Emails to Reply-To Addresses:</strong> NOT tracked (for customer convenience only)</li>
+                  <li><strong>Auto-Reply:</strong> {autoReplyEnabled ? 'Enabled - Customers will receive automatic replies' : 'Disabled - Only tracking customer messages'}</li>
+                  <li><strong>IMAP Check:</strong> Every 1 minute for new messages</li>
+                  <li><strong>Notifications:</strong> Sent to Contact Email when customer replies</li>
                 </ul>
               </div>
-            )}
-          </div>
-        </Card>
 
-        {/* Save Settings Button - Before Templates */}
-        <div className="flex justify-end mb-6">
-          <Button
-            type="primary"
-            size="large"
-            className="bg-blue-600 hover:bg-blue-700"
-            loading={saving}
-            onClick={handleSaveSettings}
-          >
-            Save Settings
-          </Button>
-        </div>
-
-        {/* Email Templates Section */}
-        <Card className="mb-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800">Email Templates</h3>
-              <p className="text-sm text-gray-600">
-                Create and manage email templates for quick messaging
-              </p>
+              {(!inboundEmail || !imapSettings.host || !imapSettings.username) && (
+                <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                  <p className="text-sm text-orange-800 font-medium mb-2">⚠️ Configuration Required:</p>
+                  <ul className="text-sm text-orange-700 list-disc list-inside space-y-1">
+                    {!inboundEmail && <li>Set your Inbound Email Address in the "Email Addresses" tab</li>}
+                    {!imapSettings.host && <li>Configure IMAP Host</li>}
+                    {!imapSettings.username && <li>Configure IMAP Username</li>}
+                  </ul>
+                </div>
+              )}
             </div>
+          </Card>
+
+          <div className="flex justify-end !mt-2">
             <Button
               type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleAddTemplate}
+              size="large"
               className="bg-blue-600 hover:bg-blue-700"
+              loading={saving}
+              onClick={handleSaveSettings}
             >
-              Add Template
+              Save Settings
             </Button>
           </div>
-          <Table
-            columns={templateColumns}
-            dataSource={templates}
-            loading={templatesLoading}
-            rowKey="_id"
-            pagination={{
-              pageSize: 5,
-              showSizeChanger: false,
-            }}
-            locale={{
-              emptyText: 'No templates found. Click "Add Template" to create one.',
-            }}
-          />
-        </Card>
+        </div>
+      ),
+    },
+    {
+      key: 'autoreply',
+      label: 'Auto-Reply',
+      children: (
+        <div className="space-y-6 p-4">
+          {/* Auto-Reply Settings Section */}
+          <Card className="shadow-sm">
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Auto-Reply to Customer Messages:
+              </label>
+              <p className="text-sm text-gray-600 mb-3">
+                Automatically send a reply message to customers when they respond to your emails. The reply will be sent from your Contact Email.
+              </p>
+              
+              <div className="mb-4">
+                <label className="flex items-center gap-2">
+                  <Switch
+                    checked={autoReplyEnabled}
+                    onChange={(checked) => setAutoReplyEnabled(checked)}
+                  />
+                  <span className="text-sm text-gray-700 font-medium">
+                    Enable Auto-Reply to Customer Messages
+                  </span>
+                </label>
+              </div>
+
+              {autoReplyEnabled && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Auto-Reply Message:
+                  </label>
+                  <Input.TextArea
+                    placeholder="Enter the message to send to customers when they reply..."
+                    value={autoReplyMessage}
+                    onChange={(e) => setAutoReplyMessage(e.target.value)}
+                    rows={4}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    💡 Tip: Keep it professional and friendly. Example: "Thank you for contacting us. We have received your email and our team will contact you soon."
+                  </p>
+                </div>
+              )}
+
+              {autoReplyEnabled && !contactEmail && (
+                <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                  <p className="text-sm text-orange-800 font-medium">
+                    ⚠️ Please configure Contact Email in the "Email Addresses" tab to use auto-reply feature
+                  </p>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          <div className="flex justify-end !mt-2">
+            <Button
+              type="primary"
+              size="large"
+              className="bg-blue-600 hover:bg-blue-700"
+              loading={saving}
+              onClick={handleSaveSettings}
+            >
+              Save Settings
+            </Button>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'templates',
+      label: 'Email Templates',
+      children: (
+        <div className="space-y-6 p-4">
+          <Card className="shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">Email Templates</h3>
+                <p className="text-sm text-gray-600">
+                  Create and manage email templates for quick messaging
+                </p>
+              </div>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleAddTemplate}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Add Template
+              </Button>
+            </div>
+            <Table
+              columns={templateColumns}
+              dataSource={templates}
+              loading={templatesLoading}
+              rowKey="_id"
+              pagination={{
+                pageSize: 5,
+                showSizeChanger: false,
+              }}
+              locale={{
+                emptyText: 'No templates found. Click "Add Template" to create one.',
+              }}
+            />
+          </Card>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="p-4 bg-gray-50 min-h-screen">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-2xl font-semibold text-gray-800 mb-6">Email Settings</h1>
+
+        <Tabs
+          items={tabItems}
+          defaultActiveKey="sending"
+          size="large"
+          className="bg-white rounded-lg shadow-sm p-2 m-2"
+          tabBarStyle={{ paddingLeft: '16px' }}
+        />
       </div>
 
       {/* Add/Edit Template Modal */}

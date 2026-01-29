@@ -845,8 +845,8 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                         if (type === "from" && value && !currentTo) {
                                                                             // From is being filled, ensure To is empty
                                                                             return {
-                                                                                ...prev,
-                                                                                [field.fieldId]: {
+                                                                        ...prev,
+                                                                        [field.fieldId]: {
                                                                                     from: value,
                                                                                     to: "",
                                                                                 },
@@ -868,7 +868,7 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                             [field.fieldId]: {
                                                                                 from: type === "from" ? value : currentFrom,
                                                                                 to: type === "to" ? value : currentTo,
-                                                                            },
+                                                                        },
                                                                         };
                                                                     });
                                                                 };
@@ -988,43 +988,43 @@ const Form: React.FC<FormProps> = ({ customerId }) => {
                                                                 const maxHeight = heightParts[1] || "";
                                                                 
                                                                 return (
-                                                                    <div className="flex gap-2">
-                                                                        <select
-                                                                            className="w-1/2 border p-2 rounded"
+                                                                <div className="flex gap-2">
+                                                                    <select
+                                                                        className="w-1/2 border p-2 rounded"
                                                                             value={minHeight}
-                                                                            onChange={(e) => {
+                                                                        onChange={(e) => {
                                                                                 const newMin = e.target.value;
                                                                                 // If min is selected and max is empty, set max to empty (any)
                                                                                 const newMax = newMin && !maxHeight ? "" : maxHeight;
                                                                                 handleUpdate(field.fieldId, newMin && newMax ? `${newMin} - ${newMax}` : newMin ? `${newMin} - ` : newMax ? ` - ${newMax}` : "");
-                                                                            }}
-                                                                        >
+                                                                        }}
+                                                                    >
                                                                             <option value="">Min Height (Any)</option>
-                                                                            {heightOptions.map((height) => (
-                                                                                <option key={height} value={height}>
-                                                                                    {height}
-                                                                                </option>
-                                                                            ))}
-                                                                        </select>
+                                                                        {heightOptions.map((height) => (
+                                                                            <option key={height} value={height}>
+                                                                                {height}
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
 
-                                                                        <select
-                                                                            className="w-1/2 border p-2 rounded"
+                                                                    <select
+                                                                        className="w-1/2 border p-2 rounded"
                                                                             value={maxHeight}
-                                                                            onChange={(e) => {
+                                                                        onChange={(e) => {
                                                                                 const newMax = e.target.value;
                                                                                 // If max is selected and min is empty, set min to empty (any)
                                                                                 const newMin = newMax && !minHeight ? "" : minHeight;
                                                                                 handleUpdate(field.fieldId, newMin && newMax ? `${newMin} - ${newMax}` : newMin ? `${newMin} - ` : newMax ? ` - ${newMax}` : "");
-                                                                            }}
-                                                                        >
+                                                                        }}
+                                                                    >
                                                                             <option value="">Max Height (Any)</option>
-                                                                            {heightOptions.map((height) => (
-                                                                                <option key={height} value={height}>
-                                                                                    {height}
-                                                                                </option>
-                                                                            ))}
-                                                                        </select>
-                                                                    </div>
+                                                                        {heightOptions.map((height) => (
+                                                                            <option key={height} value={height}>
+                                                                                {height}
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
                                                                 );
                                                             })()}
 
