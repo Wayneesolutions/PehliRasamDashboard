@@ -4,6 +4,7 @@ import { Input, Button, Modal, Form, Menu, Dropdown, message, Checkbox, Tabs, Se
 import { SearchOutlined, UserAddOutlined, InfoCircleOutlined, EllipsisOutlined, DownOutlined, CloseOutlined, PushpinOutlined, PushpinFilled, MailOutlined, EnvironmentOutlined } from "@ant-design/icons";
 import { addCustomerByAdmin, allActiveCustomer, deleteCustomer, getCustomerBasicDetail, getAllClientLists, advancedSearchCustomers, togglePinCustomer } from "../../config/apiClient";
 import { ActiveClientDetails } from "../../schema/customernew";
+import dayjs from 'dayjs';
 
 const { TabPane } = Tabs;
 const { Option } = Select;
@@ -932,6 +933,37 @@ const Clients: React.FC = () => {
                                     <Option key={opt.value} value={opt.value}>{opt.label}</Option>
                                   ))}
                                 </Select>
+                              </>
+                            ) : criterion.field === "registeredOnDate" ? (
+                              <>
+                                <DatePicker
+                                  placeholder="From Date"
+                                  value={Array.isArray(criterion.value) && criterion.value[0] ? dayjs(criterion.value[0]) : null}
+                                  onChange={(date) => {
+                                    const updated = [...searchCriteria];
+                                    updated[index].value = [
+                                      date ? date.format('YYYY-MM-DD') : "", 
+                                      Array.isArray(criterion.value) ? criterion.value[1] : ""
+                                    ];
+                                    setSearchCriteria(updated);
+                                  }}
+                                  className="w-40"
+                                  format="YYYY-MM-DD"
+                                />
+                                <DatePicker
+                                  placeholder="To Date"
+                                  value={Array.isArray(criterion.value) && criterion.value[1] ? dayjs(criterion.value[1]) : null}
+                                  onChange={(date) => {
+                                    const updated = [...searchCriteria];
+                                    updated[index].value = [
+                                      Array.isArray(criterion.value) ? criterion.value[0] : "", 
+                                      date ? date.format('YYYY-MM-DD') : ""
+                                    ];
+                                    setSearchCriteria(updated);
+                                  }}
+                                  className="w-40"
+                                  format="YYYY-MM-DD"
+                                />
                               </>
                             ) : (
                               <>

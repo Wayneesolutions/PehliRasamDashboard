@@ -45,6 +45,16 @@ const TimelineMain: React.FC = () => {
   const paginatedData = timelineData.slice(startIndex, endIndex);
   const totalPages = Math.ceil(timelineData.length / itemsPerPage);
 
+  // Utility function to clean up "undefined" from text
+  const cleanText = (text: string): string => {
+    if (!text) return text;
+    return text
+      .replace(/\s+undefined\s+/g, ' ')  // Remove " undefined " with spaces
+      .replace(/\bundefined\b/gi, '')     // Remove standalone "undefined"
+      .replace(/\s{2,}/g, ' ')            // Replace multiple spaces with single space
+      .trim();
+  };
+
   // Function to extract customer ID from changeSummary URL
   const extractCustomerIdFromUrl = (changeSummary: string): string | null => {
     const urlMatch = changeSummary.match(/\/client\/(\d+)/);
@@ -185,10 +195,11 @@ const TimelineMain: React.FC = () => {
         : `${window.location.origin}/dashboard/client-intro/${paddedId}`;
       
       // Extract intro details from changeSummary
-      const introMatch = event.text.match(/sent Intro #(\d+) of (.+?) to (.+)/i);
+      // Format: "sent Intro #12345 of Customer Name to email@example.com by Admin..."
+      const introMatch = event.text.match(/sent Intro #(\d+) of (.+?) to ([^\s]+(?:@[^\s]+)?)/i);
       const introNumber = introMatch ? introMatch[1] : paddedId;
-      const introName = introMatch ? introMatch[2] : event.link.trim();
-      const email = introMatch ? introMatch[3] : '';
+      const introName = cleanText(introMatch ? introMatch[2] : event.link.trim());
+      const email = introMatch ? introMatch[3].replace(/\s+by.*/i, '').trim() : '';
       
       return (
         <div className="text-sm" style={{ color: '#333333' }}>
@@ -206,22 +217,53 @@ const TimelineMain: React.FC = () => {
             >
               {introName}
             </a>
-            {email && ` to ${email}`}
+            {email && ` to ${cleanText(email)}`}
           </p>
         </div>
       );
     } else if (event.text.includes("→") || event.text.toLowerCase().includes("mail")) {
-      // Email action
-      const emailMatch = event.text.match(/→\s*<(.+?)>/);
-      const email = emailMatch ? emailMatch[1] : '';
-      const subjectMatch = event.text.match(/Suitable match/);
+      // Email action - handle both new and old formats
+      
+      // New format: "→ <email@example.com> Sent mail to Customer - Subject: "..." by Admin..."
+      const newFormatMatch = event.text.match(/→\s*<(.+?)>\s*Sent (intro )?mail to (.+?) - Subject: "(.+?)"/i);
+      
+      // Old format: "Sanded mail to Customer Name "subject : ..." by Admin..."
+      const oldFormatMatch = event.text.match(/(?:Sanded|Sent) mail to (.+?) "subject\s*:\s*(.+?)"/i);
+      
+      let email = '';
+      let customerName = '';
+      let subject = '';
+      let isIntroMail = false;
+      
+      if (newFormatMatch) {
+        // New format
+        email = newFormatMatch[1];
+        isIntroMail = !!newFormatMatch[2];
+        customerName = newFormatMatch[3];
+        subject = newFormatMatch[4];
+      } else if (oldFormatMatch) {
+        // Old format
+        customerName = oldFormatMatch[1];
+        subject = oldFormatMatch[2];
+        // Try to extract email from customer object if available
+        email = event.customerId ? 'customer' : '';
+      }
+      
+      // Also check for "Suitable match" emails
+      const suitableMatch = event.text.match(/Suitable match/);
       
       return (
         <div className="text-sm" style={{ color: '#333333' }}>
           <p className="mb-1">
-            <span className="font-medium" style={{ color: '#2C7BE5' }}>Pehli Rasam.com</span> → {email && <span style={{ color: '#2C7BE5' }}>{`<${email}>`}</span>}
+            <span className="font-medium" style={{ color: '#2C7BE5' }}>Pehli Rasam.com</span> → {email && <span style={{ color: '#2C7BE5' }}>{email !== 'customer' ? `<${cleanText(email)}>` : ''}</span>}
+            {customerName && ` Sent ${isIntroMail ? 'intro ' : ''}mail to ${cleanText(customerName)}`}
           </p>
-          {subjectMatch && (
+          {subject && (
+            <p className="text-xs mt-1" style={{ color: '#666666' }}>
+              Subject: {cleanText(subject)}
+            </p>
+          )}
+          {suitableMatch && (
             <p className="text-xs mt-1" style={{ color: '#666666' }}>
               Pehli Rasam : Suitable match ...
             </p>
@@ -230,12 +272,13 @@ const TimelineMain: React.FC = () => {
       );
     } else {
       // Regular update/edit action - make customer names clickable
-      const customerName = extractCustomerName(event.text);
+      const cleanedText = cleanText(event.text);
+      const customerName = extractCustomerName(cleanedText);
       
       if (customerName && event.customerId) {
         // Split text to insert clickable customer name
         const namePattern = new RegExp(`(Customer\\s+)${customerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s+)`, 'i');
-        const parts = event.text.split(namePattern);
+        const parts = cleanedText.split(namePattern);
         
         if (parts.length >= 3) {
           // Found customer name pattern
@@ -243,22 +286,22 @@ const TimelineMain: React.FC = () => {
             <p className="text-sm leading-relaxed" style={{ color: '#333333' }}>
               <span className="font-medium" style={{ color: '#2C7BE5' }}>Pehli Rasam.com</span> {parts[0]}
               {parts[1]} {/* "Customer " */}
-              {renderCustomerName(customerName, event.customerId)}
+              {renderCustomerName(cleanText(customerName), event.customerId)}
               {parts[2]} {/* space after name */}
-              {parts.slice(3).join('')} {/* rest of text */}
+              {cleanText(parts.slice(3).join(''))} {/* rest of text */}
             </p>
           );
         } else {
           // Fallback: try simpler pattern
           const simplePattern = new RegExp(`Customer\\s+${customerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
-          const simpleParts = event.text.split(simplePattern);
+          const simpleParts = cleanedText.split(simplePattern);
           
           if (simpleParts.length === 2) {
             return (
               <p className="text-sm leading-relaxed" style={{ color: '#333333' }}>
-                <span className="font-medium" style={{ color: '#2C7BE5' }}>Pehli Rasam.com</span> {simpleParts[0]}
-                Customer {renderCustomerName(customerName, event.customerId)}
-                {simpleParts[1]}
+                <span className="font-medium" style={{ color: '#2C7BE5' }}>Pehli Rasam.com</span> {cleanText(simpleParts[0])}
+                Customer {renderCustomerName(cleanText(customerName), event.customerId)}
+                {cleanText(simpleParts[1])}
               </p>
             );
           }
@@ -268,7 +311,7 @@ const TimelineMain: React.FC = () => {
       // Default: no customer name found or no customerId
       return (
         <p className="text-sm leading-relaxed" style={{ color: '#333333' }}>
-          <span className="font-medium" style={{ color: '#2C7BE5' }}>Pehli Rasam.com</span> {event.text}
+          <span className="font-medium" style={{ color: '#2C7BE5' }}>Pehli Rasam.com</span> {cleanedText}
         </p>
       );
     }
