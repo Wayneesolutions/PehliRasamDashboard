@@ -21,6 +21,13 @@ const EmailSettings = () => {
   const [replyToEmail, setReplyToEmail] = useState('');
   const [inboundEmail, setInboundEmail] = useState('');
   const [contactEmail, setContactEmail] = useState('');
+  const [contactEmailSmtp, setContactEmailSmtp] = useState({
+    host: '',
+    port: '',
+    username: '',
+    password: '',
+    connectionType: '',
+  });
   const [imapSettings, setImapSettings] = useState({
     host: '',
     port: '993',
@@ -28,6 +35,8 @@ const EmailSettings = () => {
     password: '',
     secure: true,
   });
+  const [autoReplyEnabled, setAutoReplyEnabled] = useState(false);
+  const [autoReplyMessage, setAutoReplyMessage] = useState('Thank you for contacting us. We have received your email and our team will contact you soon.');
   const [sendingTest, setSendingTest] = useState(false);
   const [testEmailModalVisible, setTestEmailModalVisible] = useState(false);
   const [testEmailAddress, setTestEmailAddress] = useState('');
@@ -67,6 +76,13 @@ const EmailSettings = () => {
         setReplyToEmail(res.data.replyToEmail || '');
         setInboundEmail(res.data.inboundEmail || '');
         setContactEmail(res.data.contactEmail || '');
+        setContactEmailSmtp(res.data.contactEmailSmtp || {
+          host: '',
+          port: '',
+          username: '',
+          password: '',
+          connectionType: '',
+        });
         setImapSettings(res.data.imapSettings || {
           host: '',
           port: '993',
@@ -74,6 +90,8 @@ const EmailSettings = () => {
           password: '',
           secure: true,
         });
+        setAutoReplyEnabled(res.data.autoReplyEnabled || false);
+        setAutoReplyMessage(res.data.autoReplyMessage || 'Thank you for contacting us. We have received your email and our team will contact you soon.');
         setDefaultSender(res.data.defaultSender || 'info@pehlirasam.com');
       }
     } catch (error) {
@@ -98,6 +116,13 @@ const EmailSettings = () => {
     }));
   };
 
+  const handleContactEmailSmtpChange = (field: string, value: string) => {
+    setContactEmailSmtp(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   const handleSaveSettings = async () => {
     setSaving(true);
     try {
@@ -107,7 +132,10 @@ const EmailSettings = () => {
         replyToEmail,
         inboundEmail,
         contactEmail,
-        imapSettings
+        contactEmailSmtp,
+        imapSettings,
+        autoReplyEnabled,
+        autoReplyMessage
       });
       
       if (res.success) {
@@ -499,6 +527,84 @@ const EmailSettings = () => {
                 className="w-full"
               />
             </div>
+
+            {/* Contact Email SMTP Settings */}
+            {contactEmail && (
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                  📧 SMTP Settings for Contact Email (for Auto-Reply)
+                </h4>
+                <p className="text-xs text-gray-600 mb-4">
+                  Configure SMTP settings for the Contact Email to send auto-replies to customers
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      SMTP Host:
+                    </label>
+                    <Input
+                      placeholder="e.g., smtp.gmail.com"
+                      value={contactEmailSmtp.host}
+                      onChange={(e) => handleContactEmailSmtpChange('host', e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      SMTP Port:
+                    </label>
+                    <Input
+                      placeholder="e.g., 587 or 465"
+                      value={contactEmailSmtp.port}
+                      onChange={(e) => handleContactEmailSmtpChange('port', e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      SMTP Username:
+                    </label>
+                    <Input
+                      placeholder="Usually your email address"
+                      value={contactEmailSmtp.username}
+                      onChange={(e) => handleContactEmailSmtpChange('username', e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      SMTP Password:
+                    </label>
+                    <Input.Password
+                      placeholder="Your email password or app password"
+                      value={contactEmailSmtp.password}
+                      onChange={(e) => handleContactEmailSmtpChange('password', e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Connection Type:
+                  </label>
+                  <Radio.Group
+                    value={contactEmailSmtp.connectionType}
+                    onChange={(e) => handleContactEmailSmtpChange('connectionType', e.target.value)}
+                  >
+                    <Radio value="ssl">SSL (Port 465)</Radio>
+                    <Radio value="tls">TLS/STARTTLS (Port 587)</Radio>
+                  </Radio.Group>
+                </div>
+
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+                  <p className="text-xs text-blue-800">
+                    💡 <strong>For Gmail:</strong> Use smtp.gmail.com, port 587, and create an App Password
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </Card>
 
@@ -569,6 +675,56 @@ const EmailSettings = () => {
           </div>
         </Card>
 
+        {/* Auto-Reply Settings Section */}
+        <Card className="mb-6 shadow-sm">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Auto-Reply to Customer Messages:
+            </label>
+            <p className="text-sm text-gray-600 mb-3">
+              Automatically send a reply message to customers when they respond to your emails. The reply will be sent from your Contact Email.
+            </p>
+            
+            <div className="mb-4">
+              <label className="flex items-center gap-2">
+                <Switch
+                  checked={autoReplyEnabled}
+                  onChange={(checked) => setAutoReplyEnabled(checked)}
+                />
+                <span className="text-sm text-gray-700 font-medium">
+                  Enable Auto-Reply to Customer Messages
+                </span>
+              </label>
+            </div>
+
+            {autoReplyEnabled && (
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Auto-Reply Message:
+                </label>
+                <Input.TextArea
+                  placeholder="Enter the message to send to customers when they reply..."
+                  value={autoReplyMessage}
+                  onChange={(e) => setAutoReplyMessage(e.target.value)}
+                  rows={4}
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  💡 Tip: Keep it professional and friendly. Example: "Thank you for contacting us. We have received your email and our team will contact you soon."
+                </p>
+              </div>
+            )}
+
+            {autoReplyEnabled && !contactEmail && (
+              <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <p className="text-sm text-orange-800 font-medium">
+                  ⚠️ Please configure Contact Email above to use auto-reply feature
+                </p>
+              </div>
+            )}
+          </div>
+        </Card>
+
         {/* Inbox Tracking Info Section */}
         <Card className="mb-6 shadow-sm">
           <div className="mb-4">
@@ -589,8 +745,9 @@ const EmailSettings = () => {
               <ul className="text-sm text-blue-700 space-y-2 list-disc list-inside">
                 <li><strong>Emails to Inbound Address:</strong> Tracked and shown in Inbox page</li>
                 <li><strong>Emails to Reply-To Addresses:</strong> NOT tracked (for customer convenience only)</li>
-                <li><strong>Auto-Reply:</strong> Disabled - Only tracking customer messages</li>
-                <li><strong>IMAP Check:</strong> Every 5 minutes for new messages</li>
+                <li><strong>Auto-Reply:</strong> {autoReplyEnabled ? 'Enabled - Customers will receive automatic replies' : 'Disabled - Only tracking customer messages'}</li>
+                <li><strong>IMAP Check:</strong> Every 1 minute for new messages</li>
+                <li><strong>Notifications:</strong> Sent to Contact Email when customer replies</li>
               </ul>
             </div>
 
