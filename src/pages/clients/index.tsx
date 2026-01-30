@@ -532,15 +532,7 @@ const Clients: React.FC = () => {
                   <Dropdown
                     overlay={
                       <Menu>
-                        <Menu.Item 
-                          key="togglePin"
-                          icon={client.isPinned ? <PushpinFilled /> : <PushpinOutlined />}
-                          onClick={() => handleTogglePin(client._id)}
-                        >
-                          {client.isPinned ? 'Unpin Client' : 'Pin Client'}
-                        </Menu.Item>
-
-                        <Menu.Item key="openProfile">
+                         <Menu.Item key="openProfile">
                           <button
                             className="w-full text-left"
                             onClick={() => {
@@ -551,6 +543,15 @@ const Clients: React.FC = () => {
                             🔗 Open Profile in New Tab
                           </button>
                         </Menu.Item>
+                        <Menu.Item 
+                          key="togglePin"
+                          icon={client.isPinned ? <PushpinFilled /> : <PushpinOutlined />}
+                          onClick={() => handleTogglePin(client._id)}
+                        >
+                          {client.isPinned ? 'Unpin Client' : 'Pin Client'}
+                        </Menu.Item>
+
+                       
 
                         <Menu.Item
                           key="deleteCustomer"

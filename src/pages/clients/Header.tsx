@@ -17,7 +17,7 @@ const Header = ({ customerId }: HeaderProps) => {
     { name: "Profile", path: "/dashboard/add-client" },
     { name: "Matching", path: "/dashboard/add-client/matching" },
     { name: "Photos", path: "/dashboard/add-client/photos" },
-    { name: "Notes", path: "/dashboard/add-client/notes" },
+   
   ];
 
   const [modalVisible, setModalVisible] = useState(false);
