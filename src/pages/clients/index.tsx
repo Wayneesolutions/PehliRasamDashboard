@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input, Button, Modal, Form, Menu, Dropdown, message, Checkbox, Tabs, Select, DatePicker } from "antd";
 import { SearchOutlined, UserAddOutlined, InfoCircleOutlined, EllipsisOutlined, DownOutlined, CloseOutlined, PushpinOutlined, PushpinFilled, MailOutlined, EnvironmentOutlined } from "@ant-design/icons";
-import { addCustomerByAdmin, allActiveCustomer, deleteCustomer, getCustomerBasicDetail, getAllClientLists, advancedSearchCustomers, togglePinCustomer } from "../../config/apiClient";
+import { addCustomerByAdmin, allActiveCustomer, deleteCustomer, getCustomerBasicDetail, getAllClientLists, advancedSearchCustomers, togglePinCustomer, getFieldByName } from "../../config/apiClient";
 import { ActiveClientDetails } from "../../schema/customernew";
 import dayjs from 'dayjs';
 
@@ -57,6 +57,11 @@ const Clients: React.FC = () => {
     { id: 6, field: "maritalStatus", value: "" },
     { id: 7, field: "registeredOnDate", value: ["", ""] },
     { id: 8, field: "registeredBy", value: "" },
+  ]);
+  const [registeredByOptions, setRegisteredByOptions] = useState<{ value: string; label: string }[]>([
+    { value: "admin", label: "Admin" },
+    { value: "self", label: "Self Registration" },
+    { value: "referral", label: "Referral" },
   ]);
 
   const openClientModal = (client: ActiveClientDetails) => {
@@ -153,6 +158,7 @@ const Clients: React.FC = () => {
   useEffect(() => {
     fetchingCustomers();
     fetchAllClientLists();
+    fetchRegisteredByOptions();
     setIsInitialLoad(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -164,6 +170,52 @@ const Clients: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedListIds]);
+
+  const fetchRegisteredByOptions = async () => {
+    try {
+      // Try different variations of the field name
+      const fieldNameVariations = ["Registered By", "RegisteredBy", "registered by", "registeredBy"];
+      let fieldData = null;
+      
+      for (const fieldName of fieldNameVariations) {
+        const res = await getFieldByName(fieldName);
+        if (res?.success && res?.data) {
+          fieldData = res.data;
+          break;
+        }
+      }
+      
+      if (fieldData && fieldData.attributeOption && fieldData.attributeOption.length > 0) {
+        // Convert field options to dropdown format
+        // Map common variations to backend-compatible values
+        const options = fieldData.attributeOption.map((option: string) => {
+          const normalized = option.toLowerCase().trim();
+          let value = normalized;
+          
+          // Map common variations to standard values
+          if (normalized.includes('admin')) {
+            value = 'admin';
+          } else if (normalized.includes('self') || normalized.includes('self registration')) {
+            value = 'self';
+          } else if (normalized.includes('referral')) {
+            value = 'referral';
+          } else {
+            // For other values, use normalized version
+            value = normalized.replace(/\s+/g, '');
+          }
+          
+          return {
+            value: value,
+            label: option
+          };
+        });
+        setRegisteredByOptions(options);
+      }
+    } catch (error) {
+      console.error("Error fetching Registered By field options:", error);
+      // Keep default options on error
+    }
+  };
 
   const fetchAllClientLists = async () => {
     try {
@@ -876,11 +928,7 @@ const Clients: React.FC = () => {
                           { value: "Divorced (Without Child)", label: "Divorced (Without Child)" },
                         ];
                       case "registeredBy":
-                        return [
-                          { value: "admin", label: "Admin" },
-                          { value: "self", label: "Self Registration" },
-                          { value: "referral", label: "Referral" },
-                        ];
+                        return registeredByOptions;
                       default:
                         return [];
                     }

@@ -150,6 +150,14 @@ export const advancedSearchCustomers = async (searchCriteria: any[]) => {
     return (error as Error).response?.data;
   }
 }
+export const getFieldByName = async (fieldName: string) => {
+  try {
+    const response = await apiClient.get('admin/getFieldByName', { params: { fieldName } })
+    return response?.data
+  } catch (error) {
+    return (error as Error).response?.data;
+  }
+}
 export const getCustomerBasicDetail = async (customerId: string) => {
   try {
     const response = await apiClient.post('admin/getCustomerBasicDetail', { customerId: customerId })
