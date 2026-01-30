@@ -401,7 +401,7 @@ const MatchesPage = () => {
                                           setEditingNotesId(null);
                                           setInlineNotesText("");
                                         }}
-                                        className="px-3 py-1.5 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                                        className="px-3 py-1.5 text-sm !mt-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
                                       >
                                         Cancel
                                       </button>
@@ -425,7 +425,7 @@ const MatchesPage = () => {
                                             message.error("Failed to save notes");
                                           }
                                         }}
-                                        className="px-3 py-1.5 text-sm text-white bg-gray-900 hover:bg-gray-800 rounded-md transition-colors"
+                                        className="px-3 py-1.5 !mt-2 text-sm !text-white bg-gray-900 hover:bg-gray-800 rounded-md transition-colors"
                                       >
                                         Save
                                       </button>
