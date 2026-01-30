@@ -14,7 +14,7 @@ const AddClient = () => {
   const queryCustomerId = new URLSearchParams(location.search).get("customerId");
 
 
-  const [entryName, setEntryName] = useState<string | null>(null);
+  const [, setEntryName] = useState<string | null>(null);
 
   useEffect(() => {
     // Get customerId from state, query params, or localStorage (in priority order)
@@ -96,8 +96,9 @@ const AddClient = () => {
     updateTabTitle();
     
     // Listen for custom event when entryName is updated in Sidebar
-    const handleEntryNameUpdate = async (event: CustomEvent) => {
-      const newEntryName = event.detail?.entryName;
+    const handleEntryNameUpdate = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const newEntryName = customEvent.detail?.entryName;
       setEntryName(newEntryName);
       
       // Update URL with new entryName
@@ -119,10 +120,10 @@ const AddClient = () => {
       updateTabTitle();
     };
     
-    window.addEventListener('entryNameUpdated', handleEntryNameUpdate as EventListener);
+    window.addEventListener('entryNameUpdated', handleEntryNameUpdate);
     
     return () => {
-      window.removeEventListener('entryNameUpdated', handleEntryNameUpdate as EventListener);
+      window.removeEventListener('entryNameUpdated', handleEntryNameUpdate);
     };
   }, [customerId, location.pathname, navigate]);
 

@@ -1,5 +1,4 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { useEffect } from "react";
 
 const ProtectedRoute = () => {
     // Check for token in URL hash (passed from timeline when opening in new tab)

@@ -272,7 +272,7 @@ const Notes: React.FC = () => {
           </div>
           <Editor
             apiKey="1ya1d1zav4tgpip8exgsyyatkcy07funukfyfrnn93t7wslj"
-            onInit={(evt, editor) => editorRef.current = editor}
+            onInit={(_evt, editor) => editorRef.current = editor}
             value={content}
             onEditorChange={(content) => setContent(content)}
             init={{

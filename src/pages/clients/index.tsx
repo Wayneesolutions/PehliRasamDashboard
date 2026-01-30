@@ -122,6 +122,16 @@ const Clients: React.FC = () => {
     const res = await allActiveCustomer(listIds);
     if (res.success) {
       const sorted = [...res.data].sort((a, b) => {
+        // Pinned clients first, sorted by pinnedAt (most recent first)
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        if (a.isPinned && b.isPinned) {
+          // Both pinned: sort by pinnedAt (most recent first)
+          const aPinnedAt = a.pinnedAt ? new Date(a.pinnedAt).getTime() : 0;
+          const bPinnedAt = b.pinnedAt ? new Date(b.pinnedAt).getTime() : 0;
+          return bPinnedAt - aPinnedAt;
+        }
+        // Both unpinned: sort by creation date (most recent first)
         return (
           new Date(parseInt(b._id.substring(0, 8), 16) * 1000).getTime() -
           new Date(parseInt(a._id.substring(0, 8), 16) * 1000).getTime()
@@ -231,25 +241,29 @@ const Clients: React.FC = () => {
     try {
       const res = await togglePinCustomer(customerId);
       if (res.success) {
-        // Update the client's pin status in the local state
-        setActiveClients((prevClients) =>
-          prevClients.map((client) =>
-            client._id === customerId
-              ? { ...client, isPinned: res.data.isPinned }
-              : client
-          )
-        );
-        // Re-sort clients (pinned first)
+        // Update the client's pin status in the local state and re-sort
         setActiveClients((prevClients) => {
-          const sorted = [...prevClients].sort((a, b) => {
+          const updated = prevClients.map((client) =>
+            client._id === customerId
+              ? { ...client, isPinned: res.data.isPinned, pinnedAt: res.data.pinnedAt }
+              : client
+          );
+          // Sort: pinned clients first (by pinnedAt, most recent first), then unpinned by creation date
+          return updated.sort((a, b) => {
             if (a.isPinned && !b.isPinned) return -1;
             if (!a.isPinned && b.isPinned) return 1;
+            if (a.isPinned && b.isPinned) {
+              // Both pinned: sort by pinnedAt (most recent first)
+              const aPinnedAt = a.pinnedAt ? new Date(a.pinnedAt).getTime() : 0;
+              const bPinnedAt = b.pinnedAt ? new Date(b.pinnedAt).getTime() : 0;
+              return bPinnedAt - aPinnedAt;
+            }
+            // Both unpinned: sort by creation date (most recent first)
             return (
               new Date(parseInt(b._id.substring(0, 8), 16) * 1000).getTime() -
               new Date(parseInt(a._id.substring(0, 8), 16) * 1000).getTime()
             );
           });
-          return sorted;
         });
         message.success(res.message || `Client ${res.data.isPinned ? 'pinned' : 'unpinned'} successfully`);
       } else {
@@ -292,10 +306,17 @@ const Clients: React.FC = () => {
       `${client.firstName} ${client.lastName}`.toLowerCase().includes(searchTerm)
     );
     
-    // Sort: pinned clients first, then by creation date
+    // Sort: pinned clients first (by pinnedAt, most recent first), then unpinned by creation date
     return filtered.sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
+      if (a.isPinned && b.isPinned) {
+        // Both pinned: sort by pinnedAt (most recent first)
+        const aPinnedAt = a.pinnedAt ? new Date(a.pinnedAt).getTime() : 0;
+        const bPinnedAt = b.pinnedAt ? new Date(b.pinnedAt).getTime() : 0;
+        return bPinnedAt - aPinnedAt;
+      }
+      // Both unpinned: sort by creation date (most recent first)
       return (
         new Date(parseInt(b._id.substring(0, 8), 16) * 1000).getTime() -
         new Date(parseInt(a._id.substring(0, 8), 16) * 1000).getTime()

@@ -128,7 +128,7 @@ const List = () => {
                 {/* Table Body */}
                 <div className="bg-white">
                     {colorList.length > 0 ? (
-                        colorList.map((list, index) => (
+                        colorList.map((list, _index: number) => (
                             <div 
                                 key={list._id} 
                                 className="grid grid-cols-12 gap-4 px-4 py-3 border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors items-center"

@@ -617,6 +617,13 @@ export const updateEmailSettings = async (data: {
   replyToEmail?: string;
   inboundEmail?: string;
   contactEmail?: string;
+  contactEmailSmtp?: {
+    host?: string;
+    port?: string;
+    username?: string;
+    password?: string;
+    connectionType?: string;
+  };
   imapSettings?: {
     host?: string;
     port?: string;

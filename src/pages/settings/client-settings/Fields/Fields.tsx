@@ -117,22 +117,6 @@ const Fields = () => {
         
         if (draggedGroupId && index !== draggedOverGroupIndex) {
             // Update UI immediately - find current position of dragged item
-            const newGroups = groups.map((g, i) => {
-                if (g._id === draggedGroupId) {
-                    // Find current index of dragged group (may have changed from original)
-                    const currentIndex = groups.findIndex(gr => gr._id === draggedGroupId);
-                    
-                    if (currentIndex !== -1 && currentIndex !== index) {
-                        // Create new array with reordered groups
-                        const reorderedGroups = [...groups];
-                        const draggedItem = reorderedGroups[currentIndex];
-                        reorderedGroups.splice(currentIndex, 1);
-                        reorderedGroups.splice(index, 0, draggedItem);
-                        return reorderedGroups;
-                    }
-                }
-                return groups;
-            });
             
             // If we found the dragged group, update state
             const currentIndex = groups.findIndex(g => g._id === draggedGroupId);
@@ -529,7 +513,7 @@ const Fields = () => {
                                     title: "Name", 
                                     dataIndex: "attributeName", 
                                     key: "attributeName",
-                                    render: (text: string, record: Field) => (
+                                    render: (text: string, _record: Field) => (
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                             <HolderOutlined style={{ color: '#999' }} />
                                             <span>{text}</span>

@@ -6,7 +6,7 @@ import { getEmailSettings, updateEmailSettings, sendTestEmail, getAllEmailTempla
 import AddEmailTemplateModal from './AddEmailTemplateModal';
 
 const EmailSettings = () => {
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sendingMethod, setSendingMethod] = useState<'default' | 'smtp'>('default');
   const [defaultSender, setDefaultSender] = useState('');

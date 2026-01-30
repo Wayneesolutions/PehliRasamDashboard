@@ -87,6 +87,7 @@ export interface ActiveClientDetails {
   imagePath: string;
   activeStatus: boolean;
   isPinned?: boolean;
+  pinnedAt?: string | Date | null;
   address: Address;
 }
 
