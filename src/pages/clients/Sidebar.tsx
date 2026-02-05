@@ -146,17 +146,19 @@ const Sidebar = ({ customerId }: SidebarProps) => {
         address: addressData,
       };
 
-      if (customer.Number && customer.Number.toString().trim() !== "") {
-        updateData.Number = customer.Number.toString();
-      }
-
       if (editMode && editMode !== "address") {
         // Handle entryName - allow empty string to clear it
         if (editMode === "entryName") {
           (updateData as any)[editMode] = editValue.trim() || null;
+        } else if (editMode === "Number") {
+          // Handle phone number update
+          updateData.Number = editValue || "";
         } else {
           (updateData as any)[editMode] = editValue;
         }
+      } else if (customer.Number && customer.Number.toString().trim() !== "") {
+        // Only set Number from customer if we're not editing it
+        updateData.Number = customer.Number.toString();
       }
 
       const res = await updateCustomerBasicDetail(updateData);
@@ -512,12 +514,15 @@ const Sidebar = ({ customerId }: SidebarProps) => {
               <label className="text-xs font-medium text-gray-600">Phone Number</label>
               {editMode === "Number" ? (
                 <div className="space-y-2">
-                  <PhoneInput
-                    value={editValue}
-                    onChange={(value) => setEditValue(value || "")}
-                    placeholder="Enter phone number"
-                    inputStyle={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db' }}
-                  />
+                  <div className="relative">
+                    <PhoneInput
+                      value={editValue}
+                      onChange={(value) => setEditValue(value || "")}
+                      placeholder="Enter phone number"
+                      inputStyle={{ width: '100%', padding: '8px 12px', paddingLeft: '48px', borderRadius: '6px', border: '1px solid #d1d5db' }}
+                      buttonStyle={{ borderRadius: '6px 0 0 6px', border: '1px solid #d1d5db', borderRight: 'none' }}
+                    />
+                  </div>
                   <div className="flex justify-end gap-2">
                     <button onClick={handleSave} disabled={isUpdating} className="p-2 text-green-600 hover:bg-green-50 rounded-md">
                       <Check size={18} />
@@ -533,12 +538,28 @@ const Sidebar = ({ customerId }: SidebarProps) => {
                   onClick={() => customer && handleEdit("Number", customer?.Number?.toString() || "")}
                 >
                   {customer?.Number ? (
-                    <PhoneInput
-                      value={customer.Number.toString()}
-                      onChange={() => { }}
-                      disabled
-                      inputStyle={{ width: '100%', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}
-                    />
+                    <div className="relative">
+                      <PhoneInput
+                        key={customer.Number.toString()}
+                        value={customer.Number.toString()}
+                        onChange={() => { }}
+                        disabled
+                        inputStyle={{ 
+                          width: '100%', 
+                          background: 'transparent', 
+                          border: 'none', 
+                          padding: '0', 
+                          paddingLeft: '48px',
+                          cursor: 'pointer',
+                          color: '#1f2937'
+                        }}
+                        buttonStyle={{ 
+                          background: 'transparent', 
+                          border: 'none',
+                          borderRadius: '0'
+                        }}
+                      />
+                    </div>
                   ) : (
                     <p className="text-sm text-gray-400">Not provided</p>
                   )}
