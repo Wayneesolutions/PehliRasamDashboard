@@ -54,13 +54,12 @@ const SendMailForIntro: React.FC<Props> = ({ link, customerId, isOpen, onClose }
             form.setFieldsValue({ subject: selected.subject });
 
             const decodedBody = decodeHtml(selected.body);
-            const fullContentWithLink = `${decodedBody}<br/><br/><p><a href="${link}" target="_blank">Click here to view the introduction</a></p>`;
-            setContent(fullContentWithLink);
+            setContent(decodedBody);
 
             // Set content in editor after a small delay to ensure editor is ready
             setTimeout(() => {
                 if (editorRef.current) {
-                    editorRef.current.setContent(fullContentWithLink);
+                    editorRef.current.setContent(decodedBody);
                 }
             }, 100);
         }
