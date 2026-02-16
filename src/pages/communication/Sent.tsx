@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { mailLogs } from "../../config/apiClient";
-import { Input, Spin } from "antd";
+import { mailLogs, type MailLogsResponse } from "../../config/apiClient";
+import { Input, Spin, Pagination, Table, Empty } from "antd";
 
 interface Email {
   to: string;
@@ -23,12 +23,37 @@ const Sent = () => {
   const [emails, setEmails] = useState<Email[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 20,
+    total: 0
+  });
 
-  const fetchEmails = async (search?: string) => {
+  const fetchEmails = async (page = 1, pageSize = 20, search?: string) => {
     setLoading(true);
     try {
-      const response = await mailLogs(search ? { search } : undefined);
+      const response: MailLogsResponse = await mailLogs({ 
+        search: search || undefined,
+        page,
+        limit: pageSize
+      });
       setEmails(response?.logs || []);
+      
+      if (response?.pagination) {
+        setPagination({
+          current: response.pagination.page,
+          pageSize: response.pagination.limit,
+          total: response.pagination.total
+        });
+      } else {
+        // Fallback for old API response
+        setPagination(prev => ({
+          ...prev,
+          current: page,
+          pageSize: pageSize,
+          total: response?.count || 0
+        }));
+      }
     } catch (error) {
       console.error("Error fetching emails:", error);
       setEmails([]);
@@ -38,17 +63,22 @@ const Sent = () => {
   };
 
   useEffect(() => {
-    fetchEmails(); // fetch all emails initially
+    fetchEmails(1, pagination.pageSize); // fetch emails initially
   }, []);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (searchTerm !== undefined) {
-        fetchEmails(searchTerm);
+        fetchEmails(1, pagination.pageSize, searchTerm);
       }
     }, 500); // debounce
     return () => clearTimeout(timeout);
   }, [searchTerm]);
+
+  // Handle pagination change
+  const handlePaginationChange = (page: number, pageSize: number) => {
+    fetchEmails(page, pageSize, searchTerm);
+  };
 
   return (
     <div className="p-6 bg-white">
@@ -81,66 +111,92 @@ const Sent = () => {
 
       {/* Emails List */}
       <div className="overflow-x-auto">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <Spin size="large" />
-            <p className="mt-4 text-gray-500">Loading emails...</p>
-          </div>
-        ) : (
-          <div className="space-y-0 border border-gray-200 rounded-lg overflow-hidden">
-            {emails.length > 0 ? (
-              emails.map((email, idx) => (
-                <div 
-                  key={idx} 
-                  className="border-b border-gray-200 hover:bg-gray-50 transition-colors last:border-b-0"
-                >
-                  <div className="p-4 grid grid-cols-12 gap-4 items-start">
-                    {/* Avatar and From/To */}
-                    <div className="col-span-12 md:col-span-3 flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-semibold flex-shrink-0">
-                        {email.from?.[0]?.toUpperCase() || "?"}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm text-gray-800 truncate">
-                          {email.from}
+        <Spin spinning={loading}>
+          {emails.length > 0 ? (
+            <>
+              <div className="space-y-0 border border-gray-200 rounded-lg overflow-hidden">
+                {emails.map((email, idx) => (
+                  <div 
+                    key={idx} 
+                    className="border-b border-gray-200 hover:bg-gray-50 transition-colors last:border-b-0"
+                  >
+                    <div className="p-4 grid grid-cols-12 gap-4 items-start">
+                      {/* Avatar and From/To */}
+                      <div className="col-span-12 md:col-span-3 flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-semibold flex-shrink-0">
+                          {email.from?.[0]?.toUpperCase() || "?"}
                         </div>
-                        <div className="text-sm text-gray-500 truncate">
-                          ➝ {email.customerName || email.to}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm text-gray-800 truncate">
+                            {email.from}
+                          </div>
+                          <div className="text-sm text-gray-500 truncate">
+                            ➝ {email.customerName || email.to}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Subject */}
-                    <div className="col-span-12 md:col-span-3">
-                      <div className="text-sm font-medium text-gray-900 line-clamp-2">
-                        {email.subject || "No subject"}
+                      {/* Subject */}
+                      <div className="col-span-12 md:col-span-3">
+                        <div className="text-sm font-medium text-gray-900 line-clamp-2">
+                          {email.subject || "No subject"}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Body Preview */}
-                    <div className="col-span-12 md:col-span-4">
-                      <div
-                        className="text-sm text-gray-600 line-clamp-3"
-                        dangerouslySetInnerHTML={{ __html: decodeHTMLEntities(email.body) }}
-                      />
-                    </div>
+                      {/* Body Preview */}
+                      <div className="col-span-12 md:col-span-4">
+                        <div
+                          className="text-sm text-gray-600 line-clamp-3"
+                          dangerouslySetInnerHTML={{ __html: decodeHTMLEntities(email.body) }}
+                        />
+                      </div>
 
-                    {/* Date */}
-                    <div className="col-span-12 md:col-span-2 text-right">
-                      <div className="text-sm text-gray-500">
-                        {new Date(email.time).toLocaleString()}
+                      {/* Date */}
+                      <div className="col-span-12 md:col-span-2 text-right">
+                        <div className="text-sm text-gray-500">
+                          {new Date(email.time).toLocaleString()}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
-            ) : (
-              <div className="p-12 text-center text-gray-500">
-                <p className="text-base">No emails found</p>
+                ))}
               </div>
-            )}
-          </div>
-        )}
+              
+              {/* Pagination */}
+              <div className="mt-6 flex justify-between items-center">
+                <div className="text-sm text-gray-600">
+                  Showing {((pagination.current - 1) * pagination.pageSize) + 1} to{' '}
+                  {Math.min(pagination.current * pagination.pageSize, pagination.total)} of{' '}
+                  {pagination.total} emails
+                </div>
+                <Pagination
+                  current={pagination.current}
+                  pageSize={pagination.pageSize}
+                  total={pagination.total}
+                  onChange={handlePaginationChange}
+                  onShowSizeChange={handlePaginationChange}
+                  showSizeChanger
+                  showQuickJumper
+                  showTotal={(total, range) => `${range[0]}-${range[1]} of ${total}`}
+                  pageSizeOptions={['10', '20', '50', '100']}
+                />
+              </div>
+            </>
+          ) : (
+            !loading && (
+              <Empty
+                description={
+                  <div>
+                    <p className="text-lg font-medium text-gray-500">No emails found</p>
+                    <p className="text-sm text-gray-400 mt-2">
+                      {searchTerm ? 'Try a different search term' : 'No sent emails yet'}
+                    </p>
+                  </div>
+                }
+              />
+            )
+          )}
+        </Spin>
       </div>
     </div>
   );

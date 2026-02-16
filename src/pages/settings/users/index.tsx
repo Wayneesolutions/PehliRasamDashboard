@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Tag, Modal, Form, Input, message, Popconfirm } from "antd";
+import { Table, Button, Tag, Modal, Form, Input, message, Popconfirm, Tooltip } from "antd";
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import apiClient from "../../../config/apiClient";
 import dayjs from 'dayjs';
@@ -106,25 +106,31 @@ const UserManagement: React.FC = () => {
                 return;
             }
 
-            await apiClient.post("/admin/deleteAdmin",
+            const response = await apiClient.post("/admin/deleteAdmin",
                 { userId },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            message.success("Admin deleted successfully!");
-            fetchUsers();
+            if (response.data?.success) {
+                message.success("Administrator deleted successfully!");
+                fetchUsers();
+            } else {
+                message.error(response.data?.message || "Failed to delete administrator");
+            }
         } catch (error: unknown) {
             console.error("Error deleting admin:", error);
 
             if (error instanceof Error) {
                 // Type assertion for Axios-style errors
-                const axiosError = error as { response?: { data?: { message?: string } } };
-                message.error(axiosError.response?.data?.message || "Failed to delete admin");
+                const axiosError = error as { response?: { data?: { message?: string; error?: string } } };
+                const errorMessage = axiosError.response?.data?.message || 
+                                   axiosError.response?.data?.error || 
+                                   "Failed to delete administrator";
+                message.error(errorMessage);
             } else {
                 message.error("An unexpected error occurred.");
             }
         }
-
     };
 
     const columns = [
@@ -142,22 +148,57 @@ const UserManagement: React.FC = () => {
         {
             title: "Last Login",
             dataIndex: "lastLogin",
-            render: (lastLogin: string) => dayjs(lastLogin).format('MMMM D, YYYY h:mm A'), // Customize the format as needed
-          },
+            render: (lastLogin: string) => {
+                if (!lastLogin || lastLogin === 'N/A' || lastLogin === 'Invalid Date') {
+                    return <span style={{ color: '#999' }}>Never</span>;
+                }
+                try {
+                    const date = dayjs(lastLogin);
+                    if (!date.isValid()) {
+                        return <span style={{ color: '#999' }}>Never</span>;
+                    }
+                    return date.format('MMMM D, YYYY h:mm A');
+                } catch {
+                    return <span style={{ color: '#999' }}>Never</span>;
+                }
+            },
+        },
         {
             title: "Actions",
-            render: (_: any, record: User) => (
-                <div style={{ display: "flex", gap: "8px" }}>
-                    <Popconfirm
-                        title="Are you sure to delete this admin?"
-                        onConfirm={() => handleDelete(record.userId)}
-                        okText="Yes"
-                        cancelText="No"
-                    >
-                        <Button icon={<DeleteOutlined />} danger />
-                    </Popconfirm>
-                </div>
-            ),
+            render: (_: any, record: User) => {
+                // Protect admin@gmail.com from deletion
+                const isProtectedAdmin = record.email && record.email.toLowerCase() === 'admin@gmail.com';
+                
+                return (
+                    <div style={{ display: "flex", gap: "8px" }}>
+                        {isProtectedAdmin ? (
+                            <Tooltip title="This administrator account cannot be deleted">
+                                <Button 
+                                    icon={<DeleteOutlined />} 
+                                    danger 
+                                    disabled
+                                    style={{ cursor: 'not-allowed' }}
+                                />
+                            </Tooltip>
+                        ) : (
+                            <Popconfirm
+                                title="Delete Administrator"
+                                description="Are you sure you want to delete this administrator? This action cannot be undone."
+                                onConfirm={() => handleDelete(record.userId)}
+                                okText="Yes, Delete"
+                                cancelText="Cancel"
+                                okButtonProps={{ danger: true }}
+                            >
+                                <Button 
+                                    icon={<DeleteOutlined />} 
+                                    danger 
+                                    type="default"
+                                />
+                            </Popconfirm>
+                        )}
+                    </div>
+                );
+            },
         },
     ];
 

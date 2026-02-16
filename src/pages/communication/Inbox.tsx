@@ -52,7 +52,12 @@ const Inbox = () => {
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 20,
-    total: 0
+    total: 0,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    showTotal: (total: number, range: [number, number]) => 
+      `${range[0]}-${range[1]} of ${total} messages`,
+    pageSizeOptions: ['10', '20', '50', '100']
   });
   
   // Filters
@@ -60,12 +65,12 @@ const Inbox = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch messages
-  const fetchMessages = async (page = 1, isRead?: boolean, search?: string) => {
+  const fetchMessages = async (page = 1, pageSize = pagination.pageSize, isRead?: boolean, search?: string) => {
     setLoading(true);
     try {
       const params: any = {
         page,
-        limit: pagination.pageSize
+        limit: pageSize
       };
 
       if (isRead !== undefined) {
@@ -81,11 +86,12 @@ const Inbox = () => {
       if (res?.success && res?.data) {
         setMessages(res.data.messages);
         setUnreadCount(res.data.unreadCount);
-        setPagination({
+        setPagination(prev => ({
+          ...prev,
           current: res.data.pagination.page,
           pageSize: res.data.pagination.limit,
           total: res.data.pagination.total
-        });
+        }));
       } else {
         message.error(res?.message || 'Failed to fetch inbox messages');
       }
@@ -105,20 +111,20 @@ const Inbox = () => {
   const handleFilterChange = (value: 'all' | 'read' | 'unread') => {
     setFilterStatus(value);
     const isRead = value === 'read' ? true : value === 'unread' ? false : undefined;
-    fetchMessages(1, isRead, searchTerm);
+    fetchMessages(1, pagination.pageSize, isRead, searchTerm);
   };
 
   // Handle search
   const handleSearch = (value: string) => {
     setSearchTerm(value);
     const isRead = filterStatus === 'read' ? true : filterStatus === 'unread' ? false : undefined;
-    fetchMessages(1, isRead, value);
+    fetchMessages(1, pagination.pageSize, isRead, value);
   };
 
   // Handle pagination change
-  const handleTableChange = (newPagination: any) => {
+  const handleTableChange = (newPagination: any, filters: any, sorter: any) => {
     const isRead = filterStatus === 'read' ? true : filterStatus === 'unread' ? false : undefined;
-    fetchMessages(newPagination.current, isRead, searchTerm);
+    fetchMessages(newPagination.current, newPagination.pageSize, isRead, searchTerm);
   };
 
   // View message details
@@ -132,7 +138,7 @@ const Inbox = () => {
         // Mark as read if unread
         if (!res.data.isRead) {
           await markMessageAsRead(messageId);
-          fetchMessages(pagination.current, 
+          fetchMessages(pagination.current, pagination.pageSize,
             filterStatus === 'read' ? true : filterStatus === 'unread' ? false : undefined, 
             searchTerm
           );
@@ -155,7 +161,7 @@ const Inbox = () => {
       
       if (res?.success) {
         message.success(isRead ? 'Marked as unread' : 'Marked as read');
-        fetchMessages(pagination.current, 
+        fetchMessages(pagination.current, pagination.pageSize,
           filterStatus === 'read' ? true : filterStatus === 'unread' ? false : undefined, 
           searchTerm
         );
@@ -171,7 +177,7 @@ const Inbox = () => {
       const res = await toggleStarMessage(messageId);
       if (res?.success) {
         message.success(res.message);
-        fetchMessages(pagination.current, 
+        fetchMessages(pagination.current, pagination.pageSize,
           filterStatus === 'read' ? true : filterStatus === 'unread' ? false : undefined, 
           searchTerm
         );
@@ -187,7 +193,7 @@ const Inbox = () => {
       const res = await deleteInboxMessage(messageId);
       if (res?.success) {
         message.success('Message deleted successfully');
-        fetchMessages(pagination.current, 
+        fetchMessages(pagination.current, pagination.pageSize,
           filterStatus === 'read' ? true : filterStatus === 'unread' ? false : undefined, 
           searchTerm
         );
@@ -356,7 +362,7 @@ const Inbox = () => {
         </div>
         <Button
           icon={<ReloadOutlined />}
-          onClick={() => fetchMessages(pagination.current, 
+          onClick={() => fetchMessages(pagination.current, pagination.pageSize,
             filterStatus === 'read' ? true : filterStatus === 'unread' ? false : undefined, 
             searchTerm
           )}

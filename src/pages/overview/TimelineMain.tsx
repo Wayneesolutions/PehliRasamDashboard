@@ -25,6 +25,14 @@ type TimelineEvent = {
   date: string;
   isIntroAction?: boolean;
   customerId?: string;
+  metadata?: {
+    type?: string;
+    recipients?: string[];
+    extraEmails?: string[];
+    customerEmail?: string;
+    subject?: string;
+    introLink?: string;
+  };
 };
 
 type ChartDataItem = {
@@ -103,6 +111,7 @@ const TimelineMain: React.FC = () => {
           date: moment(log.createdAt).format("YYYY-MM-DD"),
           isIntroAction,
           customerId,
+          metadata: log.metadata || undefined,
         };
       });
 
@@ -222,10 +231,64 @@ const TimelineMain: React.FC = () => {
         </div>
       );
     } else if (event.text.includes("→") || event.text.toLowerCase().includes("mail")) {
-      // Email action - handle both new and old formats
+      // Check if this is an intro email with recipient metadata
+      if (event.metadata?.type === 'intro_email' && event.metadata?.recipients) {
+        const recipients = event.metadata.recipients || [];
+        const extraEmails = event.metadata.extraEmails || [];
+        const customerEmail = event.metadata.customerEmail || '';
+        const subject = event.metadata.subject || '';
+        
+        // Extract customer name from text or use link
+        const customerNameMatch = event.text.match(/Sent intro mail to (.+?) - Subject:/i);
+        const customerName = customerNameMatch ? customerNameMatch[1] : event.link.trim();
+        
+        return (
+          <div className="text-sm" style={{ color: '#333333' }}>
+            <p className="mb-2 font-medium">
+              <span className="font-medium" style={{ color: '#2C7BE5' }}>Pehli Rasam.com</span> sent intro mail to <span style={{ color: '#2C7BE5' }}>{cleanText(customerName)}</span>
+            </p>
+            {recipients.length > 0 && (
+              <div className="mt-2 pt-2 border-t" style={{ borderColor: '#E5E7EB' }}>
+                <p className="text-xs font-semibold mb-1.5" style={{ color: '#374151' }}>Recipients:</p>
+                <div className="space-y-1">
+                  {recipients.map((email, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <span className="text-xs" style={{ color: '#333333' }}>
+                        {email === customerEmail ? (
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#2C7BE5' }}></span>
+                            <span className="font-medium">{email}</span>
+                            <span style={{ color: '#6B7280' }} className="text-xs">(Customer)</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#9CA3AF' }}></span>
+                            <span>{email}</span>
+                            <span style={{ color: '#6B7280' }} className="text-xs">(Additional)</span>
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {subject && (
+              <div className="mt-2 pt-2 border-t" style={{ borderColor: '#E5E7EB' }}>
+                <p className="text-xs" style={{ color: '#6B7280' }}>
+                  <span className="font-semibold" style={{ color: '#374151' }}>Subject:</span> {cleanText(subject)}
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      }
       
+      // Email action - handle both new and old formats (for non-intro emails)
       // New format: "→ <email@example.com> Sent mail to Customer - Subject: "..." by Admin..."
+      // Also handle format without < >: "Sent intro mail to Customer - Subject: "..." by Admin..."
       const newFormatMatch = event.text.match(/→\s*<(.+?)>\s*Sent (intro )?mail to (.+?) - Subject: "(.+?)"/i);
+      const newFormatWithoutBrackets = event.text.match(/Sent (intro )?mail to (.+?) - Subject: "(.+?)"/i);
       
       // Old format: "Sanded mail to Customer Name "subject : ..." by Admin..."
       const oldFormatMatch = event.text.match(/(?:Sanded|Sent) mail to (.+?) "subject\s*:\s*(.+?)"/i);
@@ -236,11 +299,16 @@ const TimelineMain: React.FC = () => {
       let isIntroMail = false;
       
       if (newFormatMatch) {
-        // New format
+        // New format with brackets
         email = newFormatMatch[1];
         isIntroMail = !!newFormatMatch[2];
         customerName = newFormatMatch[3];
         subject = newFormatMatch[4];
+      } else if (newFormatWithoutBrackets) {
+        // New format without brackets
+        isIntroMail = !!newFormatWithoutBrackets[1];
+        customerName = newFormatWithoutBrackets[2];
+        subject = newFormatWithoutBrackets[3];
       } else if (oldFormatMatch) {
         // Old format
         customerName = oldFormatMatch[1];
@@ -255,8 +323,11 @@ const TimelineMain: React.FC = () => {
       return (
         <div className="text-sm" style={{ color: '#333333' }}>
           <p className="mb-1">
-            <span className="font-medium" style={{ color: '#2C7BE5' }}>Pehli Rasam.com</span> → {email && <span style={{ color: '#2C7BE5' }}>{email !== 'customer' ? `<${cleanText(email)}>` : ''}</span>}
-            {customerName && ` Sent ${isIntroMail ? 'intro ' : ''}mail to ${cleanText(customerName)}`}
+            <span className="font-medium" style={{ color: '#2C7BE5' }}>Pehli Rasam.com</span>
+            {email && email !== 'customer' && (
+              <span style={{ color: '#2C7BE5' }}> {cleanText(email)}</span>
+            )}
+            {customerName && ` sent ${isIntroMail ? 'intro ' : ''}mail to ${cleanText(customerName)}`}
           </p>
           {subject && (
             <p className="text-xs mt-1" style={{ color: '#666666' }}>

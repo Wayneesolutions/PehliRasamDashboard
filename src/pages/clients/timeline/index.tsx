@@ -25,6 +25,14 @@ type TimelineEvent = {
   date: string;
   isIntroAction?: boolean;
   introId?: string;
+  metadata?: {
+    type?: string;
+    recipients?: string[];
+    extraEmails?: string[];
+    customerEmail?: string;
+    subject?: string;
+    introLink?: string;
+  };
 };
 
 type ChartDataItem = {
@@ -76,6 +84,7 @@ const TimelineMain: React.FC = () => {
 
       const formatted: TimelineEvent[] = sortedLogs.map((log: any) => {
         const isIntroAction = log.action.toLowerCase().includes("intro");
+        const isIntroEmail = log.action.toLowerCase().includes("mail") && log.metadata?.type === 'intro_email';
         const introIdFromUrl = isIntroAction ? extractIntroIdFromUrl(log.changeSummary) : null;
         
         // Debug logging for intro actions
@@ -99,6 +108,7 @@ const TimelineMain: React.FC = () => {
           date: moment(log.createdAt).format("YYYY-MM-DD"),
           isIntroAction,
           introId: introIdFromUrl,
+          metadata: log.metadata || undefined,
         };
       });
 
@@ -130,7 +140,58 @@ const TimelineMain: React.FC = () => {
 
   // Function to render the timeline event text with clickable link for intro actions
   const renderEventText = (event: TimelineEvent) => {
-    if (event.isIntroAction && event.introId) {
+    // Check if this is an intro email with recipient information
+    if (event.metadata?.type === 'intro_email' && event.metadata?.recipients) {
+      const recipients = event.metadata.recipients || [];
+      const extraEmails = event.metadata.extraEmails || [];
+      const customerEmail = event.metadata.customerEmail || '';
+      const subject = event.metadata.subject || '';
+      
+      // Extract customer name from changeSummary
+      const customerNameMatch = event.text.match(/Sent intro mail to (.+?) - Subject:/i);
+      const customerName = customerNameMatch ? customerNameMatch[1] : event.link.trim();
+      
+      return (
+        <div className="text-gray-700 text-sm">
+          <p className="mb-2 font-medium">
+            Sent intro mail to <span className="text-blue-600">{customerName}</span>
+          </p>
+          {recipients.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-gray-200">
+              <p className="text-xs font-semibold text-gray-700 mb-1.5">Recipients:</p>
+              <div className="space-y-1">
+                {recipients.map((email, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <span className="text-xs text-gray-700">
+                      {email === customerEmail ? (
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                          <span className="font-medium">{email}</span>
+                          <span className="text-gray-500 text-xs">(Customer)</span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                          <span>{email}</span>
+                          <span className="text-gray-500 text-xs">(Additional)</span>
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {subject && (
+            <div className="mt-2 pt-2 border-t border-gray-200">
+              <p className="text-xs text-gray-600">
+                <span className="font-semibold text-gray-700">Subject:</span> {subject}
+              </p>
+            </div>
+          )}
+        </div>
+      );
+    } else if (event.isIntroAction && event.introId) {
       // Ensure intro ID is padded to 5 digits
       const paddedId = event.introId.padStart(5, '0');
       const targetPath = `/dashboard/client-intro/${paddedId}`;
@@ -157,9 +218,16 @@ const TimelineMain: React.FC = () => {
         </p>
       );
     } else {
+      // Clean up old format entries that might have <email> symbols
+      let cleanedText = event.text;
+      // Remove → <email> pattern and replace with just email or remove entirely
+      cleanedText = cleanedText.replace(/→\s*<([^>]+)>\s*/g, (match, email) => {
+        return email + ' ';
+      });
+      
       return (
         <p className="text-gray-700 text-sm">
-          {event.text}{" "}
+          {cleanedText}{" "}
           <span className="text-blue-500 font-medium">{event.link}</span>
         </p>
       );

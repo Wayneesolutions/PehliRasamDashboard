@@ -452,9 +452,30 @@ export const deleteEmailTemplate = async (id: string) => {
 
 interface MailLogParams {
   search?: string;
+  page?: number;
+  limit?: number;
 }
 
-export const mailLogs = async (params?: MailLogParams) => {
+export interface MailLogsResponse {
+  count: number;
+  logs: Array<{
+    to: string;
+    customerName: string;
+    from: string;
+    subject: string;
+    body: string;
+    time: string;
+    status: string;
+  }>;
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
+export const mailLogs = async (params?: MailLogParams): Promise<MailLogsResponse> => {
   try {
     const response = await apiClient.post('admin/mailLogs', params || {});
     return response?.data;
