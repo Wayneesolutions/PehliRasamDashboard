@@ -122,7 +122,7 @@ const Inbox = () => {
   };
 
   // Handle pagination change
-  const handleTableChange = (newPagination: any, filters: any, sorter: any) => {
+  const handleTableChange = (newPagination: any, _filters: any, _sorter: any) => {
     const isRead = filterStatus === 'read' ? true : filterStatus === 'unread' ? false : undefined;
     fetchMessages(newPagination.current, newPagination.pageSize, isRead, searchTerm);
   };

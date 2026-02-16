@@ -84,7 +84,6 @@ const TimelineMain: React.FC = () => {
 
       const formatted: TimelineEvent[] = sortedLogs.map((log: any) => {
         const isIntroAction = log.action.toLowerCase().includes("intro");
-        const isIntroEmail = log.action.toLowerCase().includes("mail") && log.metadata?.type === 'intro_email';
         const introIdFromUrl = isIntroAction ? extractIntroIdFromUrl(log.changeSummary) : null;
         
         // Debug logging for intro actions
@@ -143,7 +142,6 @@ const TimelineMain: React.FC = () => {
     // Check if this is an intro email with recipient information
     if (event.metadata?.type === 'intro_email' && event.metadata?.recipients) {
       const recipients = event.metadata.recipients || [];
-      const extraEmails = event.metadata.extraEmails || [];
       const customerEmail = event.metadata.customerEmail || '';
       const subject = event.metadata.subject || '';
       
@@ -221,7 +219,7 @@ const TimelineMain: React.FC = () => {
       // Clean up old format entries that might have <email> symbols
       let cleanedText = event.text;
       // Remove → <email> pattern and replace with just email or remove entirely
-      cleanedText = cleanedText.replace(/→\s*<([^>]+)>\s*/g, (match, email) => {
+      cleanedText = cleanedText.replace(/→\s*<([^>]+)>\s*/g, (_match, email) => {
         return email + ' ';
       });
       

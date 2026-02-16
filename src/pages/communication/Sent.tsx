@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { mailLogs, type MailLogsResponse } from "../../config/apiClient";
-import { Input, Spin, Pagination, Table, Empty } from "antd";
+import { Input, Spin, Pagination, Empty } from "antd";
 
 interface Email {
   to: string;

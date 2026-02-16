@@ -234,7 +234,6 @@ const TimelineMain: React.FC = () => {
       // Check if this is an intro email with recipient metadata
       if (event.metadata?.type === 'intro_email' && event.metadata?.recipients) {
         const recipients = event.metadata.recipients || [];
-        const extraEmails = event.metadata.extraEmails || [];
         const customerEmail = event.metadata.customerEmail || '';
         const subject = event.metadata.subject || '';
         
