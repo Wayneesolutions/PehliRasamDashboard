@@ -8,7 +8,7 @@ import { message } from "antd";
 import { CustomerUpdate } from "../clientsForm/types/clientTypes";
 import ClientListManager from "./ClientList";
 import Select from "react-select";
-import axios from "axios";
+import { countries as countriesData } from "countries-list";
 
 type CountryOption = {
   label: string;
@@ -20,23 +20,18 @@ type SidebarProps = {
   customerId: string;
 };
 
-
-
-const fetchCountries = async (): Promise<CountryOption[]> => {
-  const { data } = await axios.get("https://restcountries.com/v3.1/all?fields=name,flags");
-  return data
-    .map((country: any) => ({
-      label: country.name.common,
-      value: country.name.common,
-      flag: country.flags.svg,
-    }))
-    .sort((a: CountryOption, b: CountryOption) => a.label.localeCompare(b.label));
-};
+const allCountryOptions: CountryOption[] = Object.entries(countriesData)
+  .map(([code, country]) => ({
+    label: country.name,
+    value: country.name,
+    flag: code.toLowerCase(),
+  }))
+  .sort((a, b) => a.label.localeCompare(b.label));
 
 // Custom SingleValue
 const customSingleValue = ({ data }: { data: CountryOption }) => (
   <div className="flex items-center">
-    <img src={data.flag} alt="flag" className="w-5 h-4 mr-2" />
+    <img src={`https://flagcdn.com/w20/${data.flag}.png`} alt={data.label} className="w-5 h-4 mr-2" />
     {data.label}
   </div>
 );
@@ -50,7 +45,7 @@ const customOption = (props: {
   const { data, innerRef, innerProps } = props;
   return (
     <div ref={innerRef} {...innerProps} className="px-2 py-1 hover:bg-gray-100 cursor-pointer flex items-center">
-      <img src={data.flag} alt="flag" className="w-5 h-4 mr-2" />
+      <img src={`https://flagcdn.com/w20/${data.flag}.png`} alt={data.label} className="w-5 h-4 mr-2" />
       {data.label}
     </div>
   );
@@ -64,7 +59,7 @@ const Sidebar = ({ customerId }: SidebarProps) => {
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [countryOptions, setCountryOptions] = useState<CountryOption[]>([]);
+  const [countryOptions] = useState<CountryOption[]>(allCountryOptions);
 
   const [imagePath, setImagePath] = useState<string | undefined>();
 
@@ -253,13 +248,6 @@ const Sidebar = ({ customerId }: SidebarProps) => {
   };
 
 
-  useEffect(() => {
-    const loadCountries = async () => {
-      const countries = await fetchCountries();
-      setCountryOptions(countries);
-    };
-    loadCountries();
-  }, []);
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
