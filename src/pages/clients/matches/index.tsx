@@ -635,7 +635,7 @@ const MatchesPage = () => {
                 </button>
                 <button
                   onClick={handleCreate}
-                  className="px-5 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors"
+                  className="px-5 py-2.5 bg-gray-900 !text-white rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors"
                 >
                   Save
                 </button>
@@ -799,6 +799,11 @@ const MatchesPage = () => {
         isOpen={isCreateIntroModalOpen}
         onClose={() => {
           setIsCreateIntroModalOpen(false);
+          // Don't wipe selectedMatchCustomerId here — SendIntro captures it in introData
+          // before onClose fires, and SendMailForIntro still needs it. Clear it only after
+          // the full flow (SendMailForIntro) is done via onFullyDone.
+        }}
+        onFullyDone={() => {
           setSelectedMatchCustomerId(null);
         }}
       />

@@ -9,6 +9,7 @@ interface Props {
   customerId: string | null;
   isOpen: boolean;
   onClose: () => void;
+  onFullyDone?: () => void;
 }
 
 interface Group {
@@ -23,7 +24,7 @@ interface Field {
   Required?: boolean;
 }
 
-const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
+const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose, onFullyDone }) => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedPreset, setSelectedPreset] = useState<string | undefined>();
   const [presetFields, setPresetFields] = useState<Field[]>([]);
@@ -74,14 +75,13 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
 
   const handleOk = async () => {
     if (!selectedPreset) return message.error("Please select a preset.");
-    if (!customerId) return message.error("Customer ID is missing.");
+    // Capture customerId immediately — onClose() will wipe the prop before React re-renders
+    const currentCustomerId = customerId;
+    if (!currentCustomerId) return message.error("Customer ID is missing.");
     if (presetFields.length === 0) return message.error("Selected preset has no fields.");
 
-    // Filter out basic info fields - they are automatically included by getIntroFieldValues
-    // Basic info fields have id starting with "basic-" and don't need to be stored in IntroFields
     const fields = presetFields
       .filter(field => {
-        // Skip basic info fields (they're automatically included, don't need to be sent)
         if (typeof field.id === 'string' && field.id.startsWith('basic-')) {
           return false;
         }
@@ -90,32 +90,36 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
       .map(field => ({
         fieldId: field.id,
         fieldsFor: field.Kind?.toLowerCase() === 'preference' ? 'Preferences' : 'Profile',
-        AllowEdit: field.AllowEdit ?? true,  // Default to true if not specified
-        isRequired: field.Required ?? false,  // Default to false if not specified
+        AllowEdit: field.AllowEdit ?? true,
+        isRequired: field.Required ?? false,
       }));
 
+    // Re-fetch basicInfo fresh at submit time to avoid stale profile image from a previous customer
+    let freshBasicInfo = basicInfo;
+    try {
+      const res = await apiClient.post('/admin/getCustomerBasicDetail', { customerId: currentCustomerId });
+      freshBasicInfo = res.data.data || basicInfo;
+    } catch {
+      // fall back to whatever basicInfo we already have
+    }
 
     const payload = {
-      expiration: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(), // 6 days
-      profileImage: basicInfo?.imagePath || "https://default-image-url.com",
-      customerId,
+      expiration: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
+      profileImage: freshBasicInfo?.imagePath || "https://default-image-url.com",
+      customerId: currentCustomerId,
       fields,
-      presetId: selectedPreset, // Include the preset ID
+      presetId: selectedPreset,
     };
 
     try {
       const response = await apiClient.post("/admin/createIntro", payload);
       if (response.data.success) {
-        if (!customerId) {
-          message.error("Customer ID is missing. Cannot proceed with sending intro email.");
-          return;
-        }
         setIntroData({
           introId: response.data.data.intro.introId,
           link: response.data.data.intro.link,
-          customerId: customerId, // Store customerId in introData
+          customerId: currentCustomerId,
         });
-        onClose(); // Close the SendIntro modal
+        onClose();
       } else {
         message.error(response.data.message || "Failed to create intro.");
       }
@@ -125,11 +129,20 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
   };
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && customerId) {
+      // Reset stale state from previous customer before fetching fresh data
+      setSelectedPreset(undefined);
+      setPresetFields([]);
+      setBasicInfo(null);
       fetchGroups();
-      if (customerId) fetchCustomerBasicDetail(customerId);
+      fetchCustomerBasicDetail(customerId);
     }
-  }, [isOpen]);
+    if (!isOpen) {
+      setSelectedPreset(undefined);
+      setPresetFields([]);
+      setBasicInfo(null);
+    }
+  }, [isOpen, customerId]);
 
   return (
     <div>
@@ -173,7 +186,10 @@ const SendIntro: React.FC<Props> = ({ customerId, isOpen, onClose }) => {
           link={introData.link}
           customerId={introData.customerId}
           isOpen={!!introData && !!introData.customerId}
-          onClose={() => setIntroData(null)}
+          onClose={() => {
+            setIntroData(null);
+            onFullyDone?.();
+          }}
         />
       )}
     </div>
